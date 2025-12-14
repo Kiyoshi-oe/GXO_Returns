@@ -1,0 +1,3723 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Chart.js für Diagramme -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    LVS Returns wird geladen<span class="loading-dots"></span>
+  </div>
+  <div class="loading-subtitle">
+    Bitte warten Sie einen Moment
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div id="imageLightbox" class="lightbox">
+  <span class="lightbox-close">&times;</span>
+  <img id="lightboxImage" class="lightbox-content" src="" alt="Label Vollansicht">
+</div>
+
+<!-- Custom Modal -->
+<div id="customModal" class="custom-modal">
+  <div class="custom-modal-content">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon" id="modalIcon">ℹ️</span>
+      <span class="custom-modal-title" id="modalTitle">Information</span>
+      <span class="custom-modal-close" id="modalClose">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="modalBody">
+      Nachricht hier
+    </div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-primary" id="modalOkBtn">OK</button>
+      <button class="btn btn-ghost" id="modalCancelBtn" style="display:none;">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <div class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-view="inventory">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </div>
+      <div class="nav-item" data-view="inbound">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </div>
+      <div class="nav-item" data-view="move">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </div>
+      <div class="nav-item" data-view="archive">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </div>
+      <div class="nav-item" data-view="ra">
+        <span class="nav-icon">📑</span>
+        <span>RA Import</span>
+      </div>
+      <div class="nav-section-title">Administration</div>
+      <div class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙️</span>
+        <span>Einstellungen</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-subtitle" id="topbarSubtitle">Überblick über Lager und Retouren</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
+        <span id="currentUserDisplay">Nicht angemeldet</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Settings Content -->
+      <section id="settingsContent" class="view" style="display: none;">
+      
+      <!-- Tab Navigation -->
+      <div class="card" id="settingsTabNavigation" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; padding: 8px; background: var(--bg-soft); border-radius: 10px;">
+          <button class="settings-tab-btn active" data-tab="carrier" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-main); transition: all 0.3s ease;">
+            🚚 Carrier Konfiguration
+          </button>
+          <button class="settings-tab-btn" data-tab="dropdowns" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            📋 Dropdown Optionen
+          </button>
+          <button class="settings-tab-btn" data-tab="system" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            ⚙️ System Info
+          </button>
+        </div>
+      </div>
+
+      <!-- Carrier Konfiguration Tab -->
+      <div class="settings-tab-content" id="tab-carrier">
+        <!-- Carrier Auswahl -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🚚 Carrier auswählen</div>
+              <div class="card-subtitle">Wählen Sie einen Versanddienstleister zur Konfiguration</div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Carrier</label>
+            <div class="searchable-dropdown" id="settingsCarrierDropdown">
+              <input type="text" id="settingsCarrierSelect" placeholder="Carrier wählen oder tippen..." autocomplete="off">
+              <div class="searchable-dropdown-list" id="settingsCarrierDropdownList"></div>
+            </div>
+          </div>
+          
+          <div id="carrierSelectionHint" style="margin-top: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange); font-size: 13px; color: var(--text-muted);">
+            💡 <strong>Hinweis:</strong> Wählen Sie einen Carrier aus der Liste oben, um dessen Einstellungen zu bearbeiten.
+          </div>
+        </div>
+
+        <!-- Carrier Einstellungen Form -->
+        <div id="carrierSettingsForm" style="display:none;">
+          
+          <!-- Grundeinstellungen -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📝 Grundeinstellungen</div>
+                <div class="card-subtitle">Anzeigename und Standardwerte</div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Anzeigename</label>
+                <input type="text" id="settingsDisplayName" placeholder="z.B. FedEx">
+              </div>
+              <div class="form-group">
+                <label>Standard Land</label>
+                <input type="text" id="settingsCountry" maxlength="2" placeholder="z.B. DE">
+              </div>
+              <div class="form-group">
+                <label>Standard Area</label>
+                <input type="text" id="settingsDefaultArea" placeholder="z.B. Area D">
+              </div>
+              <div class="form-group">
+                <label>Standard Stage</label>
+                <input type="text" id="settingsDefaultStage" placeholder="z.B. Waiting Area Returns Line 68">
+              </div>
+              <div class="form-group">
+                <label>Standard Last Stage</label>
+                <input type="text" id="settingsDefaultLastStage">
+              </div>
+              <div class="form-group">
+                <label>Standard Ship Status</label>
+                <input type="text" id="settingsDefaultShipStatus">
+              </div>
+              <div class="form-group">
+                <label>Label-Bild Pfad</label>
+                <input type="text" id="settingsLabelImage" placeholder="/images/CarrierLabels/FedEx.png">
+              </div>
+              <div class="form-group">
+                <label>Label Hilfetext</label>
+                <textarea id="settingsLabelHelpText" rows="2" placeholder="Hilfetext für Mitarbeiter"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Validierungen -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">✅ Validierungen</div>
+                <div class="card-subtitle">OLPN und Tracking Number Prüfungen</div>
+              </div>
+            </div>
+
+            <!-- OLPN Validierung -->
+            <div style="padding: 16px; background: var(--bg-soft); border-radius: 10px; margin-bottom: 16px;">
+              <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--gxo-orange); font-weight: 600;">OLPN Validierung</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none;">
+                  <input type="checkbox" id="settingsOlpnEnabled" style="width: auto; cursor: pointer;">
+                  <span>OLPN Validierung aktiv</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none;">
+                  <input type="checkbox" id="settingsOlpnRequired" style="width: auto; cursor: pointer;">
+                  <span>OLPN Pflichtfeld</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label>Länge (Stellen)</label>
+                <input type="number" id="settingsOlpnLength" placeholder="z.B. 20">
+              </div>
+              <div class="form-group">
+                <label>Beginnt mit (Komma-getrennt)</label>
+                <input type="text" id="settingsOlpnStartsWith" placeholder="z.B. 0005,0008">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+              <label>Fehlermeldung</label>
+              <input type="text" id="settingsOlpnError" placeholder="z.B. OLPN muss mit 0005 oder 0008 beginnen">
+            </div>
+          </div>
+
+            <!-- Tracking Number Validierung -->
+            <div style="padding: 16px; background: var(--bg-soft); border-radius: 10px;">
+              <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--gxo-orange); font-weight: 600;">Carrier Tracking Number Validierung</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none;">
+                  <input type="checkbox" id="settingsTrackingEnabled" style="width: auto; cursor: pointer;">
+                  <span>Tracking Validierung aktiv</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none;">
+                  <input type="checkbox" id="settingsTrackingRequired" style="width: auto; cursor: pointer;">
+                  <span>Tracking Pflichtfeld</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label>Länge (Stellen)</label>
+                <input type="number" id="settingsTrackingLength" placeholder="z.B. 12">
+              </div>
+              <div class="form-group">
+                <label>Beginnt mit (Komma-getrennt)</label>
+                <input type="text" id="settingsTrackingStartsWith" placeholder="z.B. 88">
+              </div>
+            </div>
+              <div class="form-group" style="margin-top: 8px;">
+                <label>Fehlermeldung</label>
+                <input type="text" id="settingsTrackingError" placeholder="z.B. AWB muss mit 88 beginnen">
+              </div>
+            </div>
+          </div>
+
+          <!-- Sichtbare Felder -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">👁️ Sichtbare Felder</div>
+                <div class="card-subtitle">Felder für Einzelerfassung ein-/ausblenden</div>
+              </div>
+            </div>
+            
+            <div id="visibleFieldsCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 8px;">
+              <!-- Checkboxen werden dynamisch geladen -->
+            </div>
+          </div>
+
+          <!-- Massenerfassung Konfiguration -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📋 Massenerfassung Konfiguration</div>
+                <div class="card-subtitle">Feste und variable Felder definieren</div>
+              </div>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; padding: 12px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange);">
+              <strong>Hinweis:</strong> Legen Sie fest, welche Felder bei der Massenerfassung als <strong>feste Felder</strong> (oben, für alle Einträge gleich) und welche als <strong>variable Felder</strong> (unten, pro Eintrag unterschiedlich) angezeigt werden.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div style="background: var(--bg-soft); padding: 16px; border-radius: 10px; border: 2px solid var(--border-soft);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <span style="font-size: 20px;">📌</span>
+                  <label style="font-weight: 600; color: var(--gxo-orange); font-size: 14px; margin: 0;">Feste Felder</label>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Für alle Einträge gleich</p>
+                <div id="bulkFixedFieldsCheckboxes" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; padding-right: 8px;">
+                  <!-- Checkboxen werden dynamisch geladen -->
+                </div>
+              </div>
+              
+              <div style="background: var(--bg-soft); padding: 16px; border-radius: 10px; border: 2px solid var(--border-soft);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <span style="font-size: 20px;">✏️</span>
+                  <label style="font-weight: 600; color: var(--gxo-orange); font-size: 14px; margin: 0;">Variable Felder</label>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Pro Eintrag unterschiedlich</p>
+                <div id="bulkVariableFieldsCheckboxes" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; padding-right: 8px;">
+                  <!-- Checkboxen werden dynamisch geladen -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speichern Button -->
+          <div class="card" style="background: linear-gradient(135deg, rgba(245,59,1,0.1) 0%, transparent 100%); border: 2px solid var(--gxo-orange);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-main);">Änderungen speichern</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Alle Einstellungen für diesen Carrier werden gespeichert</div>
+              </div>
+              <button class="btn btn-primary" id="btnSaveCarrierSettings" style="padding: 12px 32px; font-size: 14px;">
+                💾 Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dropdown Optionen Tab -->
+      <div class="settings-tab-content" id="tab-dropdowns" style="display:none;">
+        <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📋 Dropdown Optionen verwalten</div>
+            <div class="card-subtitle">Area und Land Optionen hinzufügen, bearbeiten oder entfernen</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange); font-size: 13px; color: var(--text-muted);">
+          💡 <strong>Hinweis:</strong> Diese Optionen werden in den Dropdown-Menüs im Wareneingang angezeigt. Sie können die Reihenfolge per Drag & Drop ändern.
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <!-- Area Optionen -->
+          <div>
+            <h4 style="font-size: 14px; margin-bottom: 8px;">Area Optionen</h4>
+            <div id="areaOptionsList" style="margin-bottom: 10px;">
+              <!-- Liste wird geladen -->
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="newAreaOption" placeholder="Neue Area Option" style="flex: 1;">
+              <button class="btn btn-secondary btn-sm" id="btnAddAreaOption">+</button>
+            </div>
+          </div>
+
+          <!-- Land Optionen -->
+          <div>
+            <h4 style="font-size: 14px; margin-bottom: 8px;">Land Optionen</h4>
+            <div id="landOptionsList" style="margin-bottom: 10px;">
+              <!-- Liste wird geladen -->
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="newLandValue" placeholder="Code (z.B. DE)" style="flex: 0.3;">
+              <input type="text" id="newLandLabel" placeholder="Label (z.B. Deutschland)" style="flex: 0.7;">
+              <button class="btn btn-secondary btn-sm" id="btnAddLandOption">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- System Info Tab -->
+      <div class="settings-tab-content" id="tab-system" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">💻 System Information</div>
+              <div class="card-subtitle">Aktueller Windows-Benutzer und Computer</div>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div style="padding: 20px; background: var(--bg-soft); border-radius: 12px; border-left: 4px solid var(--gxo-orange);">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">👤 Windows Benutzer</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--text-main);" id="settingsCurrentUser">-</div>
+            </div>
+            
+            <div style="padding: 20px; background: var(--bg-soft); border-radius: 12px; border-left: 4px solid var(--gxo-orange);">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">🖥️ Computer Name</div>
+              <div style="font-size: 20px; font-weight: 600; color: var(--text-main);" id="settingsComputerName">-</div>
+            </div>
+          </div>
+          
+          <div style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); border-radius: 12px; border: 1px solid var(--border-soft);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="font-size: 24px;">📦</span>
+              <div style="font-size: 16px; font-weight: 600; color: var(--gxo-orange);">LVS Returns System</div>
+            </div>
+            <p style="font-size: 14px; color: var(--text-main); margin-bottom: 8px;">Version 1.0</p>
+            <p style="font-size: 12px; color: var(--text-muted);">Entwickelt für GXO Logistics - Warehouse Management</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+      <!-- Dashboard -->
+      <section class="view active" id="view-dashboard">
+        <div class="grid-2">
+          <!-- Linke Spalte -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Kennzahlen Lager heute</div>
+                  <div class="card-subtitle">Werte sind Muster bis echte Buchungen umgesetzt werden</div>
+                </div>
+                <div class="card-actions">
+                  <span class="pill pill-soft">Lese Sicht</span>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="stack">
+                  <span class="kpi-number">128</span>
+                  <span class="kpi-label">belegte Stellplätze</span>
+                  <span class="muted">von 160 Stellplätzen gesamt</span>
+                </div>
+                <div class="stack">
+                  <span class="kpi-number">342</span>
+                  <span class="kpi-label">Paletten im Lager</span>
+                  <span class="muted">Durchschnitt 18 Kartons je Palette</span>
+                </div>
+                <div class="stack">
+                  <span class="kpi-number">6124</span>
+                  <span class="kpi-label">Kartons gesamt</span>
+                  <span class="muted">inklusive reservierter Bestände</span>
+                </div>
+                <div class="stack">
+                  <span class="kpi-number">73</span>
+                  <span class="kpi-label">offene RA Positionen</span>
+                  <span class="muted">davon 12 mit unklarer Nummer</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Bewegungen als Beispiel</div>
+                  <div class="card-subtitle">Hier kann später das Journal der Buchungen stehen</div>
+                </div>
+              </div>
+              <table>
+                <thead>
+                <tr>
+                  <th>Uhrzeit</th>
+                  <th>Art</th>
+                  <th>Objekt</th>
+                  <th>Von</th>
+                  <th>Nach</th>
+                  <th>Benutzer</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="data-row">
+                  <td>07:42</td>
+                  <td><span class="badge badge-ok">Wareneingang</span></td>
+                  <td>Palette PAL 00421</td>
+                  <td>Annahme</td>
+                  <td>REG A 01 02</td>
+                  <td>Operator 12</td>
+                </tr>
+                <tr class="data-row">
+                  <td>09:15</td>
+                  <td><span class="badge badge-soft">Umlagerung</span></td>
+                  <td>Karton C 883 294</td>
+                  <td>REG B 02 03</td>
+                  <td>REG B 05 01</td>
+                  <td>Operator 07</td>
+                </tr>
+                <tr class="data-row">
+                  <td>10:03</td>
+                  <td><span class="badge badge-soft">Archivierung</span></td>
+                  <td>Palette PAL 00311</td>
+                  <td>REG C 01 01</td>
+                  <td>Archivzone</td>
+                  <td>Teamleitung</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">RA Status Übersicht</div>
+                  <div class="card-subtitle">Einfacher Blick auf gültig offen und Konflikte</div>
+                </div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chartRaStatus"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rechte Spalte -->
+          <div>
+            <!-- Schnell Einstieg -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Schnell Einstieg</div>
+                  <div class="card-subtitle">Die wichtigsten Bereiche mit einem Klick</div>
+                </div>
+              </div>
+              <div class="stack">
+                <button class="btn btn-primary" data-jump="inventory">Lagerbestand anzeigen</button>
+                <button class="btn btn-secondary" data-jump="inbound">Neue Palette erfassen</button>
+                <button class="btn btn-secondary" data-jump="move">Palette umsetzen</button>
+                <button class="btn btn-secondary" data-jump="ra">RA Report prüfen</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Lager Kennzahlen Grafik</div>
+                  <div class="card-subtitle">Demo Ansicht für künftige Auswertungen</div>
+                </div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chartByWeek"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Retouren nach Frachtführer</div>
+                  <div class="card-subtitle">Verteilung als Beispiel, Daten sind Platzhalter</div>
+                </div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="chartByCarrier"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Letzte Einträge Wareneingang im Dashboard (Toggle) -->
+        <div class="card" style="width: 100%; grid-column: 1 / -1;">
+          <div class="card-header" style="cursor: pointer;" id="dashboardInboundToggleHeader">
+            <div>
+              <div class="card-title">📋 Letzte Einträge Wareneingang</div>
+              <div class="card-subtitle">Übersicht der zuletzt erfassten Wareneingänge (Klicken zum Ein-/Ausblenden)</div>
+            </div>
+            <div class="card-actions">
+              <span class="toggle-arrow" id="dashboardInboundToggleArrow">▼</span>
+            </div>
+          </div>
+          <div id="dashboardInboundTableContainer" style="display: none;">
+            <table>
+              <thead>
+              <tr>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 6%;">CW</th>
+                <th style="width: 10%;">Datum</th>
+                <th style="width: 12%;">Carrier</th>
+                <th style="width: 12%;">Area</th>
+                <th style="width: 10%;">Stage</th>
+                <th style="width: 8%;">Planned</th>
+                <th style="width: 8%;">Actual</th>
+                <th style="width: 12%;">OLPN</th>
+                <th style="width: 12%;">CTN</th>
+                <th style="width: 10%;">MH Status</th>
+              </tr>
+              </thead>
+              <tbody id="dashboardInboundListBody">
+              <tr>
+                <td colspan="11" class="muted">Noch keine Einträge geladen</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lagerbestand -->
+      <section class="view" id="view-inventory">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Lagerbestand</div>
+              <div class="card-subtitle">
+                Jede Zeile zeigt einen Stellplatz mit Anzahl der Paletten und Kartons
+              </div>
+            </div>
+            <div class="card-actions">
+              <span class="pill pill-strong">Daten aus SQL</span>
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-bottom: 8px;">
+            <div class="form-group">
+              <label>Bereich</label>
+              <select>
+                <option>Gesamtes Lager</option>
+                <option>Zone A</option>
+                <option>Zone B</option>
+                <option>Zone C</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Anzeige</label>
+              <select>
+                <option>Nur aktive Stellplätze</option>
+                <option>Alle Stellplätze</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Suche</label>
+              <input type="text" placeholder="Stellplatz oder Palette">
+            </div>
+          </div>
+
+          <table>
+            <thead>
+            <tr>
+              <th>Stellplatz</th>
+              <th>Bereich</th>
+              <th>Paletten</th>
+              <th>Kartons</th>
+              <th>Durchschnitt Kartons je Palette</th>
+              <th>Aktion</th>
+            </tr>
+            </thead>
+            <tbody id="inventoryBody">
+            <tr>
+              <td colspan="6" class="muted">Lagerdaten werden geladen</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Wareneingang Simple -->
+      <section class="view" id="view-inbound">
+        <!-- Carrier Auswahl Übersicht (nur für Einstellungsseite, hier ausgeblendet) -->
+        <div class="card" id="carrierSelectionView" style="display: none;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Versanddienstleister auswählen</div>
+              <div class="card-subtitle">
+                Bitte wählen Sie den Frachtführer für den Wareneingang
+              </div>
+            </div>
+          </div>
+
+          <div id="carrierButtonsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:10px;">
+            <!-- Carrier Cards werden hier dynamisch geladen -->
+          </div>
+        </div>
+        
+        <!-- Liste der letzten Einträge -->
+        <div class="card" id="inboundListSection">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Letzte Einträge Wareneingang</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+            <tr>
+              <th style="width: 5%;">ID</th>
+              <th style="width: 6%;">CW</th>
+              <th style="width: 10%;">Datum</th>
+              <th style="width: 12%;">Carrier</th>
+              <th style="width: 12%;">Area</th>
+              <th style="width: 10%;">Stage</th>
+              <th style="width: 8%;">Planned</th>
+              <th style="width: 8%;">Actual</th>
+              <th style="width: 12%;">OLPN</th>
+              <th style="width: 12%;">CTN</th>
+              <th style="width: 10%;">MH Status</th>
+            </tr>
+            </thead>
+            <tbody id="inboundListBody">
+            <tr>
+              <td colspan="11" class="muted">Noch keine Einträge geladen</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Detailansicht (standardmäßig sichtbar, Carrier-Auswahl nur auf Einstellungsseite) -->
+        <div id="inboundDetailView" style="display:block;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title"><span id="selectedCarrierName"></span> - Wareneingang</div>
+                <div class="card-subtitle">
+                  Erfassen Sie alle relevanten Daten für die Sendung
+                </div>
+              </div>
+            </div>
+
+            <!-- Zurück Button und Single/Bulk Mode Toggle -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <button class="btn btn-ghost btn-sm" onclick="backToCarrierSelection()">
+                ← Zurück zur Carrier-Auswahl
+              </button>
+              
+              <div class="mode-toggle-buttons-compact">
+                <button class="mode-toggle-btn-compact active" id="btnSingleMode" onclick="switchToSingleMode()">
+                  📦 Einzeln
+                </button>
+                <button class="mode-toggle-btn-compact" id="btnBulkMode" onclick="switchToBulkMode()">
+                  📋 Massen
+                </button>
+              </div>
+            </div>
+
+            <!-- Label Beispiele Toggle -->
+            <div class="label-toggle-container">
+              <div class="label-toggle-simple" id="toggleLabelExamples">
+                <span class="label-toggle-icon">🏷️</span>
+                <span class="label-toggle-text">
+                  <span>Label-Beispiel anzeigen</span>
+                  <span class="label-toggle-badge">Hilfe für Mitarbeiter</span>
+                </span>
+                <span class="label-toggle-arrow">▼</span>
+              </div>
+              
+              <div id="labelExamplesContent" class="label-examples-content" style="display:none;">
+                <!-- Hilfetext -->
+                <div id="labelHelpText" class="label-help-container">
+                  <div class="label-help-title">
+                    <span class="label-help-icon">📋</span>
+                    <span>Label-Informationen finden</span>
+                  </div>
+                  
+                  <div class="label-help-grid">
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">📦</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">OLPN</div>
+                        <div class="label-help-item-desc">Lange Nummer meist als Barcode</div>
+                        <div class="label-help-item-example">z.B. 00050197980027746580</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">🚚</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">Carrier Tracking</div>
+                        <div class="label-help-item-desc">Sendungsnummer des Frachtführers</div>
+                        <div class="label-help-item-example">z.B. 885733208991</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">📄</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">DN</div>
+                        <div class="label-help-item-desc">Delivery Note Nummer</div>
+                        <div class="label-help-item-example">Falls vorhanden, sonst 0</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">👤</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">Customer ID</div>
+                        <div class="label-help-item-desc">Kundennummer</div>
+                        <div class="label-help-item-example">z.B. 20062673</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">🔄</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">ASN/RA Nummer</div>
+                        <div class="label-help-item-desc">Return Authorization Nummer</div>
+                        <div class="label-help-item-example">z.B. 70378154</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Label Bilder (nach den Informationen) -->
+                <div id="labelImagesContainer" class="label-images-container" style="display: none;">
+                  <div class="label-image-header">
+                    <span class="label-image-icon">🖼️</span>
+                    <span>Label-Beispiele</span>
+                    <span class="label-image-hint">Klicken für Vollansicht</span>
+                  </div>
+                  <div id="labelImagesGrid" class="label-images-grid">
+                    <!-- Bilder werden hier dynamisch eingefügt -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- Alle Formularfelder in einem Grid -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label>CW</label>
+              <input type="text" id="cwInput" placeholder="Zum Beispiel CW 47">
+            </div>
+            <div class="form-group">
+              <label>Aufgenommen am</label>
+              <input type="date" id="aufgenommenInput" lang="de-DE">
+            </div>
+            <div class="form-group">
+              <label>Ignore</label>
+              <select id="ignoreInput">
+                <option value="0">Nein</option>
+                <option value="1">Ja</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Area</label>
+              <div class="searchable-dropdown" id="areaDropdown">
+                <input type="text" id="areaInput" placeholder="Area wählen oder tippen..." autocomplete="off">
+                <div class="searchable-dropdown-list" id="areaDropdownList"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Stage <span class="required-field">*</span></label>
+              <input type="text" id="stageInput" placeholder="Waiting Area Returns Line 68" required>
+            </div>
+            <div class="form-group">
+              <label>Last Stage</label>
+              <input type="text" id="lastStageInput">
+            </div>
+            <div class="form-group">
+              <label>Carrier Name</label>
+              <input type="text" id="carrierNameInput" placeholder="Wird von der Auswahl oben gefüllt">
+            </div>
+            <div class="form-group">
+              <label>Land</label>
+              <div class="searchable-dropdown" id="landDropdown">
+                <input type="text" id="landInput" placeholder="Land wählen oder tippen..." autocomplete="off">
+                <div class="searchable-dropdown-list" id="landDropdownList"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Ship Status</label>
+              <input type="text" id="shipStatusInput">
+            </div>
+            <div class="form-group">
+              <label>Planned Carton</label>
+              <input type="number" id="plannedCartonInput" placeholder="Zum Beispiel 2">
+            </div>
+            <div class="form-group">
+              <label>Actual Carton Count</label>
+              <input type="number" id="actualCartonInput" placeholder="Zum Beispiel 2">
+            </div>
+            <div class="form-group">
+              <label>OLPN</label>
+              <input type="text" id="olpnInput" placeholder="00050197980027746580">
+            </div>
+            <div class="form-group">
+              <label>DN</label>
+              <input type="text" id="dnInput" placeholder="0 falls nicht vorhanden">
+            </div>
+            <div class="form-group">
+              <label>SHI</label>
+              <input type="text" id="shiInput">
+            </div>
+            <div class="form-group">
+              <label>Carrier Tracking Number</label>
+              <input type="text" id="carrierTrackingInput" placeholder="z.B. 882826466627">
+            </div>
+            <div class="form-group">
+              <label>Customer ID</label>
+              <input type="text" id="customerIdInput" placeholder="zum Beispiel 20062673">
+            </div>
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input type="text" id="customerNameInput" placeholder="zum Beispiel Zalando">
+            </div>
+            <div class="form-group">
+              <label>ASN RA Nummer</label>
+              <input type="text" id="asnInput" placeholder="zum Beispiel 70378154">
+            </div>
+            <div class="form-group">
+              <label>Kommentar</label>
+              <input type="text" id="kommentarInput" placeholder="Optionaler Kommentar">
+            </div>
+            <div class="form-group">
+              <label>Added by</label>
+              <input type="text" id="addedByInput" readonly>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display:flex; justify-content:flex-end; gap:8px;" id="singleModeButtons">
+            <button class="btn btn-secondary" id="btnInboundReset">Maske leeren</button>
+            <button class="btn btn-primary" id="btnInboundSave">Wareneingang speichern</button>
+          </div>
+        </div>
+
+        <!-- Bulk Mode Ansicht -->
+        <div id="bulkModeView" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📋 Massenerfassung - Feste Felder definieren</div>
+                <div class="card-subtitle">Legen Sie die Felder fest, die für alle Einträge gleich bleiben</div>
+              </div>
+            </div>
+
+            <!-- Zurück Button -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <button class="btn btn-ghost btn-sm" onclick="backToCarrierSelection()">
+                ← Zurück zur Carrier-Auswahl
+              </button>
+              
+              <div class="mode-toggle-buttons-compact">
+                <button class="mode-toggle-btn-compact" id="btnSingleModeBulk" onclick="switchToSingleMode()">
+                  📦 Einzeln
+                </button>
+                <button class="mode-toggle-btn-compact active" id="btnBulkModeBulk" onclick="switchToBulkMode()">
+                  📋 Massen
+                </button>
+              </div>
+            </div>
+
+            <!-- Feste Felder -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label>CW (fest)</label>
+                <input type="text" id="bulkCwInput" placeholder="z.B. CW 47">
+              </div>
+              <div class="form-group">
+                <label>Datum (fest)</label>
+                <input type="date" id="bulkDateInput" lang="de-DE">
+              </div>
+              <div class="form-group">
+                <label>Area (fest)</label>
+                <div class="searchable-dropdown" id="bulkAreaDropdown">
+                  <input type="text" id="bulkAreaInput" placeholder="Area wählen..." autocomplete="off">
+                  <div class="searchable-dropdown-list" id="bulkAreaDropdownList"></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Land (fest)</label>
+                <div class="searchable-dropdown" id="bulkLandDropdown">
+                  <input type="text" id="bulkLandInput" placeholder="Land wählen..." autocomplete="off">
+                  <div class="searchable-dropdown-list" id="bulkLandDropdownList"></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Stage (fest) <span class="required-field">*</span></label>
+                <input type="text" id="bulkStageInput" placeholder="z.B. Waiting Area Returns Line 68" required>
+              </div>
+              <div class="form-group">
+                <label>Carrier Name (fest)</label>
+                <input type="text" id="bulkCarrierNameInput" readonly>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 12px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange);">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 18px;">ℹ️</span>
+                <strong style="color: var(--gxo-orange);">Hinweis:</strong>
+              </div>
+              <p style="font-size: 13px; color: var(--text-main); margin: 0;">
+                Die oben definierten Felder werden automatisch für jeden neuen Eintrag übernommen. 
+                Sie müssen nur noch die variablen Felder (Carrier Tracking Number, Kommentar, etc.) eingeben.
+              </p>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" id="btnSetBulkDefaults" onclick="setBulkDefaults()">
+                ✓ Feste Felder übernehmen
+              </button>
+            </div>
+          </div>
+
+          <!-- Einzeleintrag im Bulk-Modus -->
+          <div class="card" id="bulkEntryForm" style="display:none;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📦 Eintrag #<span id="bulkEntryNumber">1</span></div>
+                <div class="card-subtitle">Nur variable Felder ausfüllen</div>
+              </div>
+            </div>
+
+            <!-- Variable Felder -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Carrier Tracking Number</label>
+                <input type="text" id="bulkTrackingInput" placeholder="z.B. 882826466627">
+              </div>
+              <div class="form-group">
+                <label>OLPN</label>
+                <input type="text" id="bulkOlpnInput" placeholder="00050197980027746580">
+              </div>
+              <div class="form-group">
+                <label>Planned Carton</label>
+                <input type="number" id="bulkPlannedInput" placeholder="z.B. 2">
+              </div>
+              <div class="form-group">
+                <label>Actual Carton Count</label>
+                <input type="number" id="bulkActualInput" placeholder="z.B. 2">
+              </div>
+              <div class="form-group">
+                <label>DN</label>
+                <input type="text" id="bulkDnInput" placeholder="0 falls nicht vorhanden">
+              </div>
+              <div class="form-group">
+                <label>Customer ID</label>
+                <input type="text" id="bulkCustomerIdInput" placeholder="z.B. 20062673">
+              </div>
+              <div class="form-group">
+                <label>ASN RA Nummer</label>
+                <input type="text" id="bulkAsnInput" placeholder="z.B. 70378154">
+              </div>
+              <div class="form-group">
+                <label>Kommentar</label>
+                <input type="text" id="bulkKommentarInput" placeholder="Optionaler Kommentar">
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 13px; color: var(--text-muted);">
+                <strong>Bereits gespeichert:</strong> <span id="bulkSavedCount" style="color: var(--gxo-orange); font-weight: bold;">0</span> Einträge
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" id="btnBulkClear" onclick="clearBulkEntry()">Felder leeren</button>
+                <button class="btn btn-primary" id="btnBulkSaveAndNext" onclick="saveBulkEntry()">Speichern & Nächster</button>
+                <button class="btn btn-success" id="btnBulkFinish" onclick="finishBulkMode()">✓ Fertig</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+        </div>
+      </div>
+      </section>
+
+      <!-- Umlagerung -->
+      <section class="view" id="view-move">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Umlagerung Palette oder Karton</div>
+              <div class="card-subtitle">Einfache Sicht mit Quelle und Ziel Stellplatz</div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Objektart</label>
+              <select>
+                <option>Palette</option>
+                <option>Karton</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nummer</label>
+              <input type="text" placeholder="Zum Beispiel PAL 00421 oder C 883 294">
+            </div>
+            <div class="form-group">
+              <label>Stellplatz bisher</label>
+              <input type="text" placeholder="Wird später automatisch gelesen">
+            </div>
+            <div class="form-group">
+              <label>Stellplatz neu</label>
+              <input type="text" placeholder="Zum Beispiel REG B 05 01">
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-secondary">Prüfung simulieren</button>
+            <button class="btn btn-primary">Umlagerung buchen Entwurf</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Archiv -->
+      <section class="view" id="view-archive">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Archivierte Paletten</div>
+              <div class="card-subtitle">Beispiel Ansicht, echte Anbindung folgt bei Bedarf</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+            <tr>
+              <th>Palette</th>
+              <th>Letzter Stellplatz</th>
+              <th>Kartons</th>
+              <th>Archivdatum</th>
+              <th>Grund</th>
+              <th>Benutzer</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="data-row">
+              <td>PAL 00311</td>
+              <td>REG C 01 01</td>
+              <td>12</td>
+              <td>07.12.2025</td>
+              <td>Auslaufartikel</td>
+              <td>Teamleitung</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Einstellungen -->
+      <section class="view" id="view-settings">
+        <!-- PIN Eingabe -->
+        <div class="card" id="settingsPinCard">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔒 Admin-Zugang</div>
+              <div class="card-subtitle">Bitte geben Sie die Admin-PIN ein</div>
+            </div>
+          </div>
+          <div style="max-width: 300px;">
+            <div class="form-group">
+              <label>PIN</label>
+              <input type="password" id="settingsPinInput" placeholder="0000" maxlength="4">
+            </div>
+            <button class="btn btn-primary" id="btnSettingsAuth">Zugang freischalten</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RA Import -->
+      <section class="view" id="view-ra">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">RA Report Import</div>
+              <div class="card-subtitle">Excel Bericht einlesen und RA Status abgleichen</div>
+            </div>
+            <div class="card-actions">
+              <span class="pill pill-soft">Nur Layout ohne Logik</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Report Datei</label>
+              <input type="file">
+              <span class="muted">Später erwartet das System eine Excel Datei mit RA Nummer und Status</span>
+            </div>
+            <div class="form-group">
+              <label>Zuordnung</label>
+              <select>
+                <option>Standard Zuordnung verwenden</option>
+                <option>Eigene Zuordnung definieren</option>
+              </select>
+            </div>
+          </div>
+
+          <table style="margin-top: 10px;">
+            <thead>
+            <tr>
+              <th>RA Nummer</th>
+              <th>Status Report</th>
+              <th>Status System</th>
+              <th>Bewertung</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="data-row">
+              <td>RA 12345</td>
+              <td>gültig</td>
+              <td>gültig</td>
+              <td><span class="badge badge-ok">passt</span></td>
+            </tr>
+            <tr class="data-row">
+              <td>RA 55555</td>
+              <td>storniert</td>
+              <td>gültig</td>
+              <td><span class="badge badge-soft">Konflikt Beispiel</span></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      
+
+
+    </main>
+</div>
+
+<script>
+  const navItems = document.querySelectorAll(".nav-item");
+  const views = document.querySelectorAll(".view");
+  const topbarTitle = document.getElementById("topbarTitle");
+  const topbarSubtitle = document.getElementById("topbarSubtitle");
+  const themeToggle = document.getElementById("themeToggle");
+
+  const viewMeta = {
+    dashboard: {
+      title: "Dashboard",
+      subtitle: "Überblick über Lager und Retouren"
+    },
+    inventory: {
+      title: "Lagerbestand",
+      subtitle: "Stellplätze mit Anzahl der Paletten und Kartons aus der Datenbank"
+    },
+    inbound: {
+      title: "Wareneingang",
+      subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+    },
+    move: {
+      title: "Umlagerung",
+      subtitle: "Stellplatz Wechsel von Palette oder Karton"
+    },
+    archive: {
+      title: "Archiv",
+      subtitle: "Übersicht archivierter Bestände"
+    },
+    ra: {
+      title: "RA Import",
+      subtitle: "Layout für den späteren Abgleich mit Excel Bericht"
+    },
+    settings: {
+      title: "Einstellungen",
+      subtitle: "Carrier-Konfiguration und Dropdown-Optionen verwalten"
+    }
+  };
+
+  function applyTheme(theme) {
+    const t = theme === "light" ? "light" : "dark";
+    document.body.setAttribute("data-theme", t);
+    localStorage.setItem("lvsTheme", t);
+    themeToggle.textContent = t === "light" ? "☀" : "☾";
+  }
+
+  const savedTheme = localStorage.getItem("lvsTheme") || "dark";
+  applyTheme(savedTheme);
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.body.getAttribute("data-theme") || "dark";
+    const next = current === "dark" ? "light" : "dark";
+    applyTheme(next);
+  });
+
+  async function loadInventory() {
+    const tbody = document.getElementById("inventoryBody");
+    tbody.innerHTML = '<tr><td colspan="6" class="muted">Lagerdaten werden geladen</td></tr>';
+
+    try {
+      const response = await fetch("/api/inventory");
+      if (!response.ok) {
+        throw new Error("Antwort Code " + response.status);
+      }
+
+      const data = await response.json();
+      tbody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "Noch keine Stellplätze in der Datenbank vorhanden";
+        td.className = "muted";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      data.forEach(loc => {
+        let zone = "";
+        const parts = (loc.code || "").split(" ");
+        if (parts.length >= 2) {
+          zone = "Zone " + parts[1];
+        }
+
+        const pallets = loc.pallet_count || 0;
+        const cartons = loc.carton_count || 0;
+        const avg = pallets > 0 ? Math.round((cartons / pallets) * 10) / 10 : 0;
+
+        const tr = document.createElement("tr");
+        tr.className = "data-row";
+        tr.innerHTML = `
+          <td>
+            <div class="stack">
+              <div class="stack-row">
+                <span>${loc.code}</span>
+              </div>
+              <span class="muted">${loc.description || ""}</span>
+            </div>
+          </td>
+          <td>${zone}</td>
+          <td>${pallets}</td>
+          <td>${cartons}</td>
+          <td>${avg}</td>
+          <td class="table-actions">
+            <button class="btn btn-ghost btn-sm">Details später</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Fehler beim Laden des Lagerbestands", err);
+      tbody.innerHTML = "";
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.textContent = "Fehler beim Laden der Daten. Browser Konsole prüfen.";
+      td.className = "muted";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+  }
+
+  /* Globale Variablen */
+  let carriersData = [];
+  let currentWindowsUser = "Unbekannt";
+  let currentCarrier = null;
+  let areaOptions = [];
+  let landOptions = [];
+  let isBulkMode = false;
+  let bulkDefaults = {};
+  let bulkSavedCount = 0;
+  
+  async function loadCarriers() {
+    const container = document.getElementById("carrierButtonsGrid");
+    if (!container) return;
+
+    container.innerHTML = '<span class="muted">Carrier werden geladen...</span>';
+
+    try {
+      const response = await fetch("/api/carriers");
+      if (!response.ok) {
+        throw new Error("Code " + response.status);
+      }
+      const data = await response.json();
+      carriersData = data;
+      container.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<span class="muted">Noch keine Carrier Stammdaten vorhanden</span>';
+        return;
+      }
+
+      // Carrier Icons Mapping
+      const carrierIcons = {
+        "DPD": "📦",
+        "Geodis": "🚚",
+        "DHL": "📮",
+        "BRT": "🚛",
+        "FedEx": "✈️",
+        "Zalando Ware": "🛍️",
+        "Postnord": "📬",
+        "Lost and Found": "🔍",
+        "Lost & Found": "🔍",
+        "Dachser": "🏭",
+        "DACHSER": "🏭",
+        "Duwensee": "🚢"
+      };
+
+      data.forEach(car => {
+        const card = document.createElement("div");
+        card.className = "carrier-card";
+        card.setAttribute("data-carrier-id", car.id);
+        
+        // Markiere aktiven Carrier
+        if (currentCarrier && currentCarrier.id === car.id) {
+          card.classList.add("active");
+        }
+        
+        const icon = carrierIcons[car.name] || "📋";
+        const countryText = car.country ? `(${car.country})` : "";
+        
+        card.innerHTML = `
+          <div class="carrier-card-icon">${icon}</div>
+          <div class="carrier-card-name">${car.display_name}</div>
+          ${countryText ? `<div class="carrier-card-country">${countryText}</div>` : ''}
+        `;
+        
+        card.addEventListener("click", () => {
+          // Entferne active von allen Karten
+          document.querySelectorAll('.carrier-card').forEach(c => c.classList.remove('active'));
+          // Markiere diese Karte
+          card.classList.add('active');
+          selectCarrier(car);
+        });
+
+        container.appendChild(card);
+      });
+    } catch (err) {
+      console.error("Fehler beim Laden der Carrier", err);
+      container.innerHTML = '<span class="muted">Fehler beim Laden der Carrier Stammdaten</span>';
+    }
+  }
+
+  async function selectCarrier(carrier) {
+    currentCarrier = carrier;
+    
+    // Prüfen ob wir auf der Einstellungsseite sind
+    const isSettingsPage = document.getElementById("settingsContent") && 
+                          document.getElementById("settingsContent").style.display !== "none";
+    
+    if (!isSettingsPage) {
+      // Nur auf der Wareneingang-Seite: Ansicht wechseln
+      const carrierSelectionView = document.getElementById("carrierSelectionView");
+      const inboundDetailView = document.getElementById("inboundDetailView");
+      if (carrierSelectionView) carrierSelectionView.style.display = "none";
+      if (inboundDetailView) inboundDetailView.style.display = "block";
+      
+      // Letzte Einträge Tabelle ausblenden
+      const inboundListSection = document.getElementById("inboundListSection");
+      if (inboundListSection) {
+        inboundListSection.style.display = "none";
+      }
+    }
+    
+    // Carrier Name anzeigen
+    document.getElementById("selectedCarrierName").textContent = carrier.display_name;
+    
+    // ERST alle Felder anzeigen (Reset)
+    resetAllFieldsVisibility();
+    
+    // Dropdowns laden
+    await loadDropdownOptions();
+    
+    // Felder vorausfüllen
+    const areaInput = document.getElementById("areaInput");
+    const stageInput = document.getElementById("stageInput");
+    const lastStageInput = document.getElementById("lastStageInput");
+    const landInput = document.getElementById("landInput");
+    const shipStatusInput = document.getElementById("shipStatusInput");
+    const carrierNameInput = document.getElementById("carrierNameInput");
+    const addedByInput = document.getElementById("addedByInput");
+
+    if (carrierNameInput) carrierNameInput.value = carrier.display_name || carrier.name || "";
+    if (stageInput && carrier.default_stage) stageInput.value = carrier.default_stage;
+    if (lastStageInput && carrier.default_last_stage) lastStageInput.value = carrier.default_last_stage;
+    if (shipStatusInput && carrier.default_ship_status) shipStatusInput.value = carrier.default_ship_status;
+    
+    // Searchable Dropdowns vorausfüllen
+    if (areaInput && carrier.default_area) {
+      const areaOption = areaOptions.find(opt => opt.option_value === carrier.default_area);
+      if (areaOption) {
+        areaInput.value = areaOption.option_label;
+        areaInput.setAttribute('data-value', areaOption.option_value);
+      }
+    }
+    
+    if (landInput && carrier.country) {
+      const landOption = landOptions.find(opt => opt.option_value === carrier.country);
+      if (landOption) {
+        landInput.value = landOption.option_label;
+        landInput.setAttribute('data-value', landOption.option_value);
+      }
+    }
+    
+    // Added By mit Windows Benutzer füllen
+    if (addedByInput) {
+      addedByInput.value = currentWindowsUser;
+      addedByInput.readOnly = true;
+    }
+    
+    // Label-Bilder und Hilfetext setzen
+    const labelImagesContainer = document.getElementById("labelImagesContainer");
+    const labelImagesGrid = document.getElementById("labelImagesGrid");
+    const labelHelpText = document.getElementById("labelHelpText");
+    
+    if (carrier.label_image && labelImagesGrid && labelImagesContainer) {
+      // Unterstützt mehrere Bilder (komma-separiert)
+      const images = carrier.label_image.split(',').map(img => img.trim()).filter(img => img);
+      
+      if (images.length > 0) {
+        labelImagesGrid.innerHTML = '';
+        
+        images.forEach((imagePath, index) => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'label-image-wrapper';
+          
+          const img = document.createElement('img');
+          img.src = imagePath;
+          img.alt = `Label Beispiel ${index + 1}`;
+          img.className = 'label-image-thumbnail';
+          
+          // Fehlerbehandlung
+          img.onerror = () => {
+            wrapper.remove();
+            if (labelImagesGrid.children.length === 0) {
+              labelImagesContainer.style.display = "none";
+            }
+          };
+          
+          wrapper.appendChild(img);
+          labelImagesGrid.appendChild(wrapper);
+        });
+        
+        labelImagesContainer.style.display = "block";
+      } else {
+        labelImagesContainer.style.display = "none";
+      }
+    } else if (labelImagesContainer) {
+      labelImagesContainer.style.display = "none";
+    }
+    
+    // Label Help Text nur überschreiben, wenn vorhanden und nicht leer
+    if (carrier.label_help_text && carrier.label_help_text.trim() !== "" && labelHelpText) {
+      labelHelpText.innerHTML = carrier.label_help_text.replace(/\n/g, '<br>');
+    }
+    // Sonst bleiben die Standard-Informationen aus dem HTML erhalten
+    
+    // CW und Datum automatisch setzen
+    setDefaultDateAndCW();
+    
+    // Felder ein-/ausblenden basierend auf visible_fields
+    applyVisibleFields(carrier);
+  }
+  
+  function resetAllFieldsVisibility() {
+    // Zeige erstmal alle Felder an
+    const allInputIds = [
+      'cwInput', 'aufgenommenInput', 'ignoreInput', 'areaInput', 'stageInput',
+      'lastStageInput', 'carrierNameInput', 'landInput', 'shipStatusInput',
+      'plannedCartonInput', 'actualCartonInput', 'olpnInput', 'dnInput',
+      'shiInput', 'carrierTrackingInput', 'customerIdInput', 'customerNameInput',
+      'asnInput', 'kommentarInput', 'addedByInput'
+    ];
+    
+    allInputIds.forEach(inputId => {
+      const inputElement = document.getElementById(inputId);
+      if (inputElement) {
+        let parent = inputElement.closest('.form-group');
+        if (!parent) {
+          parent = inputElement.closest('.searchable-dropdown')?.parentElement;
+        }
+        if (parent) {
+          parent.style.display = '';
+        }
+      }
+    });
+  }
+
+  function applyVisibleFields(carrier) {
+    console.log("applyVisibleFields aufgerufen für Carrier:", carrier.display_name);
+    console.log("visible_fields (raw):", carrier.visible_fields);
+    
+    // Alle Felder und ihre parent form-group
+    const fieldMapping = {
+      'cw': 'cwInput',
+      'aufgenommen_am': 'aufgenommenInput',
+      'ignore': 'ignoreInput',
+      'area': 'areaInput',
+      'stage': 'stageInput',
+      'last_stage': 'lastStageInput',
+      'carrier_name': 'carrierNameInput',
+      'land': 'landInput',
+      'ship_status': 'shipStatusInput',
+      'planned_carton': 'plannedCartonInput',
+      'actual_carton': 'actualCartonInput',
+      'olpn': 'olpnInput',
+      'dn': 'dnInput',
+      'shi': 'shiInput',
+      'carrier_tracking_nr': 'carrierTrackingInput',
+      'customer_id': 'customerIdInput',
+      'customer_name': 'customerNameInput',
+      'asn_ra_no': 'asnInput',
+      'kommentar': 'kommentarInput',
+      'added_by': 'addedByInput'
+    };
+    
+    let visibleFields = [];
+    if (carrier.visible_fields) {
+      try {
+        visibleFields = JSON.parse(carrier.visible_fields);
+        console.log("Geparste visible_fields:", visibleFields);
+      } catch (e) {
+        console.error("Fehler beim Parsen von visible_fields:", e);
+        // Fallback: Alle Felder anzeigen
+        visibleFields = Object.keys(fieldMapping);
+      }
+    } else {
+      // Fallback: Alle Felder anzeigen
+      visibleFields = Object.keys(fieldMapping);
+      console.log("Keine visible_fields gefunden, zeige alle Felder");
+    }
+    
+    // Alle Felder durchgehen und ein-/ausblenden
+    Object.keys(fieldMapping).forEach(fieldKey => {
+      const inputId = fieldMapping[fieldKey];
+      const inputElement = document.getElementById(inputId);
+      
+      if (inputElement) {
+        // Finde die parent form-group oder searchable-dropdown
+        let parent = inputElement.closest('.form-group');
+        if (!parent) {
+          parent = inputElement.closest('.searchable-dropdown')?.parentElement;
+        }
+        
+        if (parent) {
+          if (visibleFields.includes(fieldKey)) {
+            parent.style.display = '';
+            parent.style.visibility = 'visible';
+            console.log(`✓ Zeige Feld: ${fieldKey}`, parent);
+          } else {
+            parent.style.display = 'none';
+            parent.style.visibility = 'hidden';
+            console.log(`✗ Verstecke Feld: ${fieldKey}`, parent);
+          }
+        } else {
+          console.warn(`⚠️ Kein Parent gefunden für: ${fieldKey} (Input: ${inputId})`);
+        }
+      } else {
+        console.warn(`⚠️ Input-Element nicht gefunden: ${inputId} für Feld: ${fieldKey}`);
+      }
+    });
+  }
+
+  function backToCarrierSelection() {
+    // Zurück zur Carrier-Auswahl auf der Wareneingang-Seite
+    const carrierSelectionView = document.getElementById("carrierSelectionView");
+    const inboundDetailView = document.getElementById("inboundDetailView");
+    const inboundListSection = document.getElementById("inboundListSection");
+    
+    if (carrierSelectionView) carrierSelectionView.style.display = "block";
+    if (inboundDetailView) inboundDetailView.style.display = "none";
+    if (inboundListSection) inboundListSection.style.display = "block";
+    
+    // Formular zurücksetzen
+    clearInboundForm();
+    
+    // Entferne active Markierung von allen Carrier-Karten
+    document.querySelectorAll('.carrier-card').forEach(c => c.classList.remove('active'));
+    
+    // Bulk-Modus zurücksetzen
+    if (isBulkMode) {
+      switchToSingleMode();
+      bulkDefaults = {};
+      bulkSavedCount = 0;
+    }
+    
+    currentCarrier = null;
+    clearInboundForm();
+  }
+
+  async function loadDropdownOptions() {
+    try {
+      // Area Optionen laden
+      const areaResponse = await fetch("/api/dropdown-options/area");
+      if (areaResponse.ok) {
+        areaOptions = await areaResponse.json();
+        initSearchableDropdown('area', areaOptions);
+      }
+
+      // Land Optionen laden
+      const landResponse = await fetch("/api/dropdown-options/land");
+      if (landResponse.ok) {
+        landOptions = await landResponse.json();
+        initSearchableDropdown('land', landOptions);
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden der Dropdown-Optionen:", err);
+    }
+  }
+
+  function initSearchableDropdownSettings(fieldName, options) {
+    const input = document.getElementById(`${fieldName}Select`);
+    const list = document.getElementById(`${fieldName}DropdownList`);
+    
+    if (!input || !list) return;
+    
+    let selectedValue = '';
+    let selectedLabel = '';
+    
+    // Liste mit Optionen füllen
+    const renderOptions = (filter = '') => {
+      list.innerHTML = '';
+      
+      const filtered = options.filter(opt => 
+        opt.option_label.toLowerCase().includes(filter.toLowerCase())
+      );
+      
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'searchable-dropdown-empty';
+        empty.textContent = 'Keine Ergebnisse gefunden';
+        list.appendChild(empty);
+        return;
+      }
+      
+      filtered.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'searchable-dropdown-item';
+        item.textContent = opt.option_label;
+        item.setAttribute('data-value', opt.option_value);
+        
+        if (opt.option_value === selectedValue) {
+          item.classList.add('selected');
+        }
+        
+        item.addEventListener('click', () => {
+          selectedValue = opt.option_value;
+          selectedLabel = opt.option_label;
+          input.value = opt.option_label;
+          input.setAttribute('data-value', opt.option_value);
+          list.classList.remove('active');
+          
+          // Trigger change event für Settings
+          if (fieldName === 'settingsCarrier') {
+            loadCarrierSettings(opt.option_value);
+          }
+        });
+        
+        list.appendChild(item);
+      });
+    };
+    
+    // Input Events
+    input.addEventListener('focus', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('input', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('blur', (e) => {
+      setTimeout(() => {
+        list.classList.remove('active');
+        if (!selectedValue && input.value) {
+          input.value = '';
+        } else if (selectedValue) {
+          input.value = selectedLabel;
+        }
+      }, 200);
+    });
+    
+    // Schließen bei Klick außerhalb
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !list.contains(e.target)) {
+        list.classList.remove('active');
+      }
+    });
+    
+    // Initial rendern
+    renderOptions();
+  }
+
+  function initSearchableDropdown(fieldName, options) {
+    const input = document.getElementById(`${fieldName}Input`);
+    const list = document.getElementById(`${fieldName}DropdownList`);
+    
+    if (!input || !list) return;
+    
+    let selectedValue = '';
+    let selectedLabel = '';
+    
+    // Liste mit Optionen füllen
+    const renderOptions = (filter = '') => {
+      list.innerHTML = '';
+      
+      const filtered = options.filter(opt => 
+        opt.option_label.toLowerCase().includes(filter.toLowerCase())
+      );
+      
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'searchable-dropdown-empty';
+        empty.textContent = 'Keine Ergebnisse gefunden';
+        list.appendChild(empty);
+        return;
+      }
+      
+      filtered.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'searchable-dropdown-item';
+        item.textContent = opt.option_label;
+        item.setAttribute('data-value', opt.option_value);
+        
+        if (opt.option_value === selectedValue) {
+          item.classList.add('selected');
+        }
+        
+        item.addEventListener('click', () => {
+          selectedValue = opt.option_value;
+          selectedLabel = opt.option_label;
+          input.value = opt.option_label;
+          input.setAttribute('data-value', opt.option_value);
+          list.classList.remove('active');
+        });
+        
+        list.appendChild(item);
+      });
+    };
+    
+    // Input Events
+    input.addEventListener('focus', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('input', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('blur', (e) => {
+      // Verzögerung, damit Click auf Item noch funktioniert
+      setTimeout(() => {
+        list.classList.remove('active');
+        // Wenn kein gültiger Wert, zurücksetzen
+        if (!selectedValue && input.value) {
+          input.value = '';
+        } else if (selectedValue) {
+          input.value = selectedLabel;
+        }
+      }, 200);
+    });
+    
+    // Initial rendern
+    renderOptions();
+    
+    // Schließen bei Klick außerhalb
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !list.contains(e.target)) {
+        list.classList.remove('active');
+      }
+    });
+  }
+
+  /* Windows Benutzer automatisch erkennen */
+  async function loadCurrentWindowsUser() {
+    try {
+      const response = await fetch("/api/current-user");
+      if (response.ok) {
+        const result = await response.json();
+        currentWindowsUser = result.username;
+        updateUserDisplay();
+        
+        console.log("👤 Windows Benutzer erkannt:", currentWindowsUser);
+        console.log("💻 Computer:", result.computerName);
+        
+        // Added By Feld automatisch füllen falls bereits sichtbar
+        const addedByInput = document.getElementById("addedByInput");
+        if (addedByInput) {
+          addedByInput.value = currentWindowsUser;
+          addedByInput.readOnly = true;
+        }
+        
+        return currentWindowsUser;
+      } else {
+        console.error("❌ Fehler beim Laden des Windows-Benutzers");
+        currentWindowsUser = "Unbekannt";
+        updateUserDisplay();
+        return currentWindowsUser;
+      }
+    } catch (err) {
+      console.error("❌ Fehler beim Laden des Windows-Benutzers:", err);
+      currentWindowsUser = "Unbekannt";
+      updateUserDisplay();
+      return currentWindowsUser;
+    }
+  }
+
+  function updateUserDisplay() {
+    const display = document.getElementById("currentUserDisplay");
+    if (display) {
+      display.textContent = `👤 ${currentWindowsUser}`;
+    }
+  }
+
+  function getCurrentWeek() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now - start + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+    const oneWeek = 1000 * 60 * 60 * 24 * 7;
+    const week = Math.floor(diff / oneWeek) + 1;
+    return week;
+  }
+
+  function setDefaultDateAndCW() {
+    // Aktuelles Datum setzen
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById("aufgenommenInput");
+    if (dateInput) {
+      dateInput.value = today;
+    }
+    
+    // Aktuelle CW setzen
+    const currentWeek = getCurrentWeek();
+    const cwInput = document.getElementById("cwInput");
+    if (cwInput) {
+      cwInput.value = currentWeek.toString();
+    }
+  }
+
+  // Mode Switch Funktionen
+  function switchToSingleMode() {
+    isBulkMode = false;
+    document.getElementById("btnSingleMode").classList.add("active");
+    document.getElementById("btnBulkMode").classList.remove("active");
+    document.getElementById("inboundDetailView").querySelector(".card").style.display = "block";
+    document.getElementById("bulkModeView").style.display = "none";
+  }
+
+  function switchToBulkMode() {
+    isBulkMode = true;
+    document.getElementById("btnBulkMode").classList.add("active");
+    document.getElementById("btnSingleMode").classList.remove("active");
+    document.getElementById("inboundDetailView").querySelector(".card").style.display = "none";
+    document.getElementById("bulkModeView").style.display = "block";
+    
+    // Bulk-Felder initialisieren
+    initBulkMode();
+  }
+
+  async function initBulkMode() {
+    // Dropdowns für Bulk-Modus laden
+    await loadDropdownOptions();
+    
+    // Bulk-Felder dynamisch generieren
+    renderBulkFields();
+    
+    // Zähler zurücksetzen
+    bulkSavedCount = 0;
+    document.getElementById("bulkSavedCount").textContent = bulkSavedCount;
+    document.getElementById("bulkEntryNumber").textContent = "1";
+    
+    // Formular ausblenden bis Defaults gesetzt sind
+    document.getElementById("bulkEntryForm").style.display = "none";
+  }
+  
+  function renderBulkFields() {
+    if (!currentCarrier) return;
+    
+    // Feste und variable Felder aus Carrier-Konfiguration laden
+    const bulkFixedFields = currentCarrier.bulk_fixed_fields ? JSON.parse(currentCarrier.bulk_fixed_fields) : ["cw", "aufgenommen_am", "area", "land", "stage", "carrier_name"];
+    const bulkVariableFields = currentCarrier.bulk_variable_fields ? JSON.parse(currentCarrier.bulk_variable_fields) : ["carrier_tracking_nr", "olpn", "planned_carton", "actual_carton", "dn", "customer_id", "asn_ra_no", "kommentar"];
+    
+    // Feld-Definitionen
+    const fieldDefinitions = {
+      cw: { label: "CW (fest)", type: "text", placeholder: "z.B. CW 47", id: "bulkCwInput" },
+      aufgenommen_am: { label: "Datum (fest)", type: "date", id: "bulkDateInput" },
+      area: { label: "Area (fest)", type: "dropdown", id: "bulkAreaInput", dropdownId: "bulkAreaDropdown" },
+      land: { label: "Land (fest)", type: "dropdown", id: "bulkLandInput", dropdownId: "bulkLandDropdown" },
+      stage: { label: "Stage (fest)", type: "text", placeholder: "z.B. Waiting Area Returns Line 68", id: "bulkStageInput", required: true },
+      last_stage: { label: "Last Stage (fest)", type: "text", id: "bulkLastStageInput" },
+      carrier_name: { label: "Carrier Name (fest)", type: "text", id: "bulkCarrierNameInput", readonly: true },
+      ship_status: { label: "Ship Status (fest)", type: "text", id: "bulkShipStatusInput" },
+      ignore: { label: "Ignore (fest)", type: "select", id: "bulkIgnoreInput", options: [{value: "0", label: "Nein"}, {value: "1", label: "Ja"}] },
+      carrier_tracking_nr: { label: "Carrier Tracking Number", type: "text", placeholder: "z.B. 882826466627", id: "bulkTrackingInput" },
+      olpn: { label: "OLPN", type: "text", placeholder: "00050197980027746580", id: "bulkOlpnInput" },
+      planned_carton: { label: "Planned Carton", type: "number", placeholder: "z.B. 2", id: "bulkPlannedInput" },
+      actual_carton: { label: "Actual Carton Count", type: "number", placeholder: "z.B. 2", id: "bulkActualInput" },
+      dn: { label: "DN", type: "text", placeholder: "0 falls nicht vorhanden", id: "bulkDnInput" },
+      shi: { label: "SHI", type: "text", id: "bulkShiInput" },
+      customer_id: { label: "Customer ID", type: "text", placeholder: "z.B. 20062673", id: "bulkCustomerIdInput" },
+      customer_name: { label: "Customer Name", type: "text", placeholder: "z.B. Zalando", id: "bulkCustomerNameInput" },
+      asn_ra_no: { label: "ASN RA Nummer", type: "text", placeholder: "z.B. 70378154", id: "bulkAsnInput" },
+      kommentar: { label: "Kommentar", type: "text", placeholder: "Optionaler Kommentar", id: "bulkKommentarInput" }
+    };
+    
+    // Feste Felder Container finden und leeren
+    const fixedContainer = document.querySelector("#bulkModeView .card .form-grid");
+    if (fixedContainer) {
+      fixedContainer.innerHTML = "";
+      
+      bulkFixedFields.forEach(fieldId => {
+        const field = fieldDefinitions[fieldId];
+        if (!field) return;
+        
+        const formGroup = document.createElement("div");
+        formGroup.className = "form-group";
+        
+        const label = document.createElement("label");
+        label.textContent = field.label;
+        if (field.required) {
+          const required = document.createElement("span");
+          required.className = "required-field";
+          required.textContent = " *";
+          label.appendChild(required);
+        }
+        formGroup.appendChild(label);
+        
+        if (field.type === "dropdown") {
+          const dropdown = document.createElement("div");
+          dropdown.className = "searchable-dropdown";
+          dropdown.id = field.dropdownId;
+          
+          const input = document.createElement("input");
+          input.type = "text";
+          input.id = field.id;
+          input.placeholder = field.placeholder || "Wählen...";
+          input.autocomplete = "off";
+          
+          const list = document.createElement("div");
+          list.className = "searchable-dropdown-list";
+          list.id = field.dropdownId + "List";
+          
+          dropdown.appendChild(input);
+          dropdown.appendChild(list);
+          formGroup.appendChild(dropdown);
+        } else if (field.type === "select") {
+          const select = document.createElement("select");
+          select.id = field.id;
+          field.options.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt.value;
+            option.textContent = opt.label;
+            select.appendChild(option);
+          });
+          formGroup.appendChild(select);
+        } else {
+          const input = document.createElement("input");
+          input.type = field.type;
+          input.id = field.id;
+          if (field.placeholder) input.placeholder = field.placeholder;
+          if (field.readonly) input.readOnly = true;
+          if (field.required) input.required = true;
+          if (field.type === "date") input.lang = "de-DE";
+          formGroup.appendChild(input);
+        }
+        
+        fixedContainer.appendChild(formGroup);
+      });
+      
+      // Dropdowns initialisieren
+      if (bulkFixedFields.includes("area")) {
+        setTimeout(() => initSearchableDropdown('bulkArea', areaOptions), 100);
+      }
+      if (bulkFixedFields.includes("land")) {
+        setTimeout(() => initSearchableDropdown('bulkLand', landOptions), 100);
+      }
+      
+      // Defaults setzen
+      if (bulkFixedFields.includes("carrier_name") && currentCarrier) {
+        document.getElementById("bulkCarrierNameInput").value = currentCarrier.display_name || currentCarrier.name;
+      }
+      if (bulkFixedFields.includes("aufgenommen_am")) {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("bulkDateInput").value = today;
+      }
+      if (bulkFixedFields.includes("cw")) {
+        const currentWeek = getWeekNumber(new Date());
+        document.getElementById("bulkCwInput").value = `CW ${currentWeek}`;
+      }
+      if (bulkFixedFields.includes("stage") && currentCarrier && currentCarrier.default_stage) {
+        document.getElementById("bulkStageInput").value = currentCarrier.default_stage;
+      }
+    }
+    
+    // Variable Felder Container finden und leeren
+    const variableContainer = document.querySelector("#bulkEntryForm .form-grid");
+    if (variableContainer) {
+      variableContainer.innerHTML = "";
+      
+      bulkVariableFields.forEach(fieldId => {
+        const field = fieldDefinitions[fieldId];
+        if (!field) return;
+        
+        const formGroup = document.createElement("div");
+        formGroup.className = "form-group";
+        
+        const label = document.createElement("label");
+        label.textContent = field.label;
+        formGroup.appendChild(label);
+        
+        const input = document.createElement("input");
+        input.type = field.type;
+        input.id = field.id;
+        if (field.placeholder) input.placeholder = field.placeholder;
+        formGroup.appendChild(input);
+        
+        variableContainer.appendChild(formGroup);
+      });
+    }
+  }
+
+  function setBulkDefaults() {
+    if (!currentCarrier) return;
+    
+    // Feste Felder aus Konfiguration laden
+    const bulkFixedFields = currentCarrier.bulk_fixed_fields ? JSON.parse(currentCarrier.bulk_fixed_fields) : [];
+    
+    // Feste Felder sammeln
+    bulkDefaults = {};
+    let hasError = false;
+    
+    bulkFixedFields.forEach(fieldId => {
+      const inputId = `bulk${fieldId.charAt(0).toUpperCase() + fieldId.slice(1).replace(/_/g, '')}Input`;
+      const element = document.getElementById(inputId);
+      
+      if (element) {
+        const value = element.getAttribute('data-value') || element.value;
+        bulkDefaults[fieldId] = value;
+        
+        // Stage Validierung (Pflichtfeld)
+        if (fieldId === 'stage' && !value.trim()) {
+          showCustomModal("❌ Stage ist ein Pflichtfeld!", "error");
+          element.focus();
+          hasError = true;
+        }
+      }
+    });
+    
+    if (hasError) return;
+    
+    // Eintrag-Formular anzeigen
+    document.getElementById("bulkEntryForm").style.display = "block";
+    
+    // Fokus auf erstes variables Feld setzen
+    const firstVariableInput = document.querySelector("#bulkEntryForm .form-grid input");
+    if (firstVariableInput) {
+      firstVariableInput.focus();
+    }
+    
+    showCustomModal("✓ Feste Felder wurden übernommen! Sie können jetzt Einträge erfassen.", "success");
+  }
+
+  async function saveBulkEntry() {
+    if (!bulkDefaults.stage) {
+      showCustomModal("❌ Bitte zuerst die festen Felder definieren!", "error");
+      return;
+    }
+    
+    // Variable Felder auslesen
+    const trackingValue = document.getElementById("bulkTrackingInput").value.trim();
+    const olpnValue = document.getElementById("bulkOlpnInput").value.trim();
+    
+    // Carrier-spezifische Validierung
+    if (currentCarrier) {
+      // OLPN Validierung
+      if (currentCarrier.olpn_validation) {
+        const olpnVal = JSON.parse(currentCarrier.olpn_validation);
+        if (olpnVal.enabled && olpnVal.required && !olpnValue) {
+          showCustomModal("❌ OLPN ist ein Pflichtfeld für " + currentCarrier.display_name, "error");
+          document.getElementById("bulkOlpnInput").focus();
+          return;
+        }
+        if (olpnVal.enabled && olpnValue && olpnVal.length && olpnValue.length !== parseInt(olpnVal.length)) {
+          const msg = olpnVal.error_message || `OLPN muss genau ${olpnVal.length} Zeichen lang sein`;
+          showCustomModal("❌ " + msg, "error");
+          document.getElementById("bulkOlpnInput").focus();
+          return;
+        }
+        if (olpnVal.enabled && olpnValue && olpnVal.regex) {
+          const regex = new RegExp(olpnVal.regex);
+          if (!regex.test(olpnValue)) {
+            const msg = olpnVal.error_message || "OLPN entspricht nicht dem erwarteten Format";
+            showCustomModal("❌ " + msg, "error");
+            document.getElementById("bulkOlpnInput").focus();
+            return;
+          }
+        }
+      }
+      
+      // Tracking Number Validierung
+      if (currentCarrier.tracking_validation) {
+        const trackVal = JSON.parse(currentCarrier.tracking_validation);
+        if (trackVal.enabled && trackVal.required && !trackingValue) {
+          showCustomModal("❌ Carrier Tracking Number ist ein Pflichtfeld für " + currentCarrier.display_name, "error");
+          document.getElementById("bulkTrackingInput").focus();
+          return;
+        }
+        if (trackVal.enabled && trackingValue && trackVal.length && trackingValue.length !== parseInt(trackVal.length)) {
+          const msg = trackVal.error_message || `Carrier Tracking Number muss genau ${trackVal.length} Zeichen lang sein`;
+          showCustomModal("❌ " + msg, "error");
+          document.getElementById("bulkTrackingInput").focus();
+          return;
+        }
+        if (trackVal.enabled && trackingValue && trackVal.regex) {
+          const regex = new RegExp(trackVal.regex);
+          if (!regex.test(trackingValue)) {
+            const msg = trackVal.error_message || "Carrier Tracking Number entspricht nicht dem erwarteten Format";
+            showCustomModal("❌ " + msg, "error");
+            document.getElementById("bulkTrackingInput").focus();
+            return;
+          }
+        }
+      }
+    }
+    
+    // Payload zusammenstellen (feste + variable Felder)
+    const payload = {
+      cw: bulkDefaults.cw,
+      aufgenommen_am: bulkDefaults.date,
+      area: bulkDefaults.area,
+      land: bulkDefaults.land,
+      stage: bulkDefaults.stage,
+      carrier_name: bulkDefaults.carrier_name,
+      carrier_tracking_nr: trackingValue,
+      olpn: olpnValue,
+      planned_carton: document.getElementById("bulkPlannedInput").value,
+      actual_carton_count: document.getElementById("bulkActualInput").value,
+      dn: document.getElementById("bulkDnInput").value,
+      customer_id: document.getElementById("bulkCustomerIdInput").value,
+      asn_ra_nummer: document.getElementById("bulkAsnInput").value,
+      kommentar: document.getElementById("bulkKommentarInput").value,
+      added_by: document.getElementById("addedByInput").value,
+      ignore: 0,
+      last_stage: "",
+      ship_status: "",
+      shi: "",
+      customer_name: ""
+    };
+    
+    try {
+      const response = await fetch("/api/inbound-simple", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        bulkSavedCount++;
+        document.getElementById("bulkSavedCount").textContent = bulkSavedCount;
+        document.getElementById("bulkEntryNumber").textContent = (bulkSavedCount + 1);
+        
+        // Variable Felder leeren
+        clearBulkEntry();
+        
+        // Fokus auf erstes Feld
+        document.getElementById("bulkTrackingInput").focus();
+        
+        showCustomModal(`✓ Eintrag #${bulkSavedCount} erfolgreich gespeichert!`, "success");
+      } else {
+        const error = await response.text();
+        showCustomModal("❌ Fehler beim Speichern: " + error, "error");
+      }
+    } catch (err) {
+      console.error("Fehler beim Speichern:", err);
+      showCustomModal("❌ Fehler beim Speichern: " + err.message, "error");
+    }
+  }
+
+  function clearBulkEntry() {
+    document.getElementById("bulkTrackingInput").value = "";
+    document.getElementById("bulkOlpnInput").value = "";
+    document.getElementById("bulkPlannedInput").value = "";
+    document.getElementById("bulkActualInput").value = "";
+    document.getElementById("bulkDnInput").value = "";
+    document.getElementById("bulkCustomerIdInput").value = "";
+    document.getElementById("bulkAsnInput").value = "";
+    document.getElementById("bulkKommentarInput").value = "";
+  }
+
+  async function finishBulkMode() {
+    if (bulkSavedCount === 0) {
+      const confirmed = await showCustomConfirm("Sie haben noch keine Einträge gespeichert. Möchten Sie wirklich beenden?");
+      if (!confirmed) return;
+    }
+    
+    showCustomModal(`✓ Massenerfassung abgeschlossen! ${bulkSavedCount} Einträge wurden gespeichert.`, "success");
+    
+    // Zurück zur Einzelerfassung
+    switchToSingleMode();
+    
+    // Liste neu laden
+    await loadInboundList();
+    
+    // Bulk-Variablen zurücksetzen
+    bulkDefaults = {};
+    bulkSavedCount = 0;
+  }
+
+  function clearInboundForm() {
+    const ids = [
+      "cwInput","aufgenommenInput","ignoreInput","areaInput","stageInput","lastStageInput",
+      "carrierNameInput","landInput","shipStatusInput","plannedCartonInput","actualCartonInput",
+      "olpnInput","dnInput","shiInput","carrierTrackingInput","customerIdInput","customerNameInput",
+      "asnInput","kommentarInput","addedByInput"
+    ];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === "SELECT") {
+        el.selectedIndex = 0;
+      } else {
+        el.value = "";
+      }
+    });
+    
+    // CW und Datum wieder setzen
+    setDefaultDateAndCW();
+  }
+
+  async function saveInboundSimple() {
+    // Validierung
+    const carrierName = document.getElementById("carrierNameInput")?.value;
+    if (!carrierName || carrierName.trim() === "") {
+      alert("Bitte wählen Sie zuerst einen Carrier aus!");
+      return;
+    }
+
+    // Stage ist Pflichtfeld für alle Carrier
+    const stageValue = document.getElementById("stageInput")?.value?.trim();
+    if (!stageValue || stageValue === "") {
+      alert("❌ Stage ist ein Pflichtfeld!");
+      document.getElementById("stageInput")?.focus();
+      return;
+    }
+
+    // Carrier-spezifische Validierung
+    if (currentCarrier) {
+      const olpnValue = document.getElementById("olpnInput")?.value?.trim();
+      const trackingValue = document.getElementById("carrierTrackingInput")?.value?.trim();
+      
+      // OLPN Validierung
+      if (currentCarrier.olpn_validation) {
+        const olpnVal = JSON.parse(currentCarrier.olpn_validation);
+        if (olpnVal.enabled) {
+          if (olpnVal.required && !olpnValue) {
+            alert("❌ OLPN ist ein Pflichtfeld für " + currentCarrier.display_name);
+            document.getElementById("olpnInput")?.focus();
+            return;
+          }
+          
+          if (olpnValue && olpnVal.length && olpnValue.length !== olpnVal.length) {
+            alert("❌ " + (olpnVal.errorMessage || `OLPN muss genau ${olpnVal.length} Stellen lang sein`));
+            document.getElementById("olpnInput")?.focus();
+            return;
+          }
+          
+          if (olpnValue && olpnVal.startsWith && olpnVal.startsWith.length > 0) {
+            const startsCorrect = olpnVal.startsWith.some(prefix => olpnValue.startsWith(prefix));
+            if (!startsCorrect) {
+              alert("❌ " + (olpnVal.errorMessage || `OLPN muss mit ${olpnVal.startsWith.join(" oder ")} beginnen`));
+              document.getElementById("olpnInput")?.focus();
+              return;
+            }
+          }
+        }
+      }
+      
+      // Tracking Number Validierung
+      if (currentCarrier.tracking_validation) {
+        const trackingVal = JSON.parse(currentCarrier.tracking_validation);
+        if (trackingVal.enabled) {
+          if (trackingVal.required && !trackingValue) {
+            alert("❌ Carrier Tracking Number ist ein Pflichtfeld für " + currentCarrier.display_name);
+            document.getElementById("carrierTrackingInput")?.focus();
+            return;
+          }
+          
+          if (trackingValue && trackingVal.length && trackingValue.length !== trackingVal.length) {
+            alert("❌ " + (trackingVal.errorMessage || `Tracking Number muss genau ${trackingVal.length} Stellen lang sein`));
+            document.getElementById("carrierTrackingInput")?.focus();
+            return;
+          }
+          
+          if (trackingValue && trackingVal.startsWith && trackingVal.startsWith.length > 0) {
+            const startsCorrect = trackingVal.startsWith.some(prefix => trackingValue.startsWith(prefix));
+            if (!startsCorrect) {
+              alert("❌ " + (trackingVal.errorMessage || `Tracking Number muss mit ${trackingVal.startsWith.join(" oder ")} beginnen`));
+              document.getElementById("carrierTrackingInput")?.focus();
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    const areaInput = document.getElementById("areaInput");
+    const landInput = document.getElementById("landInput");
+    
+    const payload = {
+      cw: document.getElementById("cwInput")?.value?.trim() || null,
+      aufgenommenAm: document.getElementById("aufgenommenInput")?.value || null,
+      ignoreFlag: document.getElementById("ignoreInput")?.value === "1",
+      area: areaInput?.getAttribute('data-value') || areaInput?.value?.trim() || null,
+      stage: document.getElementById("stageInput")?.value?.trim() || null,
+      lastStage: document.getElementById("lastStageInput")?.value?.trim() || null,
+      carrierName: carrierName.trim(),
+      land: landInput?.getAttribute('data-value') || landInput?.value?.trim() || null,
+      shipStatus: document.getElementById("shipStatusInput")?.value?.trim() || null,
+      plannedCarton: document.getElementById("plannedCartonInput")?.value || null,
+      actualCarton: document.getElementById("actualCartonInput")?.value || null,
+      olpn: document.getElementById("olpnInput")?.value?.trim() || null,
+      dn: document.getElementById("dnInput")?.value?.trim() || null,
+      shi: document.getElementById("shiInput")?.value?.trim() || null,
+      carrierTrackingNr: document.getElementById("carrierTrackingInput")?.value?.trim() || null,
+      customerId: document.getElementById("customerIdInput")?.value?.trim() || null,
+      customerName: document.getElementById("customerNameInput")?.value?.trim() || null,
+      asnRaNo: document.getElementById("asnInput")?.value?.trim() || null,
+      neueRa: document.getElementById("neueRaInput")?.value?.trim() || null,
+      newReOpenRa: document.getElementById("newReOpenInput")?.value?.trim() || null,
+      cw49: document.getElementById("cw49Input")?.value?.trim() || null,
+      cw50: document.getElementById("cw50Input")?.value?.trim() || null,
+      mhStatus: document.getElementById("mhStatusInput")?.value?.trim() || null,
+      kommentar: document.getElementById("kommentarInput")?.value?.trim() || null,
+      addedBy: document.getElementById("addedByInput")?.value?.trim() || null
+    };
+
+    console.log("Payload wird gesendet:", payload);
+
+    try {
+      const response = await fetch("/api/inbound-simple", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        console.error("Server Fehler:", err);
+        throw new Error(err.error || "Unbekannter Fehler (Code " + response.status + ")");
+      }
+
+      const result = await response.json();
+      alert("✓ Wareneingang erfolgreich gespeichert!\nID: " + result.id);
+      clearInboundForm();
+      backToCarrierSelection();
+      loadInboundList();
+    } catch (err) {
+      console.error("Fehler beim Speichern:", err);
+      alert("❌ Fehler beim Speichern:\n" + err.message);
+    }
+  }
+
+  async function loadInboundList() {
+    const body = document.getElementById("inboundListBody");
+    const dashboardBody = document.getElementById("dashboardInboundListBody");
+    
+    // Beide Tabellen aktualisieren (falls vorhanden)
+    if (body) {
+      body.innerHTML = '<tr><td colspan="11" class="muted">Einträge werden geladen</td></tr>';
+    }
+    if (dashboardBody) {
+      dashboardBody.innerHTML = '<tr><td colspan="11" class="muted">Einträge werden geladen</td></tr>';
+    }
+
+    try {
+      const response = await fetch("/api/inbound-simple");
+      if (!response.ok) {
+        throw new Error("Code " + response.status);
+      }
+      const data = await response.json();
+      
+      if (body) body.innerHTML = "";
+      if (dashboardBody) dashboardBody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        if (body) body.innerHTML = '<tr><td colspan="11" class="muted">Noch keine Einträge vorhanden</td></tr>';
+        if (dashboardBody) dashboardBody.innerHTML = '<tr><td colspan="11" class="muted">Noch keine Einträge vorhanden</td></tr>';
+        return;
+      }
+
+      data.forEach(row => {
+        const trHTML = `
+          <td>${row.id}</td>
+          <td>${row.cw || ""}</td>
+          <td>${row.aufgenommen_am || ""}</td>
+          <td>${row.carrier_name || ""}</td>
+          <td>${row.area || ""}</td>
+          <td>${row.stage || ""}</td>
+          <td>${row.planned_carton != null ? row.planned_carton : ""}</td>
+          <td>${row.actual_carton != null ? row.actual_carton : ""}</td>
+          <td>${row.olpn || ""}</td>
+          <td>${row.carrier_tracking_nr || ""}</td>
+          <td>${row.mh_status || ""}</td>
+        `;
+        
+        // Für Wareneingang-Tabelle
+        if (body) {
+          const tr = document.createElement("tr");
+          tr.className = "data-row";
+          tr.innerHTML = trHTML;
+          body.appendChild(tr);
+        }
+        
+        // Für Dashboard-Tabelle
+        if (dashboardBody) {
+          const tr = document.createElement("tr");
+          tr.className = "data-row";
+          tr.innerHTML = trHTML;
+          dashboardBody.appendChild(tr);
+        }
+      });
+    } catch (err) {
+      console.error("Fehler inbound liste", err);
+      if (body) body.innerHTML = '<tr><td colspan="11" class="muted">Fehler beim Laden der Einträge</td></tr>';
+      if (dashboardBody) dashboardBody.innerHTML = '<tr><td colspan="11" class="muted">Fehler beim Laden der Einträge</td></tr>';
+    }
+  }
+
+  // Dashboard Toggle für Inbound-Liste
+  const dashboardToggleHeader = document.getElementById("dashboardInboundToggleHeader");
+  const dashboardToggleArrow = document.getElementById("dashboardInboundToggleArrow");
+  const dashboardTableContainer = document.getElementById("dashboardInboundTableContainer");
+  
+  if (dashboardToggleHeader) {
+    dashboardToggleHeader.addEventListener("click", () => {
+      const isVisible = dashboardTableContainer.style.display !== "none";
+      
+      if (isVisible) {
+        dashboardTableContainer.style.display = "none";
+        dashboardToggleArrow.textContent = "▼";
+      } else {
+        dashboardTableContainer.style.display = "block";
+        dashboardToggleArrow.textContent = "▲";
+        // Daten laden wenn noch nicht geladen
+        if (dashboardTableContainer.querySelector('td[colspan]')) {
+          loadInboundList();
+        }
+      }
+    });
+  }
+
+  navItems.forEach(item => {
+    item.addEventListener("click", () => {
+      const viewName = item.getAttribute("data-view");
+
+      navItems.forEach(n => n.classList.remove("active"));
+      item.classList.add("active");
+
+      views.forEach(v => v.classList.remove("active"));
+      const viewElement = document.getElementById("view-" + viewName);
+      if (viewElement) {
+        viewElement.classList.add("active");
+      }
+
+      if (viewMeta[viewName]) {
+        topbarTitle.textContent = viewMeta[viewName].title;
+        topbarSubtitle.textContent = viewMeta[viewName].subtitle;
+      }
+      
+      // Nach oben scrollen beim View-Wechsel (mehrere Methoden für Kompatibilität)
+      setTimeout(() => {
+        const mainContent = document.querySelector(".main");
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 0);
+
+      // Settings Content nur auf der Einstellungen-Seite anzeigen
+      const settingsContent = document.getElementById("settingsContent");
+      if (viewName !== "settings" && settingsContent) {
+        settingsContent.style.display = "none";
+      }
+
+      if (viewName === "inventory") {
+        loadInventory();
+      } else if (viewName === "settings") {
+        // Settings View: Prüfen ob Benutzer "paypa" ist
+        const settingsContent = document.getElementById("settingsContent");
+        const settingsPinCard = document.getElementById("settingsPinCard");
+        
+        // Carrier-Auswahl zurücksetzen
+        const carrierInput = document.getElementById("settingsCarrierSelect");
+        if (carrierInput) {
+          carrierInput.value = "";
+          carrierInput.removeAttribute('data-value');
+        }
+        
+        // Carrier-Einstellungen-Form verstecken
+        const carrierForm = document.getElementById("carrierSettingsForm");
+        if (carrierForm) {
+          carrierForm.style.display = "none";
+        }
+        
+        // Hinweis wieder anzeigen
+        const hint = document.getElementById("carrierSelectionHint");
+        if (hint) hint.style.display = "block";
+        
+        // Wenn Benutzer "paypa" ist, direkt Zugriff gewähren
+        if (currentWindowsUser && currentWindowsUser.toLowerCase() === "paypa") {
+          if (settingsPinCard) settingsPinCard.style.display = "none";
+          if (settingsContent) settingsContent.style.display = "block";
+          loadSettingsData();
+          // Carrier-Auswahl für Einstellungsseite laden (nur wenn auf Einstellungsseite)
+          loadCarriers();
+          console.log("✅ Einstellungen für Benutzer 'paypa' geladen");
+        } else if (settingsContent && settingsContent.style.display === "none") {
+          // Für andere Benutzer: PIN zurücksetzen falls nicht authentifiziert
+          if (settingsPinCard) settingsPinCard.style.display = "block";
+          if (settingsContent) settingsContent.style.display = "none";
+          const pinInput = document.getElementById("settingsPinInput");
+          if (pinInput) pinInput.value = "";
+        }
+      } else if (viewName === "inbound") {
+        // Carrier-Auswahl beim Wareneingang anzeigen
+        const carrierSelectionView = document.getElementById("carrierSelectionView");
+        const inboundDetailView = document.getElementById("inboundDetailView");
+        const inboundListSection = document.getElementById("inboundListSection");
+        
+        if (carrierSelectionView) carrierSelectionView.style.display = "block";
+        if (inboundDetailView) inboundDetailView.style.display = "none";
+        if (inboundListSection) inboundListSection.style.display = "block";
+        
+        // Carrier-Buttons laden
+        loadCarriers();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-jump]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-jump");
+      const navTarget = document.querySelector('.nav-item[data-view="' + target + '"]');
+      if (navTarget) {
+        navTarget.click();
+      }
+    });
+  });
+
+  function initCharts() {
+    const ctxWeek = document.getElementById("chartByWeek");
+    const ctxCarrier = document.getElementById("chartByCarrier");
+    const ctxRaStatus = document.getElementById("chartRaStatus");
+    if (!window.Chart) {
+      return;
+    }
+
+    if (ctxWeek) {
+      new Chart(ctxWeek, {
+        type: "line",
+        data: {
+          labels: ["CW 45", "CW 46", "CW 47", "CW 48", "CW 49", "CW 50"],
+          datasets: [{
+            label: "Retouren gesamt",
+            data: [180, 210, 260, 230, 280, 300],
+            borderColor: "#F53B01",
+            backgroundColor: "rgba(245,59,1,0.18)",
+            tension: 0.25,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
+              },
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
+              },
+              grid: {
+                color: "rgba(150,150,150,0.18)"
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (ctxCarrier) {
+      new Chart(ctxCarrier, {
+        type: "bar",
+        data: {
+          labels: ["DPD", "DHL", "Geodis", "BRT", "FedEx"],
+          datasets: [{
+            label: "Retouren",
+            data: [120, 95, 70, 40, 35],
+            backgroundColor: [
+              "rgba(245,59,1,0.9)",
+              "rgba(97,97,97,0.9)",
+              "rgba(97,97,97,0.7)",
+              "rgba(97,97,97,0.7)",
+              "rgba(97,97,97,0.7)"
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: {
+                color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
+              },
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
+              },
+              grid: {
+                color: "rgba(150,150,150,0.18)"
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (ctxRaStatus) {
+      new Chart(ctxRaStatus, {
+        type: "doughnut",
+        data: {
+          labels: ["gültig", "offen", "Konflikt"],
+          datasets: [{
+            data: [48, 25, 12],
+            backgroundColor: [
+              "rgba(60,179,113,0.9)",
+              "rgba(97,97,97,0.7)",
+              "rgba(245,59,1,0.9)"
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true },
+          },
+          cutout: "60%"
+        }
+      });
+    }
+  }
+
+  /* Settings Funktionen */
+  async function authenticateSettings() {
+    const pin = document.getElementById("settingsPinInput")?.value;
+    
+    if (!pin) {
+      alert("Bitte geben Sie die PIN ein!");
+      return;
+    }
+    
+    try {
+      const response = await fetch("/api/settings/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pin })
+      });
+      
+      if (response.ok) {
+        document.getElementById("settingsPinCard").style.display = "none";
+        document.getElementById("settingsContent").style.display = "block";
+        loadSettingsData();
+      } else {
+        alert("❌ Falsche PIN!");
+      }
+    } catch (err) {
+      console.error("Auth Fehler:", err);
+      alert("Fehler bei der Authentifizierung: " + err.message);
+    }
+  }
+
+  async function loadSettingsData() {
+    console.log("📋 Lade Einstellungsdaten...");
+    
+    // Carrier für Settings laden (Searchable Dropdown)
+    // Falls noch nicht geladen, erst laden
+    if (carriersData.length === 0) {
+      try {
+        const response = await fetch("/api/carriers");
+        if (response.ok) {
+          carriersData = await response.json();
+          console.log("✅ Carrier-Daten geladen:", carriersData.length);
+        }
+      } catch (err) {
+        console.error("❌ Fehler beim Laden der Carrier-Daten:", err);
+      }
+    }
+    
+    if (carriersData.length > 0) {
+      const carrierOptions = carriersData.map(car => ({
+        id: car.id,
+        option_value: car.id.toString(),
+        option_label: car.display_name
+      }));
+      initSearchableDropdownSettings('settingsCarrier', carrierOptions);
+      console.log("✅ Carrier-Dropdown initialisiert");
+    }
+    
+    // Dropdown Optionen laden
+    loadDropdownOptionsSettings();
+    
+    // System Info anzeigen
+    const userDisplay = document.getElementById("settingsCurrentUser");
+    const computerDisplay = document.getElementById("settingsComputerName");
+    
+    try {
+      const response = await fetch("/api/current-user");
+      if (response.ok) {
+        const result = await response.json();
+        if (userDisplay) userDisplay.textContent = result.username;
+        if (computerDisplay) computerDisplay.textContent = result.computerName || "-";
+        console.log("✅ System-Info geladen");
+      }
+    } catch (err) {
+      console.error("❌ Fehler beim Laden der System-Info:", err);
+    }
+    
+    console.log("✅ Einstellungsdaten vollständig geladen");
+  }
+
+  function loadCarrierSettings(carrierId) {
+    const carrier = carriersData.find(c => c.id == carrierId);
+    if (!carrier) return;
+    
+    // Hinweis ausblenden
+    const hint = document.getElementById("carrierSelectionHint");
+    if (hint) hint.style.display = "none";
+    
+    document.getElementById("carrierSettingsForm").style.display = "block";
+    document.getElementById("settingsDisplayName").value = carrier.display_name || "";
+    document.getElementById("settingsCountry").value = carrier.country || "";
+    document.getElementById("settingsDefaultArea").value = carrier.default_area || "";
+    document.getElementById("settingsDefaultStage").value = carrier.default_stage || "";
+    document.getElementById("settingsDefaultLastStage").value = carrier.default_last_stage || "";
+    document.getElementById("settingsDefaultShipStatus").value = carrier.default_ship_status || "";
+    document.getElementById("settingsLabelImage").value = carrier.label_image || "";
+    document.getElementById("settingsLabelHelpText").value = carrier.label_help_text || "";
+    
+    console.log("📝 Carrier-Einstellungen geladen:", carrier.display_name);
+    
+    // OLPN Validierung laden
+    const olpnVal = carrier.olpn_validation ? JSON.parse(carrier.olpn_validation) : {};
+    document.getElementById("settingsOlpnEnabled").checked = olpnVal.enabled || false;
+    document.getElementById("settingsOlpnRequired").checked = olpnVal.required || false;
+    document.getElementById("settingsOlpnLength").value = olpnVal.length || "";
+    document.getElementById("settingsOlpnStartsWith").value = (olpnVal.startsWith || []).join(",");
+    document.getElementById("settingsOlpnError").value = olpnVal.errorMessage || "";
+    
+    // Tracking Validierung laden
+    const trackingVal = carrier.tracking_validation ? JSON.parse(carrier.tracking_validation) : {};
+    document.getElementById("settingsTrackingEnabled").checked = trackingVal.enabled || false;
+    document.getElementById("settingsTrackingRequired").checked = trackingVal.required || false;
+    document.getElementById("settingsTrackingLength").value = trackingVal.length || "";
+    document.getElementById("settingsTrackingStartsWith").value = (trackingVal.startsWith || []).join(",");
+    document.getElementById("settingsTrackingError").value = trackingVal.errorMessage || "";
+    
+    // Visible Fields Checkboxen
+    const visibleFields = carrier.visible_fields ? JSON.parse(carrier.visible_fields) : [];
+    const container = document.getElementById("visibleFieldsCheckboxes");
+    
+    const allFields = [
+      { id: "cw", label: "CW" },
+      { id: "aufgenommen_am", label: "Aufgenommen am" },
+      { id: "ignore", label: "Ignore" },
+      { id: "area", label: "Area" },
+      { id: "stage", label: "Stage" },
+      { id: "last_stage", label: "Last Stage" },
+      { id: "carrier_name", label: "Carrier Name" },
+      { id: "land", label: "Land" },
+      { id: "ship_status", label: "Ship Status" },
+      { id: "planned_carton", label: "Planned Carton" },
+      { id: "actual_carton", label: "Actual Carton" },
+      { id: "olpn", label: "OLPN" },
+      { id: "dn", label: "DN" },
+      { id: "shi", label: "SHI" },
+      { id: "carrier_tracking_nr", label: "Carrier Tracking" },
+      { id: "customer_id", label: "Customer ID" },
+      { id: "customer_name", label: "Customer Name" },
+      { id: "asn_ra_no", label: "ASN/RA Nummer" },
+      { id: "kommentar", label: "Kommentar" },
+      { id: "added_by", label: "Added By" }
+    ];
+    
+    container.innerHTML = "";
+    allFields.forEach(field => {
+      const div = document.createElement("div");
+      div.style.display = "flex";
+      div.style.alignItems = "center";
+      div.style.gap = "6px";
+      
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = "field_" + field.id;
+      checkbox.value = field.id;
+      checkbox.checked = visibleFields.includes(field.id);
+      checkbox.style.width = "auto";
+      checkbox.style.cursor = "pointer";
+      
+      const label = document.createElement("label");
+      label.htmlFor = "field_" + field.id;
+      label.textContent = field.label;
+      label.style.cursor = "pointer";
+      label.style.textTransform = "none";
+      label.style.fontSize = "12px";
+      
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      container.appendChild(div);
+    });
+    
+    // Bulk Fields Checkboxen laden
+    const bulkFixedFields = carrier.bulk_fixed_fields ? JSON.parse(carrier.bulk_fixed_fields) : ["cw", "aufgenommen_am", "area", "land", "stage", "carrier_name"];
+    const bulkVariableFields = carrier.bulk_variable_fields ? JSON.parse(carrier.bulk_variable_fields) : ["carrier_tracking_nr", "olpn", "planned_carton", "actual_carton", "dn", "customer_id", "asn_ra_no", "kommentar"];
+    
+    const bulkFixedContainer = document.getElementById("bulkFixedFieldsCheckboxes");
+    const bulkVariableContainer = document.getElementById("bulkVariableFieldsCheckboxes");
+    
+    bulkFixedContainer.innerHTML = "";
+    bulkVariableContainer.innerHTML = "";
+    
+    allFields.forEach(field => {
+      // Feste Felder Checkbox
+      const fixedDiv = document.createElement("div");
+      fixedDiv.style.display = "flex";
+      fixedDiv.style.alignItems = "center";
+      fixedDiv.style.gap = "6px";
+      
+      const fixedCheckbox = document.createElement("input");
+      fixedCheckbox.type = "checkbox";
+      fixedCheckbox.id = "bulk_fixed_" + field.id;
+      fixedCheckbox.value = field.id;
+      fixedCheckbox.checked = bulkFixedFields.includes(field.id);
+      fixedCheckbox.style.width = "auto";
+      fixedCheckbox.style.cursor = "pointer";
+      
+      const fixedLabel = document.createElement("label");
+      fixedLabel.htmlFor = "bulk_fixed_" + field.id;
+      fixedLabel.textContent = field.label;
+      fixedLabel.style.cursor = "pointer";
+      fixedLabel.style.textTransform = "none";
+      fixedLabel.style.fontSize = "12px";
+      
+      fixedDiv.appendChild(fixedCheckbox);
+      fixedDiv.appendChild(fixedLabel);
+      bulkFixedContainer.appendChild(fixedDiv);
+      
+      // Variable Felder Checkbox
+      const varDiv = document.createElement("div");
+      varDiv.style.display = "flex";
+      varDiv.style.alignItems = "center";
+      varDiv.style.gap = "6px";
+      
+      const varCheckbox = document.createElement("input");
+      varCheckbox.type = "checkbox";
+      varCheckbox.id = "bulk_var_" + field.id;
+      varCheckbox.value = field.id;
+      varCheckbox.checked = bulkVariableFields.includes(field.id);
+      varCheckbox.style.width = "auto";
+      varCheckbox.style.cursor = "pointer";
+      
+      const varLabel = document.createElement("label");
+      varLabel.htmlFor = "bulk_var_" + field.id;
+      varLabel.textContent = field.label;
+      varLabel.style.cursor = "pointer";
+      varLabel.style.textTransform = "none";
+      varLabel.style.fontSize = "12px";
+      
+      varDiv.appendChild(varCheckbox);
+      varDiv.appendChild(varLabel);
+      bulkVariableContainer.appendChild(varDiv);
+    });
+  }
+
+  async function saveCarrierSettings() {
+    const carrierInput = document.getElementById("settingsCarrierSelect");
+    const carrierId = carrierInput?.getAttribute('data-value') || carrierInput?.value;
+    if (!carrierId) {
+      alert("Bitte wählen Sie einen Carrier aus!");
+      return;
+    }
+    
+    // Visible Fields sammeln
+    const checkboxes = document.querySelectorAll("#visibleFieldsCheckboxes input[type=checkbox]:checked");
+    const visibleFields = Array.from(checkboxes).map(cb => cb.value);
+    
+    // Bulk Fixed Fields sammeln
+    const bulkFixedCheckboxes = document.querySelectorAll("#bulkFixedFieldsCheckboxes input[type=checkbox]:checked");
+    const bulkFixedFields = Array.from(bulkFixedCheckboxes).map(cb => cb.value);
+    
+    // Bulk Variable Fields sammeln
+    const bulkVariableCheckboxes = document.querySelectorAll("#bulkVariableFieldsCheckboxes input[type=checkbox]:checked");
+    const bulkVariableFields = Array.from(bulkVariableCheckboxes).map(cb => cb.value);
+    
+    console.log("Speichere Carrier-Einstellungen:");
+    console.log("Carrier ID:", carrierId);
+    console.log("Visible Fields:", visibleFields);
+    console.log("Bulk Fixed Fields:", bulkFixedFields);
+    console.log("Bulk Variable Fields:", bulkVariableFields);
+    
+    // OLPN Validierung sammeln
+    const olpnStartsWith = document.getElementById("settingsOlpnStartsWith").value
+      .split(",")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    
+    const olpnValidation = {
+      enabled: document.getElementById("settingsOlpnEnabled").checked,
+      required: document.getElementById("settingsOlpnRequired").checked,
+      length: parseInt(document.getElementById("settingsOlpnLength").value) || null,
+      startsWith: olpnStartsWith,
+      errorMessage: document.getElementById("settingsOlpnError").value || ""
+    };
+    
+    // Tracking Validierung sammeln
+    const trackingStartsWith = document.getElementById("settingsTrackingStartsWith").value
+      .split(",")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    
+    const trackingValidation = {
+      enabled: document.getElementById("settingsTrackingEnabled").checked,
+      required: document.getElementById("settingsTrackingRequired").checked,
+      length: parseInt(document.getElementById("settingsTrackingLength").value) || null,
+      startsWith: trackingStartsWith,
+      errorMessage: document.getElementById("settingsTrackingError").value || ""
+    };
+    
+    const payload = {
+      display_name: document.getElementById("settingsDisplayName").value,
+      country: document.getElementById("settingsCountry").value,
+      default_area: document.getElementById("settingsDefaultArea").value,
+      default_stage: document.getElementById("settingsDefaultStage").value,
+      default_last_stage: document.getElementById("settingsDefaultLastStage").value,
+      default_ship_status: document.getElementById("settingsDefaultShipStatus").value,
+      label_image: document.getElementById("settingsLabelImage").value,
+      label_help_text: document.getElementById("settingsLabelHelpText").value,
+      visible_fields: JSON.stringify(visibleFields),
+      bulk_fixed_fields: JSON.stringify(bulkFixedFields),
+      bulk_variable_fields: JSON.stringify(bulkVariableFields),
+      field_placeholders: "{}",
+      olpn_validation: JSON.stringify(olpnValidation),
+      tracking_validation: JSON.stringify(trackingValidation)
+    };
+    
+    try {
+      const response = await fetch(`/api/carriers/${carrierId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        alert("✓ Carrier Einstellungen gespeichert!");
+        // Carrier neu laden
+        await loadCarriers();
+        
+        // Wenn dieser Carrier gerade aktiv ist, Felder sofort aktualisieren
+        if (currentCarrier && currentCarrier.id == carrierId) {
+          // Carrier-Daten aktualisieren
+          const updatedCarrier = carriersData.find(c => c.id == carrierId);
+          if (updatedCarrier) {
+            currentCarrier = updatedCarrier;
+            applyVisibleFields(updatedCarrier);
+          }
+        }
+      } else {
+        alert("❌ Fehler beim Speichern!");
+      }
+    } catch (err) {
+      console.error("Fehler beim Speichern:", err);
+      alert("Fehler: " + err.message);
+    }
+  }
+
+  async function loadDropdownOptionsSettings() {
+    // Area Optionen
+    try {
+      const areaResponse = await fetch("/api/dropdown-options/area");
+      if (areaResponse.ok) {
+        const options = await areaResponse.json();
+        const container = document.getElementById("areaOptionsList");
+        if (container) {
+          container.innerHTML = "";
+          options.forEach((opt, index) => {
+            const div = document.createElement("div");
+            div.className = "dropdown-option-item";
+            div.setAttribute("data-id", opt.id);
+            div.setAttribute("draggable", "true");
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.padding = "4px 8px";
+            div.style.background = "var(--bg-soft)";
+            div.style.borderRadius = "6px";
+            div.style.marginBottom = "4px";
+            div.style.cursor = "move";
+            div.title = "Ziehen zum Verschieben, Doppelklick zum Bearbeiten";
+            
+            // Drag Handle
+            const dragHandle = document.createElement("span");
+            dragHandle.className = "drag-handle";
+            dragHandle.innerHTML = "⋮⋮";
+            dragHandle.style.marginRight = "8px";
+            
+            const span = document.createElement("span");
+            span.style.fontSize = "12px";
+            span.style.flex = "1";
+            span.textContent = opt.option_label;
+            
+            // Doppelklick zum Bearbeiten
+            span.addEventListener("dblclick", (e) => {
+              e.stopPropagation();
+              editDropdownOption(opt.id, opt.option_label, 'area', span);
+            });
+            
+            const btn = document.createElement("button");
+            btn.className = "btn btn-ghost btn-sm";
+            btn.textContent = "×";
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              deleteDropdownOption(opt.id, 'area');
+            });
+            
+            div.appendChild(dragHandle);
+            div.appendChild(span);
+            div.appendChild(btn);
+            container.appendChild(div);
+            
+            // Drag Events
+            setupDragAndDrop(div, container, 'area');
+          });
+        }
+      }
+      
+      // Land Optionen
+      const landResponse = await fetch("/api/dropdown-options/land");
+      if (landResponse.ok) {
+        const options = await landResponse.json();
+        const container = document.getElementById("landOptionsList");
+        if (container) {
+          container.innerHTML = "";
+          options.forEach((opt, index) => {
+            const div = document.createElement("div");
+            div.className = "dropdown-option-item";
+            div.setAttribute("data-id", opt.id);
+            div.setAttribute("draggable", "true");
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.padding = "4px 8px";
+            div.style.background = "var(--bg-soft)";
+            div.style.borderRadius = "6px";
+            div.style.marginBottom = "4px";
+            div.style.cursor = "move";
+            div.title = "Ziehen zum Verschieben, Doppelklick zum Bearbeiten";
+            
+            // Drag Handle
+            const dragHandle = document.createElement("span");
+            dragHandle.className = "drag-handle";
+            dragHandle.innerHTML = "⋮⋮";
+            dragHandle.style.marginRight = "8px";
+            
+            const span = document.createElement("span");
+            span.style.fontSize = "12px";
+            span.style.flex = "1";
+            span.textContent = `${opt.option_value} - ${opt.option_label}`;
+            
+            // Doppelklick zum Bearbeiten
+            span.addEventListener("dblclick", (e) => {
+              e.stopPropagation();
+              editDropdownOption(opt.id, opt.option_label, 'land', span);
+            });
+            
+            const btn = document.createElement("button");
+            btn.className = "btn btn-ghost btn-sm";
+            btn.textContent = "×";
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              deleteDropdownOption(opt.id, 'land');
+            });
+            
+            div.appendChild(dragHandle);
+            div.appendChild(span);
+            div.appendChild(btn);
+            container.appendChild(div);
+            
+            // Drag Events
+            setupDragAndDrop(div, container, 'land');
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden Dropdown Optionen:", err);
+    }
+  }
+
+  async function addDropdownOption(fieldName) {
+    let value, label;
+    
+    if (fieldName === "area") {
+      value = document.getElementById("newAreaOption").value.trim();
+      label = value;
+      if (!value) {
+        alert("Bitte geben Sie eine Area Option ein!");
+        return;
+      }
+    } else if (fieldName === "land") {
+      value = document.getElementById("newLandValue").value.trim();
+      label = document.getElementById("newLandLabel").value.trim();
+      if (!value || !label) {
+        alert("Bitte füllen Sie beide Felder aus!");
+        return;
+      }
+    }
+    
+    try {
+      const response = await fetch("/api/dropdown-options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          field_name: fieldName,
+          option_value: value,
+          option_label: label,
+          sort_order: 999
+        })
+      });
+      
+      if (response.ok) {
+        if (fieldName === "area") {
+          document.getElementById("newAreaOption").value = "";
+        } else {
+          document.getElementById("newLandValue").value = "";
+          document.getElementById("newLandLabel").value = "";
+        }
+        loadDropdownOptionsSettings();
+        loadDropdownOptions(); // Auch die Haupt-Dropdowns aktualisieren
+      } else {
+        alert("❌ Fehler beim Hinzufügen!");
+      }
+    } catch (err) {
+      console.error("Fehler:", err);
+      alert("Fehler: " + err.message);
+    }
+  }
+
+  function setupDragAndDrop(element, container, fieldName) {
+    let draggedElement = null;
+    
+    element.addEventListener("dragstart", (e) => {
+      draggedElement = element;
+      element.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", element.innerHTML);
+    });
+    
+    element.addEventListener("dragend", (e) => {
+      element.classList.remove("dragging");
+      
+      // Neue Reihenfolge speichern
+      const items = Array.from(container.querySelectorAll(".dropdown-option-item"));
+      const orderedIds = items.map(item => parseInt(item.getAttribute("data-id")));
+      saveDropdownOrder(fieldName, orderedIds);
+    });
+    
+    element.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      
+      const afterElement = getDragAfterElement(container, e.clientY);
+      const dragging = container.querySelector(".dragging");
+      
+      if (afterElement == null) {
+        container.appendChild(dragging);
+      } else {
+        container.insertBefore(dragging, afterElement);
+      }
+    });
+    
+    element.addEventListener("dragenter", (e) => {
+      if (element !== draggedElement) {
+        element.classList.add("drag-over");
+      }
+    });
+    
+    element.addEventListener("dragleave", (e) => {
+      element.classList.remove("drag-over");
+    });
+    
+    element.addEventListener("drop", (e) => {
+      e.stopPropagation();
+      element.classList.remove("drag-over");
+      return false;
+    });
+  }
+  
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll(".dropdown-option-item:not(.dragging)")];
+    
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+  
+  async function saveDropdownOrder(fieldName, orderedIds) {
+    try {
+      const response = await fetch(`/api/dropdown-options/reorder/${fieldName}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds })
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Reihenfolge für ${fieldName} gespeichert`);
+        // Dropdowns im Hauptformular neu laden
+        await loadDropdownOptions();
+      } else {
+        console.error("Fehler beim Speichern der Reihenfolge");
+      }
+    } catch (err) {
+      console.error("Fehler beim Speichern der Reihenfolge:", err);
+    }
+  }
+
+  async function editDropdownOption(id, currentLabel, fieldName, spanElement) {
+    // Prüfe ob bereits ein Edit läuft
+    if (spanElement.querySelector("input")) {
+      return;
+    }
+    
+    // Erstelle ein Inline-Edit-Feld
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = currentLabel;
+    input.style.fontSize = "12px";
+    input.style.padding = "2px 6px";
+    input.style.border = "1px solid var(--gxo-orange)";
+    input.style.borderRadius = "4px";
+    input.style.background = "var(--bg-main)";
+    input.style.color = "var(--text-primary)";
+    input.style.width = "200px";
+    input.style.outline = "none";
+    
+    // Ersetze den Text temporär
+    const originalText = spanElement.textContent;
+    spanElement.textContent = "";
+    spanElement.appendChild(input);
+    input.focus();
+    input.select();
+    
+    let isSaving = false;
+    
+    // Funktion zum Speichern
+    const saveEdit = async () => {
+      if (isSaving) return;
+      isSaving = true;
+      
+      const newLabel = input.value.trim();
+      
+      if (!newLabel) {
+        alert("❌ Der Wert darf nicht leer sein!");
+        spanElement.textContent = originalText;
+        return;
+      }
+      
+      if (newLabel === currentLabel) {
+        // Keine Änderung
+        spanElement.textContent = originalText;
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/dropdown-options/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ option_label: newLabel })
+        });
+        
+        if (response.ok) {
+          // Aktualisiere nur den Text, ohne die Liste neu zu laden
+          if (fieldName === 'land') {
+            // Bei Land: Format "value - label" beibehalten
+            const parts = originalText.split(' - ');
+            spanElement.textContent = parts[0] + ' - ' + newLabel;
+          } else {
+            spanElement.textContent = newLabel;
+          }
+          // Dropdowns im Hauptformular neu laden
+          await loadDropdownOptions();
+        } else {
+          const error = await response.json().catch(() => ({}));
+          alert("❌ Fehler beim Speichern: " + (error.error || "Unbekannter Fehler"));
+          spanElement.textContent = originalText;
+        }
+      } catch (err) {
+        console.error("Fehler beim Speichern:", err);
+        alert("❌ Fehler: " + err.message);
+        spanElement.textContent = originalText;
+      }
+    };
+    
+    // Funktion zum Abbrechen
+    const cancelEdit = () => {
+      spanElement.textContent = originalText;
+    };
+    
+    // Enter zum Speichern
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+    
+    // Blur zum Speichern
+    input.addEventListener("blur", () => {
+      setTimeout(saveEdit, 100);
+    });
+  }
+
+  // Custom Modal Funktionen
+  function showModal(message, type = 'info', title = null) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('customModal');
+      const modalIcon = document.getElementById('modalIcon');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      const modalOkBtn = document.getElementById('modalOkBtn');
+      const modalCancelBtn = document.getElementById('modalCancelBtn');
+      const modalClose = document.getElementById('modalClose');
+      
+      // Icon und Titel basierend auf Typ
+      const types = {
+        'success': { icon: '✅', title: 'Erfolg', color: '#4CAF50' },
+        'error': { icon: '❌', title: 'Fehler', color: '#F44336' },
+        'warning': { icon: '⚠️', title: 'Warnung', color: '#FF9800' },
+        'info': { icon: 'ℹ️', title: 'Information', color: '#2196F3' },
+        'question': { icon: '❓', title: 'Bestätigung', color: '#FF3A00' }
+      };
+      
+      const config = types[type] || types.info;
+      modalIcon.textContent = config.icon;
+      modalTitle.textContent = title || config.title;
+      modalBody.innerHTML = message;
+      
+      // Zeige/Verstecke Abbrechen-Button
+      if (type === 'question') {
+        modalCancelBtn.style.display = '';
+      } else {
+        modalCancelBtn.style.display = 'none';
+      }
+      
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      
+      // Event Handlers
+      const closeModal = (result) => {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        resolve(result);
+      };
+      
+      modalOkBtn.onclick = () => closeModal(true);
+      modalCancelBtn.onclick = () => closeModal(false);
+      modalClose.onclick = () => closeModal(false);
+      
+      // ESC zum Schließen
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          closeModal(false);
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+      
+      // Klick außerhalb schließt Modal
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          closeModal(false);
+        }
+      };
+    });
+  }
+  
+  // Ersatz für alert()
+  window.customAlert = (message, type = 'info') => showModal(message, type);
+  
+  // Ersatz für confirm()
+  window.customConfirm = (message) => showModal(message, 'question', 'Bestätigung');
+  
+  // Überschreibe native alert() und confirm()
+  window.alert = function(message) {
+    let type = 'info';
+    if (message.includes('✓') || message.includes('Erfolg')) type = 'success';
+    else if (message.includes('❌') || message.includes('Fehler')) type = 'error';
+    else if (message.includes('⚠️') || message.includes('Warnung')) type = 'warning';
+    
+    return showModal(message, type);
+  };
+  
+  window.confirm = function(message) {
+    return showModal(message, 'question', 'Bestätigung');
+  };
+
+  function setupImageLightbox() {
+    const lightbox = document.getElementById("imageLightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const closeBtn = document.querySelector(".lightbox-close");
+    
+    if (!lightbox || !lightboxImage) return;
+    
+    // Event Delegation für dynamisch erstellte Bilder
+    document.addEventListener("click", (e) => {
+      if (e.target.classList.contains("label-image-thumbnail")) {
+        if (e.target.src && e.target.src !== "") {
+          lightboxImage.src = e.target.src;
+          lightbox.classList.add("active");
+          document.body.style.overflow = "hidden";
+        }
+      }
+    });
+    
+    // Schließe Lightbox beim Klick auf X
+    if (closeBtn) {
+      closeBtn.addEventListener("click", closeLightbox);
+    }
+    
+    // Schließe Lightbox beim Klick auf den Hintergrund
+    lightbox.addEventListener("click", (e) => {
+      if (e.target === lightbox) {
+        closeLightbox();
+      }
+    });
+    
+    // Schließe Lightbox mit ESC-Taste
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && lightbox.classList.contains("active")) {
+        closeLightbox();
+      }
+    });
+    
+    function closeLightbox() {
+      lightbox.classList.remove("active");
+      document.body.style.overflow = "";
+    }
+  }
+
+  async function deleteDropdownOption(id, fieldName) {
+    console.log("Lösche Dropdown Option:", id, fieldName);
+    
+    if (!confirm(`Wirklich löschen?`)) return;
+    
+    try {
+      const response = await fetch(`/api/dropdown-options/${id}`, {
+        method: "DELETE"
+      });
+      
+      if (response.ok) {
+        console.log("Erfolgreich gelöscht");
+        // Beide Listen neu laden
+        await loadDropdownOptionsSettings();
+        await loadDropdownOptions();
+      } else {
+        const error = await response.json().catch(() => ({}));
+        console.error("Fehler beim Löschen:", error);
+        alert("❌ Fehler beim Löschen: " + (error.error || "Unbekannter Fehler"));
+      }
+    } catch (err) {
+      console.error("Fehler beim Löschen:", err);
+      alert("❌ Fehler: " + err.message);
+    }
+  }
+
+
+  window.addEventListener("load", () => {
+    // Verstecke Loading Screen nach kurzer Verzögerung
+    setTimeout(() => {
+      const loadingScreen = document.getElementById("loadingScreen");
+      if (loadingScreen) {
+        loadingScreen.classList.add("hidden");
+        // Entferne Element nach Animation
+        setTimeout(() => {
+          loadingScreen.remove();
+        }, 600);
+      }
+    }, 800);
+
+    initCharts();
+    // Carrier-Auswahl nur auf der Einstellungsseite laden, nicht auf der Wareneingang-Seite
+    // loadCarriers(); // Entfernt - Carrier-Auswahl nur auf Einstellungsseite
+    loadInboundList();
+
+    const btnSave = document.getElementById("btnInboundSave");
+    const btnReset = document.getElementById("btnInboundReset");
+    const toggleExamples = document.getElementById("toggleLabelExamples");
+    
+    if (btnSave) btnSave.addEventListener("click", saveInboundSimple);
+    if (btnReset) btnReset.addEventListener("click", clearInboundForm);
+    
+    if (toggleExamples) {
+      toggleExamples.addEventListener("click", () => {
+        const content = document.getElementById("labelExamplesContent");
+        if (content) {
+          const isVisible = content.style.display === "block";
+          content.style.display = isVisible ? "none" : "block";
+          toggleExamples.classList.toggle("active", !isVisible);
+        }
+      });
+    }
+
+    // Windows Benutzer automatisch laden
+    loadCurrentWindowsUser().then(() => {
+      console.log("✅ Windows-Benutzer geladen:", currentWindowsUser);
+      
+      // Wenn Benutzer "paypa" ist und Settings-View aktiv ist, Einstellungen laden
+      const activeView = document.querySelector('.view.active');
+      if (activeView && activeView.id === 'view-settings' && currentWindowsUser && currentWindowsUser.toLowerCase() === 'paypa') {
+        const settingsPinCard = document.getElementById("settingsPinCard");
+        const settingsContent = document.getElementById("settingsContent");
+        if (settingsPinCard) settingsPinCard.style.display = "none";
+        if (settingsContent) settingsContent.style.display = "block";
+        loadSettingsData();
+      }
+    });
+    
+    // Lightbox Setup
+    setupImageLightbox();
+
+    // Settings Tab Navigation
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabName = btn.getAttribute('data-tab');
+        
+        // Alle Tabs deaktivieren
+        document.querySelectorAll('.settings-tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--text-muted)';
+          b.style.borderColor = 'transparent';
+        });
+        
+        // Aktiven Tab aktivieren
+        btn.classList.add('active');
+        btn.style.background = 'var(--bg-card)';
+        btn.style.color = 'var(--text-main)';
+        btn.style.borderColor = 'var(--gxo-orange)';
+        
+        // Alle Tab-Inhalte ausblenden
+        document.querySelectorAll('.settings-tab-content').forEach(content => {
+          content.style.display = 'none';
+        });
+        
+        // Aktiven Tab-Inhalt anzeigen
+        const activeContent = document.getElementById('tab-' + tabName);
+        if (activeContent) {
+          activeContent.style.display = 'block';
+        }
+      });
+    });
+
+    // Settings Event Listener
+    const btnSettingsAuth = document.getElementById("btnSettingsAuth");
+    const settingsCarrierSelect = document.getElementById("settingsCarrierSelect");
+    const btnSaveCarrierSettings = document.getElementById("btnSaveCarrierSettings");
+    const btnAddAreaOption = document.getElementById("btnAddAreaOption");
+    const btnAddLandOption = document.getElementById("btnAddLandOption");
+    
+    if (btnSettingsAuth) {
+      btnSettingsAuth.addEventListener("click", authenticateSettings);
+    }
+    
+    if (settingsCarrierSelect) {
+      settingsCarrierSelect.addEventListener("change", (e) => {
+        if (e.target.value) {
+          loadCarrierSettings(e.target.value);
+        } else {
+          document.getElementById("carrierSettingsForm").style.display = "none";
+        }
+      });
+    }
+    
+    if (btnSaveCarrierSettings) {
+      btnSaveCarrierSettings.addEventListener("click", saveCarrierSettings);
+    }
+    
+    if (btnAddAreaOption) {
+      btnAddAreaOption.addEventListener("click", () => addDropdownOption("area"));
+    }
+    
+    if (btnAddLandOption) {
+      btnAddLandOption.addEventListener("click", () => addDropdownOption("land"));
+    }
+
+    // Enter-Taste für PIN
+    const settingsPinInput = document.getElementById("settingsPinInput");
+    if (settingsPinInput) {
+      settingsPinInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          authenticateSettings();
+        }
+      });
+    }
+  });
+</script>
+</body>
+</html>
