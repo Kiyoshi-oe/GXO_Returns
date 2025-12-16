@@ -38,6 +38,10 @@ const viewMeta = {
   settings: {
     title: "Einstellungen",
     subtitle: "Carrier-Konfiguration und Dropdown-Optionen verwalten"
+  },
+  export: {
+    title: "Export",
+    subtitle: "Lagerbestand als Excel-Datei exportieren"
   }
 };
 

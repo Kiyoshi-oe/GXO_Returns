@@ -67,6 +67,10 @@ function handleViewSwitch(viewName) {
     handleSettingsView();
   } else if (viewName === "inbound") {
     handleInboundView();
+  } else if (viewName === "export") {
+    if (typeof initExport === 'function') {
+      initExport();
+    }
   }
 }
 

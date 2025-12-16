@@ -2,6 +2,9 @@ const express = require("express");
 const path = require("path");
 const Database = require("better-sqlite3");
 const cors = require("cors");
+const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
+const fs = require("fs");
 
 const app = express();
 const port = 3000;
@@ -782,58 +785,127 @@ app.get("/api/current-user", (req, res) => {
   const { promisify } = require('util');
   const execAsync = promisify(exec);
   
-  // Windows Benutzername aus Umgebungsvariablen
-  const username = process.env.USERNAME || process.env.USER || "Unbekannt";
   const computerName = process.env.COMPUTERNAME || process.env.HOSTNAME || "";
   
-  // Versuche den vollständigen Namen (Display Name) zu holen
-  let displayName = username; // Fallback auf Benutzername
+  // Verwende PowerShell, um den aktuellen Benutzer und Display-Name zu bekommen
+  // PowerShell-Befehl, der sowohl Benutzername als auch Display-Name zurückgibt
+  const psCommand = `powershell -Command "$user = [System.Security.Principal.WindowsIdentity]::GetCurrent(); $username = $user.Name.Split('\\\\')[-1]; $account = Get-LocalUser -Name $username -ErrorAction SilentlyContinue; if ($account) { $displayName = $account.FullName; if ([string]::IsNullOrWhiteSpace($displayName)) { $displayName = $username } } else { $displayName = $username }; Write-Output \"USERNAME=$username|DISPLAYNAME=$displayName\""`;
   
-  // Windows-Befehl um den vollständigen Namen zu holen
-  execAsync(`wmic useraccount where name="${username}" get fullname /value`)
+  execAsync(psCommand)
     .then(({ stdout }) => {
-      // Parse den Output: FullName=Denis Tschöpe
-      const match = stdout.match(/FullName=(.+)/);
-      if (match && match[1] && match[1].trim()) {
-        displayName = match[1].trim();
+      let username = process.env.USERNAME || "Unbekannt";
+      let displayName = username;
+      
+      // Parse PowerShell Output
+      const output = stdout.trim();
+      const usernameMatch = output.match(/USERNAME=([^|]+)/);
+      const displayNameMatch = output.match(/DISPLAYNAME=(.+)/);
+      
+      if (usernameMatch && usernameMatch[1]) {
+        username = usernameMatch[1].trim();
       }
       
-      res.json({ 
-        ok: true, 
-        username: username,
-        displayName: displayName,
-        computerName: computerName
-      });
-    })
-    .catch(() => {
-      // Falls wmic fehlschlägt, versuche net user
-      execAsync(`net user "${username}"`)
-        .then(({ stdout }) => {
-          // Parse den Output nach "Full name"
-          const lines = stdout.split('\n');
-          for (const line of lines) {
-            if (line.toLowerCase().includes('full name')) {
-              const match = line.match(/Full name\s+(.+)/i);
+      if (displayNameMatch && displayNameMatch[1]) {
+        displayName = displayNameMatch[1].trim();
+        // Falls Display-Name leer ist, verwende Benutzername
+        if (!displayName || displayName === username) {
+          // Versuche alternativen Weg über wmic
+          return execAsync(`wmic useraccount where name="${username}" get fullname /value`)
+            .then(({ stdout }) => {
+              const match = stdout.match(/FullName=(.+)/);
               if (match && match[1] && match[1].trim()) {
                 displayName = match[1].trim();
-                break;
               }
-            }
-          }
-          
+              
+              res.json({ 
+                ok: true, 
+                username: username,
+                displayName: displayName || username,
+                computerName: computerName
+              });
+            })
+            .catch(() => {
+              res.json({ 
+                ok: true, 
+                username: username,
+                displayName: displayName || username,
+                computerName: computerName
+              });
+            });
+        } else {
           res.json({ 
             ok: true, 
             username: username,
             displayName: displayName,
             computerName: computerName
           });
+        }
+      } else {
+        // Fallback: verwende wmic
+        return execAsync(`wmic useraccount where name="${username}" get fullname /value`)
+          .then(({ stdout }) => {
+            const match = stdout.match(/FullName=(.+)/);
+            if (match && match[1] && match[1].trim()) {
+              displayName = match[1].trim();
+            }
+            
+            res.json({ 
+              ok: true, 
+              username: username,
+              displayName: displayName || username,
+              computerName: computerName
+            });
+          })
+          .catch(() => {
+            res.json({ 
+              ok: true, 
+              username: username,
+              displayName: username,
+              computerName: computerName
+            });
+          });
+      }
+    })
+    .catch(() => {
+      // Fallback: verwende whoami und wmic
+      execAsync('whoami')
+        .then(({ stdout }) => {
+          let username = stdout.trim();
+          if (username.includes('\\')) {
+            username = username.split('\\')[1];
+          }
+          username = username.trim();
+          
+          return execAsync(`wmic useraccount where name="${username}" get fullname /value`)
+            .then(({ stdout }) => {
+              let displayName = username;
+              const match = stdout.match(/FullName=(.+)/);
+              if (match && match[1] && match[1].trim()) {
+                displayName = match[1].trim();
+              }
+              
+              res.json({ 
+                ok: true, 
+                username: username,
+                displayName: displayName,
+                computerName: computerName
+              });
+            })
+            .catch(() => {
+              res.json({ 
+                ok: true, 
+                username: username,
+                displayName: username,
+                computerName: computerName
+              });
+            });
         })
         .catch(() => {
-          // Fallback: nur Benutzername
+          const username = process.env.USERNAME || "Unbekannt";
           res.json({ 
             ok: true, 
             username: username,
-            displayName: displayName,
+            displayName: username,
             computerName: computerName
           });
         });
@@ -2160,6 +2232,705 @@ app.post("/api/inbound", (req, res) => {
     res.json({ ok: true, palletId });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* Export API - Excel-Export */
+app.get("/api/export", async (req, res) => {
+  try {
+    const { type, columns, location_ids, areas, preview, limit, date_from, date_to } = req.query;
+    
+    if (!type || !columns) {
+      return res.status(400).json({ ok: false, error: "type und columns sind erforderlich" });
+    }
+    
+    const selectedColumns = columns.split(',').filter(c => c);
+    if (selectedColumns.length === 0) {
+      return res.status(400).json({ ok: false, error: "Mindestens eine Spalte muss ausgewählt sein" });
+    }
+    
+    let data = [];
+    let sql = '';
+    const params = [];
+    
+    // Helper-Funktion für Datumsfilter
+    const addDateFilter = (dateColumn) => {
+      if (date_from) {
+        sql += ` and ${dateColumn} >= ?`;
+        params.push(date_from);
+      }
+      if (date_to) {
+        sql += ` and ${dateColumn} <= ?`;
+        params.push(date_to + ' 23:59:59');
+      }
+    };
+    
+    if (type === 'locations') {
+      // Stellplätze exportieren
+      sql = `
+        select
+          l.id,
+          l.code,
+          l.description,
+          l.area,
+          l.is_active,
+          l.created_at,
+          ifnull(count(distinct i.id), 0) as carton_count,
+          ifnull(sum(i.actual_carton), 0) as total_cartons,
+          max(i.created_at) as last_booked_at
+        from location l
+        left join inbound_simple i on i.location_id = l.id and i.ignore_flag = 0
+        where 1=1
+      `;
+      
+      if (location_ids) {
+        const ids = location_ids.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+        if (ids.length > 0) {
+          const placeholders = ids.map(() => '?').join(',');
+          sql += ` and l.id in (${placeholders})`;
+          params.push(...ids);
+        }
+      }
+      
+      sql += ` group by l.id, l.code, l.description, l.area, l.is_active, l.created_at order by l.area, l.code`;
+      
+      const rows = db.prepare(sql).all(...params);
+      data = rows.map(row => ({
+        id: row.id,
+        code: row.code,
+        description: row.description || '',
+        area: row.area || '',
+        is_active: row.is_active ? 'Ja' : 'Nein',
+        carton_count: row.carton_count,
+        total_cartons: row.total_cartons,
+        last_booked_at: row.last_booked_at || '',
+        created_at: row.created_at || ''
+      }));
+      
+    } else if (type === 'inbounds') {
+      // Wareneingänge exportieren
+      sql = `
+        select
+          i.id,
+          i.created_at as timestamp,
+          i.added_by as user,
+          i.cw,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.carrier_name,
+          i.land,
+          i.actual_carton,
+          l.code as location_code,
+          i.asn_ra_no,
+          i.customer_name,
+          i.kommentar
+        from inbound_simple i
+        left join location l on i.location_id = l.id
+        where i.ignore_flag = 0 and i.created_at is not null
+      `;
+      addDateFilter('i.created_at');
+      sql += ` order by i.created_at desc`;
+      
+      if (preview === 'true' && limit) {
+        sql += ` limit ?`;
+        params.push(parseInt(limit) || 50);
+      }
+      
+      const rows = db.prepare(sql).all(...params);
+      data = rows.map(row => ({
+        id: row.id,
+        timestamp: row.timestamp || '',
+        user: row.user || '-',
+        cw: row.cw || '',
+        olpn: row.olpn || '',
+        carrier_tracking_nr: row.carrier_tracking_nr || '',
+        carrier_name: row.carrier_name || '',
+        land: row.land || '',
+        actual_carton: row.actual_carton || 0,
+        location_code: row.location_code || '',
+        asn_ra_no: row.asn_ra_no || '',
+        customer_name: row.customer_name || '',
+        kommentar: row.kommentar || ''
+      }));
+      
+    } else if (type === 'movements') {
+      // Umlagerungen exportieren
+      sql = `
+        select
+          m.id,
+          m.moved_at as timestamp,
+          m.moved_by as user,
+          m.inbound_id,
+          i.cw,
+          i.olpn,
+          i.carrier_tracking_nr,
+          l_from.code as from_location,
+          l_to.code as to_location,
+          m.reason,
+          i.actual_carton
+        from movement m
+        left join location l_from on m.from_location_id = l_from.id
+        left join location l_to on m.to_location_id = l_to.id
+        left join inbound_simple i on m.inbound_id = i.id
+        where m.moved_at is not null
+      `;
+      addDateFilter('m.moved_at');
+      sql += ` order by m.moved_at desc`;
+      
+      if (preview === 'true' && limit) {
+        sql += ` limit ?`;
+        params.push(parseInt(limit) || 50);
+      }
+      
+      const rows = db.prepare(sql).all(...params);
+      data = rows.map(row => ({
+        id: row.id,
+        timestamp: row.timestamp || '',
+        user: row.user || '-',
+        inbound_id: row.inbound_id || '',
+        cw: row.cw || '',
+        olpn: row.olpn || '',
+        carrier_tracking_nr: row.carrier_tracking_nr || '',
+        from_location: row.from_location || '',
+        to_location: row.to_location || '',
+        reason: row.reason || '',
+        actual_carton: row.actual_carton || 0
+      }));
+      
+    } else if (type === 'archives') {
+      // Archivierungen exportieren
+      sql = `
+        select
+          a.id,
+          a.archived_at as timestamp,
+          a.archived_by as user,
+          a.inbound_id,
+          i.cw,
+          i.olpn,
+          i.carrier_tracking_nr,
+          l.code as location_code,
+          a.reason,
+          a.notes
+        from archive a
+        left join inbound_simple i on a.inbound_id = i.id
+        left join location l on a.location_id = l.id
+        where a.archived_at is not null
+      `;
+      addDateFilter('a.archived_at');
+      sql += ` order by a.archived_at desc`;
+      
+      if (preview === 'true' && limit) {
+        sql += ` limit ?`;
+        params.push(parseInt(limit) || 50);
+      }
+      
+      const rows = db.prepare(sql).all(...params);
+      data = rows.map(row => ({
+        id: row.id,
+        timestamp: row.timestamp || '',
+        user: row.user || '-',
+        inbound_id: row.inbound_id || '',
+        cw: row.cw || '',
+        olpn: row.olpn || '',
+        carrier_tracking_nr: row.carrier_tracking_nr || '',
+        location_code: row.location_code || '',
+        reason: row.reason || '',
+        notes: row.notes || ''
+      }));
+      
+    } else if (type === 'activities') {
+      // Alle Aktivitäten exportieren (Wareneingänge, Umlagerungen, Archivierungen)
+      const activities = [];
+      
+      // Wareneingänge
+      const inboundQuery = `
+        select
+          i.id as inbound_id,
+          i.created_at as timestamp,
+          i.added_by as user,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.actual_carton,
+          i.cw,
+          l.code as location_code,
+          'Wareneingang' as type,
+          'Annahme' as from_location,
+          l.code as to_location
+        from inbound_simple i
+        left join location l on i.location_id = l.id
+        where i.created_at is not null
+      `;
+      let inboundSql = inboundQuery;
+      const inboundParams = [];
+      if (date_from) {
+        inboundSql += ` and i.created_at >= ?`;
+        inboundParams.push(date_from);
+      }
+      if (date_to) {
+        inboundSql += ` and i.created_at <= ?`;
+        inboundParams.push(date_to + ' 23:59:59');
+      }
+      inboundSql += ` order by i.created_at desc`;
+      if (preview === 'true' && limit) {
+        inboundSql += ` limit ?`;
+        inboundParams.push(parseInt(limit) || 50);
+      }
+      const inbounds = db.prepare(inboundSql).all(...inboundParams);
+      inbounds.forEach(i => {
+        const object = i.cw ? `Karton ${i.cw}` : (i.olpn || i.carrier_tracking_nr || `#${i.inbound_id}`);
+        activities.push({
+          type: 'Wareneingang',
+          timestamp: i.timestamp,
+          user: i.user || '-',
+          object: object,
+          from_location: 'Annahme',
+          to_location: i.to_location || '-',
+          inbound_id: i.inbound_id
+        });
+      });
+      
+      // Umlagerungen
+      const movementQuery = `
+        select
+          m.inbound_id,
+          m.moved_at as timestamp,
+          m.moved_by as user,
+          l_from.code as from_location,
+          l_to.code as to_location,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.cw,
+          i.actual_carton,
+          'Umlagerung' as type
+        from movement m
+        left join location l_from on m.from_location_id = l_from.id
+        left join location l_to on m.to_location_id = l_to.id
+        left join inbound_simple i on m.inbound_id = i.id
+        where m.moved_at is not null
+      `;
+      let movementSql = movementQuery;
+      const movementParams = [];
+      if (date_from) {
+        movementSql += ` and m.moved_at >= ?`;
+        movementParams.push(date_from);
+      }
+      if (date_to) {
+        movementSql += ` and m.moved_at <= ?`;
+        movementParams.push(date_to + ' 23:59:59');
+      }
+      movementSql += ` order by m.moved_at desc`;
+      if (preview === 'true' && limit) {
+        movementSql += ` limit ?`;
+        movementParams.push(parseInt(limit) || 50);
+      }
+      const moves = db.prepare(movementSql).all(...movementParams);
+      moves.forEach(m => {
+        const object = m.cw ? `Karton ${m.cw}` : (m.olpn || m.carrier_tracking_nr || `#${m.inbound_id}`);
+        activities.push({
+          type: 'Umlagerung',
+          timestamp: m.timestamp,
+          user: m.user || '-',
+          object: object,
+          from_location: m.from_location || '-',
+          to_location: m.to_location || '-',
+          inbound_id: m.inbound_id
+        });
+      });
+      
+      // Archivierungen
+      const archiveQuery = `
+        select
+          a.inbound_id,
+          a.archived_at as timestamp,
+          a.archived_by as user,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.cw,
+          l.code as location_code,
+          'Archivierung' as type
+        from archive a
+        left join inbound_simple i on a.inbound_id = i.id
+        left join location l on a.location_id = l.id
+        where a.archived_at is not null
+      `;
+      let archiveSql = archiveQuery;
+      const archiveParams = [];
+      if (date_from) {
+        archiveSql += ` and a.archived_at >= ?`;
+        archiveParams.push(date_from);
+      }
+      if (date_to) {
+        archiveSql += ` and a.archived_at <= ?`;
+        archiveParams.push(date_to + ' 23:59:59');
+      }
+      archiveSql += ` order by a.archived_at desc`;
+      if (preview === 'true' && limit) {
+        archiveSql += ` limit ?`;
+        archiveParams.push(parseInt(limit) || 50);
+      }
+      const archives = db.prepare(archiveSql).all(...archiveParams);
+      archives.forEach(a => {
+        const object = a.cw ? `Karton ${a.cw}` : (a.olpn || a.carrier_tracking_nr || `#${a.inbound_id}`);
+        activities.push({
+          type: 'Archivierung',
+          timestamp: a.timestamp,
+          user: a.user || '-',
+          object: object,
+          from_location: a.location_code || '-',
+          to_location: 'Archiv',
+          inbound_id: a.inbound_id
+        });
+      });
+      
+      // Nach Zeitstempel sortieren
+      activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      // Limit für Preview
+      if (preview === 'true' && limit) {
+        data = activities.slice(0, parseInt(limit) || 50);
+      } else {
+        data = activities;
+      }
+      
+    } else {
+      // Kartons exportieren (type === 'all' oder 'cartons' oder 'areas')
+      sql = `
+        select
+          i.id,
+          l.code as location_code,
+          l.description as location_description,
+          l.area,
+          i.cw,
+          i.aufgenommen_am,
+          i.carrier_name,
+          i.land,
+          i.ship_status,
+          i.planned_carton,
+          i.actual_carton,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.customer_id,
+          i.customer_name,
+          i.asn_ra_no,
+          i.mh_status,
+          i.kommentar,
+          i.created_at,
+          i.added_by
+        from inbound_simple i
+        left join location l on i.location_id = l.id
+        where i.ignore_flag = 0
+      `;
+      
+      if (type === 'areas' && areas) {
+        const areaList = areas.split(',').filter(a => a);
+        if (areaList.length > 0) {
+          const placeholders = areaList.map(() => '?').join(',');
+          sql += ` and l.area in (${placeholders})`;
+          params.push(...areaList);
+        }
+      }
+      
+      sql += ` order by i.created_at desc`;
+      
+      if (preview === 'true' && limit) {
+        sql += ` limit ?`;
+        params.push(parseInt(limit) || 50);
+      }
+      
+      const rows = db.prepare(sql).all(...params);
+      data = rows.map(row => ({
+        id: row.id,
+        location_code: row.location_code || '',
+        location_description: row.location_description || '',
+        area: row.area || '',
+        cw: row.cw || '',
+        aufgenommen_am: row.aufgenommen_am || '',
+        carrier_name: row.carrier_name || '',
+        land: row.land || '',
+        ship_status: row.ship_status || '',
+        planned_carton: row.planned_carton || 0,
+        actual_carton: row.actual_carton || 0,
+        olpn: row.olpn || '',
+        carrier_tracking_nr: row.carrier_tracking_nr || '',
+        customer_id: row.customer_id || '',
+        customer_name: row.customer_name || '',
+        asn_ra_no: row.asn_ra_no || '',
+        mh_status: row.mh_status || '',
+        kommentar: row.kommentar || '',
+        created_at: row.created_at || '',
+        added_by: row.added_by || ''
+      }));
+    }
+    
+    // Spaltennamen-Mapping für Übersetzung
+    const columnNameMapping = {
+      'id': 'ID',
+      'location_code': 'Stellplatz',
+      'location_description': 'Stellplatz Beschreibung',
+      'code': 'Stellplatz-Code',
+      'description': 'Beschreibung',
+      'area': 'Bereich',
+      'is_active': 'Aktiv',
+      'carton_count': 'Anzahl Kartons',
+      'total_cartons': 'Gesamt Kartons',
+      'last_booked_at': 'Zuletzt gebucht',
+      'created_at': 'Erstellt am',
+      'cw': 'CW',
+      'aufgenommen_am': 'Aufgenommen am',
+      'carrier_name': 'Carrier',
+      'land': 'Land',
+      'ship_status': 'Ship Status',
+      'planned_carton': 'Geplante Kartons',
+      'actual_carton': 'Tatsächliche Kartons',
+      'olpn': 'OLPN',
+      'carrier_tracking_nr': 'Tracking-Nr.',
+      'customer_id': 'Kunden-ID',
+      'customer_name': 'Kundenname',
+      'asn_ra_no': 'ASN/RA-Nr.',
+      'mh_status': 'MH Status',
+      'kommentar': 'Kommentar',
+      'added_by': 'Erstellt von',
+      'timestamp': 'Datum/Zeit',
+      'user': 'Benutzer',
+      'inbound_id': 'Karton-ID',
+      'from_location': 'Von Stellplatz',
+      'to_location': 'Nach Stellplatz',
+      'reason': 'Grund',
+      'notes': 'Notizen',
+      'type': 'Typ',
+      'object': 'Objekt'
+    };
+    
+    // Nur ausgewählte Spalten filtern und Namen übersetzen
+    const filteredData = data.map(row => {
+      const filtered = {};
+      selectedColumns.forEach(col => {
+        const translatedName = columnNameMapping[col] || col;
+        filtered[translatedName] = row[col] !== null && row[col] !== undefined ? row[col] : '';
+      });
+      return filtered;
+    });
+    
+    // Wenn Preview, JSON zurückgeben (mit originalen Spaltennamen für Frontend)
+    if (preview === 'true') {
+      const previewData = data.map(row => {
+        const filtered = {};
+        selectedColumns.forEach(col => {
+          filtered[col] = row[col] !== null && row[col] !== undefined ? row[col] : '';
+        });
+        return filtered;
+      });
+      return res.json(previewData);
+    }
+    
+    // Excel-Datei mit ExcelJS erstellen
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'GXO Returns System';
+    workbook.created = new Date();
+    
+    // Tabellenname basierend auf Typ
+    const sheetNames = {
+      'all': 'Lagerbestand',
+      'locations': 'Stellplätze',
+      'cartons': 'Kartons',
+      'areas': 'Bereiche',
+      'activities': 'Aktivitäten',
+      'inbounds': 'Wareneingänge',
+      'movements': 'Umlagerungen',
+      'archives': 'Archivierungen'
+    };
+    const sheetName = sheetNames[type] || 'Export';
+    const worksheet = workbook.addWorksheet(sheetName);
+    
+    // Header-Bereich mit Logo und Export-Informationen
+    let headerStartRow = 1;
+    
+    // Logo hinzufügen (falls vorhanden)
+    const logoPath = path.join(__dirname, 'images', 'GXO_logo.png');
+    if (fs.existsSync(logoPath)) {
+      try {
+        const logo = workbook.addImage({
+          filename: logoPath,
+          extension: 'png'
+        });
+        // Logo in Zeile 1-3, Spalte A einfügen
+        worksheet.addImage(logo, {
+          tl: { col: 0, row: 0 },
+          ext: { width: 150, height: 50 }
+        });
+      } catch (logoError) {
+        console.warn("Logo konnte nicht geladen werden:", logoError.message);
+      }
+    }
+    
+    // Export-Informationen rechts neben dem Logo
+    const infoRow1 = worksheet.addRow([]);
+    const infoRow2 = worksheet.addRow([]);
+    const infoRow3 = worksheet.addRow([]);
+    const infoRow4 = worksheet.addRow([]);
+    
+    // Export-Typ
+    worksheet.getCell('E1').value = 'Export-Typ:';
+    worksheet.getCell('E1').font = { bold: true, size: 11 };
+    worksheet.getCell('F1').value = sheetName;
+    worksheet.getCell('F1').font = { size: 11 };
+    
+    // Export-Datum
+    worksheet.getCell('E2').value = 'Export-Datum:';
+    worksheet.getCell('E2').font = { bold: true, size: 11 };
+    worksheet.getCell('F2').value = new Date().toLocaleString('de-DE', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    worksheet.getCell('F2').font = { size: 11 };
+    
+    // Anzahl Datensätze
+    worksheet.getCell('E3').value = 'Anzahl Datensätze:';
+    worksheet.getCell('E3').font = { bold: true, size: 11 };
+    worksheet.getCell('F3').value = filteredData.length;
+    worksheet.getCell('F3').font = { size: 11 };
+    
+    // System-Info
+    worksheet.getCell('E4').value = 'GXO Returns System v1.0';
+    worksheet.getCell('E4').font = { italic: true, size: 10, color: { argb: 'FF666666' } };
+    
+    // Leere Zeile für Abstand
+    worksheet.addRow([]);
+    headerStartRow = 6; // Start der Tabelle nach Logo und Infos
+    
+    // Prüfe ob Daten vorhanden sind
+    if (filteredData.length === 0) {
+      // Keine Daten - nur Header mit Meldung
+      const headerRow = worksheet.addRow(['Keine Daten gefunden']);
+      headerRow.getCell(1).font = { bold: true, size: 12 };
+      headerRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    } else {
+      // Header-Zeile mit Überschriften
+      const headerKeys = Object.keys(filteredData[0]);
+      const headerRow = worksheet.addRow(headerKeys);
+      
+      // Header-Formatierung: Orange Hintergrund, weiße Schrift, fett
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' } // GXO Orange
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+      });
+      
+      // Daten-Zeilen hinzufügen
+      filteredData.forEach((row, index) => {
+        const dataRow = worksheet.addRow(Object.values(row));
+        
+        // Abwechselnde Zeilenfarben für bessere Lesbarkeit
+        if (index % 2 === 0) {
+          dataRow.eachCell((cell) => {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF9F9F9' } // Sehr helles Grau
+            };
+          });
+        }
+        
+        // Zell-Formatierung
+        dataRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+          };
+          cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        });
+      });
+      
+      // Spaltenbreiten automatisch anpassen
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = 10;
+        const header = headerRow.getCell(index + 1);
+        if (header.value) {
+          maxLength = Math.max(maxLength, String(header.value).length);
+        }
+        
+        filteredData.forEach(row => {
+          const value = Object.values(row)[index];
+          if (value !== null && value !== undefined) {
+            maxLength = Math.max(maxLength, String(value).length);
+          }
+        });
+        
+        column.width = Math.min(maxLength + 2, 50);
+      });
+      
+      // Header-Zeile einfrieren (nach Logo-Bereich)
+      worksheet.views = [{
+        state: 'frozen',
+        ySplit: headerStartRow - 1 // Einfrieren ab der Tabellen-Header-Zeile
+      }];
+      
+      // Tabellenformat hinzufügen (Excel-Tabelle) - nur wenn mindestens 1 Datenzeile vorhanden ist
+      if (filteredData.length > 0 && headerKeys.length > 0) {
+        try {
+          const numCols = headerKeys.length;
+          const lastCol = numCols <= 26 
+            ? String.fromCharCode(64 + numCols)
+            : String.fromCharCode(64 + Math.floor((numCols - 1) / 26)) + String.fromCharCode(65 + ((numCols - 1) % 26));
+          // Tabellen-Bereich beginnt bei headerStartRow
+          const tableRange = `A${headerStartRow}:${lastCol}${headerStartRow + filteredData.length}`;
+          
+          // ExcelJS benötigt mindestens Header + 1 Datenzeile für Tabellen
+          if (filteredData.length >= 1) {
+            worksheet.addTable({
+              name: 'ExportTable',
+              ref: tableRange,
+              headerRow: true,
+              style: {
+                theme: 'TableStyleMedium2',
+                showFirstColumn: false,
+                showLastColumn: false,
+                showRowStripes: true,
+                showColumnStripes: false
+              },
+              columns: headerKeys.map(key => ({ name: key }))
+            });
+          }
+        } catch (tableError) {
+          // Wenn Tabellen-Erstellung fehlschlägt, einfach ohne Tabelle fortfahren
+          console.warn("Tabellenformat konnte nicht erstellt werden:", tableError.message);
+        }
+      }
+    }
+    
+    // Spaltenbreiten für Info-Spalten anpassen
+    worksheet.getColumn('E').width = 18;
+    worksheet.getColumn('F').width = 25;
+    
+    // Excel-Datei generieren
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    
+    // Dateiname mit Timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `${sheetName}_Export_${timestamp}.xlsx`;
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+    
+  } catch (err) {
+    console.error("Fehler beim Export:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

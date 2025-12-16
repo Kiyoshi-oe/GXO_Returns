@@ -167,6 +167,10 @@
       <span class="nav-icon">⚙️</span>
       <span>Einstellungen</span>
     </div>
+    <div class="nav-item" data-view="export">
+      <span class="nav-icon">📤</span>
+      <span>Export</span>
+    </div>
 
     <div class="sidebar-footer">
       <div style="font-size: 11px; color: var(--text-soft);">
@@ -185,17 +189,137 @@
       </div>
       <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
         <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
-        <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; border: 1px solid var(--border-soft); cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
+        <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
           <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="userAvatar">👤</div>
           <div style="display: flex; flex-direction: column; align-items: flex-start;">
             <span style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="userName">Nicht angemeldet</span>
-            <span style="font-size: 11px; color: var(--text-soft);" id="userEmail">Windows-Benutzer</span>
+            <span style="font-size: 11px; color: var(--text-soft); display: none;" id="userEmail">Windows-Benutzer</span>
           </div>
         </div>
       </div>
     </header>
 
     <main class="main">
+      <!-- Export -->
+      <section class="view" id="view-export">
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📤 Datenexport</div>
+              <div class="card-subtitle">Exportieren Sie Lagerbestand, Aktivitäten (Wareneingänge, Umlagerungen, Archivierungen) oder Stellplätze als strukturierte Excel-Datei für Inventur und Analyse</div>
+            </div>
+          </div>
+
+          <!-- Export-Optionen -->
+          <div class="form-grid" style="margin-bottom: 20px;">
+            <div class="form-group">
+              <label>Export-Typ</label>
+              <select id="exportType" onchange="updateExportOptions()">
+                <optgroup label="Lagerbestand">
+                  <option value="all">Alles exportieren</option>
+                  <option value="locations">Einzelne Stellplätze</option>
+                  <option value="cartons">Kartons</option>
+                  <option value="areas">Nach Bereichen (Areas)</option>
+                </optgroup>
+                <optgroup label="Aktivitäten">
+                  <option value="activities">Alle Aktivitäten</option>
+                  <option value="inbounds">Wareneingänge</option>
+                  <option value="movements">Umlagerungen</option>
+                  <option value="archives">Archivierungen</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group" id="exportLocationGroup" style="display: none;">
+              <label>Stellplatz auswählen</label>
+              <select id="exportLocationSelect" multiple style="min-height: 100px;">
+                <!-- Wird dynamisch geladen -->
+              </select>
+              <span class="muted" style="font-size: 11px;">Mehrfachauswahl mit Strg/Cmd möglich</span>
+            </div>
+            <div class="form-group" id="exportAreaGroup" style="display: none;">
+              <label>Bereich auswählen</label>
+              <select id="exportAreaSelect" multiple style="min-height: 100px;">
+                <!-- Wird dynamisch geladen -->
+              </select>
+              <span class="muted" style="font-size: 11px;">Mehrfachauswahl mit Strg/Cmd möglich</span>
+            </div>
+            <div class="form-group" id="exportDateRangeGroup" style="display: none;">
+              <label>Zeitraum</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="font-size: 11px; color: var(--text-soft); margin-bottom: 4px; display: block;">Von</label>
+                  <input type="date" id="exportDateFrom" style="width: 100%; padding: 6px 9px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--text-soft); margin-bottom: 4px; display: block;">Bis</label>
+                  <input type="date" id="exportDateTo" style="width: 100%; padding: 6px 9px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                </div>
+              </div>
+              <span class="muted" style="font-size: 11px;">Optional: Zeitraum für Aktivitäten eingrenzen</span>
+            </div>
+          </div>
+
+          <!-- Spalten-Auswahl -->
+          <div class="card" style="margin-bottom: 20px; background: var(--bg-soft);">
+            <div class="card-header" style="margin-bottom: 12px;">
+              <div>
+                <div class="card-title" style="font-size: 14px;">📋 Spalten auswählen</div>
+                <div class="card-subtitle" style="font-size: 11px;">Wählen Sie die Spalten aus, die exportiert werden sollen</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" onclick="selectAllColumns()" style="padding: 4px 10px; font-size: 11px;">Alle auswählen</button>
+                <button class="btn btn-secondary btn-sm" onclick="deselectAllColumns()" style="padding: 4px 10px; font-size: 11px;">Alle abwählen</button>
+              </div>
+            </div>
+            <div id="exportColumnsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; padding: 12px;">
+              <!-- Wird dynamisch generiert -->
+            </div>
+          </div>
+
+          <!-- Vorschau -->
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header" style="margin-bottom: 12px;">
+              <div>
+                <div class="card-title" style="font-size: 14px;">👁️ Vorschau</div>
+                <div class="card-subtitle" style="font-size: 11px;">So wird die Excel-Datei aussehen</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" onclick="loadExportPreview()" style="padding: 4px 10px; font-size: 11px;">🔄 Aktualisieren</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+              <table class="data-table" id="exportPreviewTable" style="font-size: 12px; width: 100%; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; z-index: 10; background: var(--bg-card);">
+                  <tr id="exportPreviewHeader">
+                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-main);">Lade Vorschau...</th>
+                  </tr>
+                </thead>
+                <tbody id="exportPreviewBody">
+                  <tr>
+                    <td colspan="100" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                      Bitte wählen Sie einen Export-Typ und klicken Sie auf "Aktualisieren"
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top: 12px; padding: 10px; background: var(--bg-soft); border-radius: 6px; font-size: 11px; color: var(--text-muted);">
+              <strong>Hinweis:</strong> Die Vorschau zeigt maximal 50 Zeilen. Die Excel-Datei enthält alle ausgewählten Daten.
+            </div>
+          </div>
+
+          <!-- Export-Button -->
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="resetExportForm()" style="padding: 10px 20px;">
+              Zurücksetzen
+            </button>
+            <button class="btn btn-primary" id="btnExportExcel" onclick="executeExport()" style="padding: 10px 24px; font-weight: 600;">
+              📥 Excel exportieren
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- Archiv -->
       <section class="view" id="view-archive">
         <!-- Archivierungs-Formular -->
@@ -1831,8 +1955,6 @@
           </table>
         </div>
       </section>
-      
-
 
     </main>
 </div>
@@ -1872,6 +1994,10 @@
     settings: {
       title: "Einstellungen",
       subtitle: "Carrier-Konfiguration und Dropdown-Optionen verwalten"
+    },
+    export: {
+      title: "Export",
+      subtitle: "Lagerbestand als Excel-Datei exportieren"
     }
   };
 
@@ -3597,11 +3723,12 @@
         userAvatarEl.textContent = firstLetter;
       }
       
+      // Nur den Windows-Benutzernamen (Display-Name) anzeigen
       userNameEl.textContent = displayText;
       
-      // E-Mail basierend auf Benutzername (kann später erweitert werden)
+      // E-Mail-Element ausblenden
       if (userEmailEl) {
-        userEmailEl.textContent = currentWindowsUser ? `${currentWindowsUser.toLowerCase()}@windows.local` : "Windows-Benutzer";
+        userEmailEl.style.display = "none";
       }
     }
     
@@ -9136,6 +9263,7 @@
 
 </script>
 
+<script src="js/export.js"></script>
 
 </body>
 </html>
