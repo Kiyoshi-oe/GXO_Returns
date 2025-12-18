@@ -274,6 +274,20 @@ async function loadExportPreview() {
   
   if (!previewHeader || !previewBody) return;
   
+  // Prüfen, ob mindestens eine Spalte ausgewählt ist
+  if (selectedColumns.size === 0) {
+    previewHeader.innerHTML = '';
+    previewBody.innerHTML = '';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 1;
+    td.textContent = 'Bitte wählen Sie mindestens eine Spalte aus.';
+    td.style.cssText = 'text-align: center; padding: 30px; color: var(--text-muted);';
+    tr.appendChild(td);
+    previewBody.appendChild(tr);
+    return;
+  }
+  
     // Header erstellen - warte auf Daten, damit wir die richtige Reihenfolge haben
     previewHeader.innerHTML = '';
     previewBody.innerHTML = '';
@@ -332,7 +346,16 @@ async function loadExportPreview() {
     params.append('limit', '50');
     
     const response = await fetch(`/api/export?${params.toString()}`);
-    if (!response.ok) throw new Error('Fehler beim Laden der Vorschau');
+    if (!response.ok) {
+      let errorMessage = 'Fehler beim Laden der Vorschau';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // Wenn JSON-Parsing fehlschlägt, verwende Standard-Fehlermeldung
+      }
+      throw new Error(errorMessage);
+    }
     
     data = await response.json();
     exportData = data;
@@ -345,6 +368,18 @@ async function loadExportPreview() {
       // Nur Spalten anzeigen, die auch in den Daten vorhanden sind
       return data.length === 0 || data.some(row => row.hasOwnProperty(col.key));
     });
+    
+    // Prüfen, ob nach dem Filtern noch Spalten vorhanden sind
+    if (selectedCols.length === 0 && data.length > 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 1;
+      td.textContent = 'Keine der ausgewählten Spalten ist in den Daten vorhanden.';
+      td.style.cssText = 'text-align: center; padding: 30px; color: var(--text-muted);';
+      tr.appendChild(td);
+      previewBody.appendChild(tr);
+      return;
+    }
     
     const headerRow = document.createElement('tr');
     selectedCols.forEach(col => {
@@ -359,7 +394,7 @@ async function loadExportPreview() {
     if (data.length === 0) {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
-      td.colSpan = selectedCols.length;
+      td.colSpan = selectedCols.length || 1;
       td.textContent = 'Keine Daten gefunden';
       td.style.cssText = 'text-align: center; padding: 30px; color: var(--text-muted);';
       tr.appendChild(td);
@@ -372,7 +407,7 @@ async function loadExportPreview() {
           const td = document.createElement('td');
           const value = row[col.key];
           td.textContent = value !== null && value !== undefined ? String(value) : '';
-          td.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid var(--border-soft); font-size: 12px; white-space: nowrap;';
+          td.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid var(--border-soft); font-size: 12px; white-space: nowrap; text-align: left;';
           tr.appendChild(td);
         });
         previewBody.appendChild(tr);
@@ -385,7 +420,8 @@ async function loadExportPreview() {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 1;
-    td.textContent = 'Fehler beim Laden der Vorschau. Bitte versuchen Sie es erneut.';
+    const errorMessage = err.message || 'Fehler beim Laden der Vorschau. Bitte versuchen Sie es erneut.';
+    td.textContent = errorMessage;
     td.style.cssText = 'text-align: center; padding: 30px; color: var(--error);';
     tr.appendChild(td);
     previewBody.appendChild(tr);

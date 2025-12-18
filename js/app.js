@@ -39,6 +39,10 @@ const viewMeta = {
     title: "Einstellungen",
     subtitle: "Carrier-Konfiguration und Dropdown-Optionen verwalten"
   },
+  import: {
+    title: "Import",
+    subtitle: "Lagerbestand aus Excel-Datei importieren"
+  },
   export: {
     title: "Export",
     subtitle: "Lagerbestand als Excel-Datei exportieren"

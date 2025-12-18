@@ -37,6 +37,8 @@ body {
   background: var(--bg-main);
   color: var(--text-main);
   transition: background 0.2s ease, color 0.2s ease;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .app {
@@ -44,6 +46,8 @@ body {
   min-height: 100vh;
   background: radial-gradient(circle at top left, #2A2A2A 0, var(--bg-main) 55%);
   transition: background 0.2s ease;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body[data-theme="light"] .app {
@@ -216,6 +220,9 @@ body[data-theme="light"] .app {
   display: flex;
   flex-direction: column;
   margin-left: 260px;
+  overflow-x: hidden;
+  max-width: calc(100vw - 260px);
+  min-width: 0;
 }
 
 .topbar {
@@ -278,19 +285,34 @@ body[data-theme="light"] .topbar {
 
 .main {
   padding: 18px 20px 20px 20px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   flex: 1;
   min-height: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .view {
   display: none;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .view.active {
   display: block;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#view-export {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Cards */
@@ -303,7 +325,10 @@ body[data-theme="light"] .topbar {
   box-shadow: 0 8px 20px rgba(0,0,0,0.45);
   margin-bottom: 14px;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body[data-theme="light"] .card {
@@ -570,6 +595,8 @@ body[data-theme="light"] .btn-icon {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1400px) {
@@ -862,9 +889,12 @@ textarea {
 
 table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 12px;
   margin-top: 4px;
+  box-sizing: border-box;
+  table-layout: auto;
 }
 
 th,
