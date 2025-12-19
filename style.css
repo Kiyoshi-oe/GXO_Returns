@@ -2087,4 +2087,499 @@ body[data-theme="light"] .label-help-item:hover .label-help-item-example {
   }
 }
 
+/* Excel-ähnliche Filter-Menüs */
+.excel-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.excel-filter-header:hover {
+  background: var(--bg-soft);
+  border-radius: 4px;
+}
+
+.excel-filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 6px;
+  color: var(--text-soft);
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+}
+
+.excel-filter-header:hover .excel-filter-btn {
+  opacity: 1;
+  background: var(--bg-soft);
+  color: var(--gxo-orange);
+}
+
+.excel-filter-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  min-width: 240px;
+  max-width: 300px;
+  max-height: 450px;
+  overflow: hidden;
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.excel-filter-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.excel-filter-menu-item:last-child {
+  border-bottom: none;
+}
+
+.excel-filter-menu-item:hover {
+  background: var(--bg-soft);
+  color: var(--text-main);
+}
+
+.excel-filter-menu-item > span:first-child {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.excel-filter-menu-item > span:last-child {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.excel-filter-divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 6px 0;
+}
+
+.excel-textfilter-submenu,
+.excel-numberfilter-submenu {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  min-width: 180px;
+  z-index: 10001;
+  padding: 4px 0;
+}
+
+.excel-textfilter-submenu > div,
+.excel-numberfilter-submenu > div {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.excel-textfilter-submenu > div:last-child,
+.excel-numberfilter-submenu > div:last-child {
+  border-bottom: none;
+}
+
+.excel-textfilter-submenu > div:hover,
+.excel-numberfilter-submenu > div:hover {
+  background: var(--bg-soft);
+}
+
+.excel-valuefilter-submenu {
+  padding: 12px;
+  max-height: 350px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.excel-valuefilter-submenu input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.excel-valuefilter-submenu input[type="text"]:focus {
+  outline: none;
+  border-color: var(--gxo-orange);
+  box-shadow: 0 0 0 2px rgba(245, 59, 1, 0.2);
+}
+
+.excel-checkbox-list {
+  max-height: 250px;
+  overflow-y: auto;
+  margin: 8px 0;
+  padding: 4px 0;
+}
+
+.excel-checkbox-list label {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.15s ease;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+.excel-checkbox-list label:hover {
+  background: var(--bg-soft);
+}
+
+.excel-checkbox-list input[type="checkbox"] {
+  margin-right: 10px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gxo-orange);
+  flex-shrink: 0;
+}
+
+.excel-apply-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--gxo-orange);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 8px;
+  transition: background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.excel-apply-btn:hover {
+  background: #d43201;
+}
+
+/* Eingabefeld-Modal für Text- und Zahlenfilter */
+.excel-filter-input-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.excel-filter-input-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: 320px;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.excel-filter-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+}
+
+.excel-filter-input-header > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.excel-filter-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.excel-filter-close-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.excel-filter-input-body {
+  padding: 16px;
+}
+
+.excel-filter-input-body input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+.excel-filter-input-body input:focus {
+  outline: none;
+  border-color: var(--gxo-orange);
+  box-shadow: 0 0 0 2px rgba(245, 59, 1, 0.2);
+}
+
+.excel-filter-input-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.excel-filter-apply-btn {
+  padding: 8px 16px;
+  background: var(--gxo-orange);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.excel-filter-apply-btn:hover {
+  background: #d43201;
+}
+
+.excel-filter-cancel-btn {
+  padding: 8px 16px;
+  background: var(--bg-soft);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.excel-filter-cancel-btn:hover {
+  background: var(--border-soft);
+  border-color: var(--gxo-orange);
+  color: var(--gxo-orange);
+}
+
+/* Inventory Tabs */
+.inventory-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-soft);
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+  bottom: -1px;
+}
+
+.inventory-tab-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-soft);
+}
+
+.inventory-tab-btn.active {
+  color: var(--gxo-orange);
+  border-bottom-color: var(--gxo-orange);
+  font-weight: 600;
+}
+
+.inventory-tab-content {
+  display: block;
+}
+
+/* Autocomplete für Filter */
+.excel-filter-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-main);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10003;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.excel-filter-autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+}
+
+.excel-filter-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.excel-filter-autocomplete-item:hover,
+.excel-filter-autocomplete-item.selected {
+  background: var(--bg-soft);
+  color: var(--gxo-orange);
+}
+
+.excel-filter-autocomplete-item mark {
+  background: var(--gxo-orange);
+  color: white;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Scrollbar für Excel-Filter-Menüs */
+.excel-filter-menu::-webkit-scrollbar,
+.excel-checkbox-list::-webkit-scrollbar,
+.excel-valuefilter-submenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.excel-filter-menu::-webkit-scrollbar-track,
+.excel-checkbox-list::-webkit-scrollbar-track,
+.excel-valuefilter-submenu::-webkit-scrollbar-track {
+  background: var(--bg-soft);
+  border-radius: 4px;
+}
+
+.excel-filter-menu::-webkit-scrollbar-thumb,
+.excel-checkbox-list::-webkit-scrollbar-thumb,
+.excel-valuefilter-submenu::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: 4px;
+}
+
+.excel-filter-menu::-webkit-scrollbar-thumb:hover,
+.excel-checkbox-list::-webkit-scrollbar-thumb:hover,
+.excel-valuefilter-submenu::-webkit-scrollbar-thumb:hover {
+  background: var(--gxo-orange);
+}
+
+/* Tabellen-Header für Excel-Filter */
+#warehouseTable th {
+  position: relative;
+  overflow: visible;
+}
+
+#warehouseTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-main);
+}
+
+/* Sortier-Indikatoren */
+th[data-sort] {
+  position: relative;
+}
+
+th[data-sort="asc"] .excel-filter-header::after {
+  content: " ↑";
+  color: var(--gxo-orange);
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+th[data-sort="desc"] .excel-filter-header::after {
+  content: " ↓";
+  color: var(--gxo-orange);
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+/* Filter aktiv Indikator */
+th[data-filter-active="true"] .excel-filter-btn {
+  color: var(--gxo-orange);
+  opacity: 1;
+  font-weight: bold;
+  background: rgba(245, 59, 1, 0.1);
+}
+
+th[data-filter-active="true"] .excel-filter-btn::before {
+  content: "●";
+  font-size: 6px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Sicherstellen, dass Menüs über anderen Elementen sind */
+.excel-filter-menu {
+  position: absolute;
+}
+
+.excel-textfilter-submenu,
+.excel-numberfilter-submenu {
+  position: absolute;
+}
+
+.excel-valuefilter-submenu {
+  display: flex;
+  flex-direction: column;
+}
+
 

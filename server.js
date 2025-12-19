@@ -634,6 +634,51 @@ app.get("/api/warehouse/locations/:id/details", (req, res) => {
   }
 });
 
+/* API Alle Einträge mit Stellplatz (Overall-Ansicht) */
+app.get("/api/warehouse/all-entries", (req, res) => {
+  try {
+    const { limit = 10000, offset = 0 } = req.query;
+    
+    const sql = `
+      select
+        l.code as location_code,
+        l.description as location_description,
+        l.area as location_area,
+        i.id,
+        i.cw,
+        i.aufgenommen_am,
+        i.ignore_flag,
+        i.area,
+        i.carrier_name,
+        i.land,
+        i.ship_status,
+        i.planned_carton,
+        i.actual_carton,
+        i.olpn,
+        i.dn,
+        i.shi,
+        i.carrier_tracking_nr,
+        i.customer_id,
+        i.customer_name,
+        i.asn_ra_no,
+        i.kommentar,
+        i.added_by,
+        i.created_at
+      from inbound_simple i
+      left join location l on i.location_id = l.id
+      where i.ignore_flag = 0
+      order by l.code, i.created_at desc
+      limit ? offset ?
+    `;
+    
+    const rows = db.prepare(sql).all(parseInt(limit), parseInt(offset));
+    res.json(rows);
+  } catch (err) {
+    console.error("Fehler beim Abrufen aller Einträge:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 /* API Alle Areas abrufen */
 app.get("/api/warehouse/areas", (req, res) => {
   try {
@@ -1411,27 +1456,52 @@ app.get("/api/dashboard/stats", (req, res) => {
 // Chart: Wareneingänge nach Kalenderwoche
 app.get("/api/dashboard/charts/week", (req, res) => {
   try {
-    const rows = db.prepare(`
+    // Hole alle Einträge und normalisiere die CW (extrahiere nur die Zahl)
+    const allRows = db.prepare(`
       select 
         cw,
-        count(*) as count,
-        coalesce(sum(actual_carton), 0) as total_cartons
+        actual_carton
       from inbound_simple
       where ignore_flag = 0 and cw is not null and cw != ''
-      group by cw
-      order by cw desc
-      limit 12
     `).all();
     
-    // Sortiere nach CW (neueste zuerst, dann umkehren für Chart)
-    const sorted = rows.sort((a, b) => {
+    // Normalisiere CW: Extrahiere nur die Zahl (z.B. "CW 47" -> "47", "CW12345" -> "12345")
+    const normalizeCw = (cw) => {
+      if (!cw) return null;
+      // Entferne "CW" und Leerzeichen, behalte nur Zahlen
+      const match = cw.toString().replace(/[^0-9]/g, '');
+      return match ? match : null;
+    };
+    
+    // Gruppiere nach normalisierter CW
+    const grouped = {};
+    allRows.forEach(row => {
+      const normalizedCw = normalizeCw(row.cw);
+      if (!normalizedCw) return;
+      
+      if (!grouped[normalizedCw]) {
+        grouped[normalizedCw] = {
+          cw: normalizedCw,
+          count: 0,
+          total_cartons: 0
+        };
+      }
+      grouped[normalizedCw].count++;
+      grouped[normalizedCw].total_cartons += (row.actual_carton || 0);
+    });
+    
+    // Konvertiere zu Array und sortiere nach CW (numerisch)
+    const rows = Object.values(grouped).sort((a, b) => {
       const cwA = parseInt(a.cw) || 0;
       const cwB = parseInt(b.cw) || 0;
       return cwA - cwB;
     });
     
+    // Neueste 12 Wochen
+    const sorted = rows.slice(-12);
+    
     res.json({
-      labels: sorted.map(r => `CW ${r.cw}`),
+      labels: sorted.map(r => r.cw), // Nur die Zahl, ohne "CW"
       data: sorted.map(r => r.count),
       cartons: sorted.map(r => r.total_cartons)
     });
@@ -1567,11 +1637,12 @@ app.post("/api/movement/single", (req, res) => {
   try {
     const { inbound_id, from_location_id, to_location_id, moved_by, reason } = req.body;
     
-    if (!inbound_id || !from_location_id || !to_location_id) {
-      return res.status(400).json({ ok: false, error: "inbound_id, from_location_id und to_location_id sind erforderlich" });
+    if (!inbound_id || !to_location_id) {
+      return res.status(400).json({ ok: false, error: "inbound_id und to_location_id sind erforderlich" });
     }
     
-    if (from_location_id === to_location_id) {
+    // from_location_id kann null sein (für Einträge ohne Stellplatz)
+    if (from_location_id !== null && from_location_id !== undefined && from_location_id === to_location_id) {
       return res.status(400).json({ ok: false, error: "Quell- und Ziel-Stellplatz dürfen nicht identisch sein" });
     }
     
@@ -1581,8 +1652,10 @@ app.post("/api/movement/single", (req, res) => {
       return res.status(404).json({ ok: false, error: "Eintrag nicht gefunden oder ignoriert" });
     }
     
-    // Prüfe ob Eintrag auf dem angegebenen Quell-Stellplatz ist
-    if (inbound.location_id != from_location_id) {
+    // Prüfe ob Eintrag auf dem angegebenen Quell-Stellplatz ist (oder keinen Stellplatz hat wenn from_location_id null ist)
+    const currentLocationId = inbound.location_id;
+    const expectedFromLocationId = from_location_id === null || from_location_id === undefined ? null : from_location_id;
+    if (currentLocationId != expectedFromLocationId) {
       return res.status(400).json({ ok: false, error: "Eintrag befindet sich nicht auf dem angegebenen Quell-Stellplatz" });
     }
     
@@ -1630,11 +1703,12 @@ app.post("/api/movement/multiple", (req, res) => {
       return res.status(400).json({ ok: false, error: "inbound_ids (Array) ist erforderlich" });
     }
     
-    if (!from_location_id || !to_location_id) {
-      return res.status(400).json({ ok: false, error: "from_location_id und to_location_id sind erforderlich" });
+    if (!to_location_id) {
+      return res.status(400).json({ ok: false, error: "to_location_id ist erforderlich" });
     }
     
-    if (from_location_id === to_location_id) {
+    // from_location_id kann null sein (für Einträge ohne Stellplatz)
+    if (from_location_id !== null && from_location_id !== undefined && from_location_id === to_location_id) {
       return res.status(400).json({ ok: false, error: "Quell- und Ziel-Stellplatz dürfen nicht identisch sein" });
     }
     
@@ -1658,8 +1732,9 @@ app.post("/api/movement/multiple", (req, res) => {
       return res.status(400).json({ ok: false, error: "Einige Einträge wurden nicht gefunden oder sind ignoriert" });
     }
     
-    // Prüfe ob alle Einträge auf dem angegebenen Quell-Stellplatz sind
-    const invalidEntries = inboundEntries.filter(entry => entry.location_id != from_location_id);
+    // Prüfe ob alle Einträge auf dem angegebenen Quell-Stellplatz sind (oder keinen Stellplatz haben wenn from_location_id null ist)
+    const expectedFromLocationId = from_location_id === null || from_location_id === undefined ? null : from_location_id;
+    const invalidEntries = inboundEntries.filter(entry => entry.location_id != expectedFromLocationId);
     if (invalidEntries.length > 0) {
       return res.status(400).json({ 
         ok: false, 

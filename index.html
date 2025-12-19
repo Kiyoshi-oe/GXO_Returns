@@ -346,8 +346,14 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="grid-column: 1 / -1;">
               <label style="font-size: 11px;">Stellplatz auswählen</label>
+              <div class="form-group" style="margin-bottom: 8px;">
+                <label style="font-size: 10px; display: flex; align-items: center; cursor: pointer;">
+                  <input type="checkbox" id="archiveNoLocation" style="margin-right: 6px; accent-color: var(--gxo-orange);" onchange="toggleArchiveLocation()">
+                  <span>Einträge ohne Stellplatz</span>
+                </label>
+              </div>
               <div class="searchable-dropdown" id="archiveLocationDropdown">
-                <input type="text" id="archiveLocation" placeholder="Stellplatz wählen oder Code eingeben..." autocomplete="off" style="padding: 6px 9px; font-size: 12px;">
+                <input type="text" id="archiveLocation" placeholder="Stellplatz wählen oder Code eingeben..." autocomplete="off" style="padding: 6px 9px; font-size: 12px;" disabled>
                 <div class="searchable-dropdown-list" id="archiveLocationList"></div>
               </div>
             </div>
@@ -1319,6 +1325,18 @@
 
       <!-- Lagerbestand -->
       <section class="view" id="view-inventory">
+        <!-- Tabs für Unterseiten -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-soft);">
+          <button class="inventory-tab-btn active" onclick="switchInventoryTab('locations')" id="inventory-tab-locations">
+            📦 Stellplätze
+          </button>
+          <button class="inventory-tab-btn" onclick="switchInventoryTab('overall')" id="inventory-tab-overall">
+            📋 Gesamtübersicht
+          </button>
+        </div>
+
+        <!-- Tab: Stellplätze -->
+        <div id="inventory-tab-content-locations" class="inventory-tab-content">
         <div class="card">
           <div class="card-header">
             <div>
@@ -1328,6 +1346,9 @@
               </div>
             </div>
             <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()" style="margin-right: 8px;">
+                🗑️ Alle Filter löschen
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="refreshWarehouse()">
                 🔄 Aktualisieren
               </button>
@@ -1381,117 +1402,192 @@
             <table id="warehouseTable">
             <thead>
             <tr>
-                  <th style="width: 40px;"></th>
-              <th>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+              <th style="width: 40px; position: relative;">
+              </th>
+              <th style="position: relative;">
+                <div class="excel-filter-header" onclick="event.stopPropagation(); toggleExcelFilter('location')">
                   <span>Stellplatz</span>
-                  <div class="filter-container">
-                    <button class="filter-btn" onclick="event.stopPropagation(); toggleFilter('location')" title="Filter">
-                      🔽
-                    </button>
-                    <div id="filter-location" class="filter-dropdown" style="display: none;">
-                      <div>
-                        <input type="text" id="filter-location-input" placeholder="Suchen..." oninput="applyFilters()">
-                        <button onclick="clearFilter('location'); applyFilters()">Filter löschen</button>
-                      </div>
-                    </div>
+                  <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                </div>
+                <div id="excel-filter-location" class="excel-filter-menu" style="display: none;">
+                  <div class="excel-filter-menu-item" onclick="sortColumn('location', 'asc')">
+                    <span>Von A bis Z sortieren</span>
+                    <span style="font-size: 12px;">A→Z</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="sortColumn('location', 'desc')">
+                    <span>Von Z bis A sortieren</span>
+                    <span style="font-size: 12px;">Z→A</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="showTextFilter('location')">
+                    <span>Textfilter</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-textfilter-location" class="excel-textfilter-submenu" style="display: none;">
+                    <div onclick="setTextFilter('location', 'equals')">Ist gleich...</div>
+                    <div onclick="setTextFilter('location', 'not-equals')">Ist nicht gleich...</div>
+                    <div onclick="setTextFilter('location', 'begins')">Beginnt mit...</div>
+                    <div onclick="setTextFilter('location', 'ends')">Endet mit...</div>
+                    <div onclick="setTextFilter('location', 'contains')">Enthält...</div>
+                    <div onclick="setTextFilter('location', 'not-contains')">Enthält nicht...</div>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="showValueFilter('location')">
+                    <span>Werte filtern</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-valuefilter-location" class="excel-valuefilter-submenu" style="display: none;">
+                    <input type="text" id="excel-search-location" placeholder="Suchen..." oninput="filterValueList('location')" style="width: 100%; padding: 4px; margin-bottom: 4px;">
+                    <div class="excel-checkbox-list" id="excel-checkbox-list-location"></div>
+                    <button class="excel-apply-btn" onclick="applyValueFilter('location')">Übernehmen</button>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="clearColumnFilter('location')">
+                    <span>Filter aus 'Stellplatz' entfernen</span>
                   </div>
                 </div>
               </th>
-              <th>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+              <th style="position: relative;">
+                <div class="excel-filter-header" onclick="event.stopPropagation(); toggleExcelFilter('area')">
                   <span>Bereich</span>
-                  <div class="filter-container">
-                    <button class="filter-btn" onclick="event.stopPropagation(); toggleFilter('area')" title="Filter">
-                      🔽
-                    </button>
-                    <div id="filter-area" class="filter-dropdown" style="display: none;">
-                      <div>
-                        <label>
-                          <input type="checkbox" value="all" checked onchange="applyFilters()">Alle
-                        </label>
-                        <div id="filter-area-options"></div>
-                        <button onclick="clearFilter('area'); applyFilters()">Filter löschen</button>
-                      </div>
-                    </div>
+                  <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                </div>
+                <div id="excel-filter-area" class="excel-filter-menu" style="display: none;">
+                  <div class="excel-filter-menu-item" onclick="sortColumn('area', 'asc')">
+                    <span>Von A bis Z sortieren</span>
+                    <span style="font-size: 12px;">A→Z</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="sortColumn('area', 'desc')">
+                    <span>Von Z bis A sortieren</span>
+                    <span style="font-size: 12px;">Z→A</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="showTextFilter('area')">
+                    <span>Textfilter</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-textfilter-area" class="excel-textfilter-submenu" style="display: none;">
+                    <div onclick="setTextFilter('area', 'equals')">Ist gleich...</div>
+                    <div onclick="setTextFilter('area', 'not-equals')">Ist nicht gleich...</div>
+                    <div onclick="setTextFilter('area', 'begins')">Beginnt mit...</div>
+                    <div onclick="setTextFilter('area', 'ends')">Endet mit...</div>
+                    <div onclick="setTextFilter('area', 'contains')">Enthält...</div>
+                    <div onclick="setTextFilter('area', 'not-contains')">Enthält nicht...</div>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="showValueFilter('area')">
+                    <span>Werte filtern</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-valuefilter-area" class="excel-valuefilter-submenu" style="display: none;">
+                    <input type="text" id="excel-search-area" placeholder="Suchen..." oninput="filterValueList('area')" style="width: 100%; padding: 4px; margin-bottom: 4px;">
+                    <div class="excel-checkbox-list" id="excel-checkbox-list-area"></div>
+                    <button class="excel-apply-btn" onclick="applyValueFilter('area')">Übernehmen</button>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="clearColumnFilter('area')">
+                    <span>Filter aus 'Bereich' entfernen</span>
                   </div>
                 </div>
               </th>
-              <th>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+              <th style="position: relative;">
+                <div class="excel-filter-header" onclick="event.stopPropagation(); toggleExcelFilter('cartons')">
                   <span>Kartons</span>
-                  <div class="filter-container">
-                    <button class="filter-btn" onclick="event.stopPropagation(); toggleFilter('cartons')" title="Filter">
-                      🔽
-                    </button>
-                    <div id="filter-cartons" class="filter-dropdown" style="display: none;">
-                      <div>
-                        <select id="filter-cartons-operator" onchange="applyFilters()">
-                          <option value="all">Alle</option>
-                          <option value="empty">Leer (0)</option>
-                          <option value="not-empty">Nicht leer (>0)</option>
-                          <option value="gt">Größer als</option>
-                          <option value="lt">Kleiner als</option>
-                          <option value="eq">Gleich</option>
-                        </select>
-                        <input type="number" id="filter-cartons-value" placeholder="Wert..." oninput="applyFilters()" style="display: none;">
-                        <button onclick="clearFilter('cartons'); applyFilters()">Filter löschen</button>
-                      </div>
-                    </div>
+                  <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                </div>
+                <div id="excel-filter-cartons" class="excel-filter-menu" style="display: none;">
+                  <div class="excel-filter-menu-item" onclick="sortColumn('cartons', 'asc')">
+                    <span>Aufsteigend sortieren</span>
+                    <span style="font-size: 12px;">↑</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="sortColumn('cartons', 'desc')">
+                    <span>Absteigend sortieren</span>
+                    <span style="font-size: 12px;">↓</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="showNumberFilter('cartons')">
+                    <span>Zahlenfilter</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-numberfilter-cartons" class="excel-numberfilter-submenu" style="display: none;">
+                    <div onclick="setNumberFilter('cartons', 'equals')">Ist gleich...</div>
+                    <div onclick="setNumberFilter('cartons', 'not-equals')">Ist nicht gleich...</div>
+                    <div onclick="setNumberFilter('cartons', 'greater')">Größer als...</div>
+                    <div onclick="setNumberFilter('cartons', 'less')">Kleiner als...</div>
+                    <div onclick="setNumberFilter('cartons', 'greater-equal')">Größer oder gleich...</div>
+                    <div onclick="setNumberFilter('cartons', 'less-equal')">Kleiner oder gleich...</div>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="clearColumnFilter('cartons')">
+                    <span>Filter aus 'Kartons' entfernen</span>
                   </div>
                 </div>
               </th>
-              <th>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+              <th style="position: relative;">
+                <div class="excel-filter-header" onclick="event.stopPropagation(); toggleExcelFilter('date')">
                   <span>Zuletzt gebucht</span>
-                  <div class="filter-container">
-                    <button class="filter-btn" onclick="event.stopPropagation(); toggleFilter('date')" title="Filter">
-                      🔽
-                    </button>
-                    <div id="filter-date" class="filter-dropdown" style="display: none;">
-                      <div>
-                        <select id="filter-date-operator" onchange="applyFilters()">
-                          <option value="all">Alle</option>
-                          <option value="empty">Leer</option>
-                          <option value="not-empty">Nicht leer</option>
-                          <option value="today">Heute</option>
-                          <option value="this-week">Diese Woche</option>
-                          <option value="this-month">Dieser Monat</option>
-                          <option value="before">Vor Datum</option>
-                          <option value="after">Nach Datum</option>
-                        </select>
-                        <input type="date" id="filter-date-value" onchange="applyFilters()" style="display: none;">
-                        <button onclick="clearFilter('date'); applyFilters()">Filter löschen</button>
-                      </div>
-                    </div>
+                  <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                </div>
+                <div id="excel-filter-date" class="excel-filter-menu" style="display: none;">
+                  <div class="excel-filter-menu-item" onclick="sortColumn('date', 'asc')">
+                    <span>Älteste zuerst</span>
+                    <span style="font-size: 12px;">↑</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="sortColumn('date', 'desc')">
+                    <span>Neueste zuerst</span>
+                    <span style="font-size: 12px;">↓</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="setDateFilter('date', 'empty')">
+                    <span>Leer</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="setDateFilter('date', 'not-empty')">
+                    <span>Nicht leer</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="setDateFilter('date', 'today')">
+                    <span>Heute</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="setDateFilter('date', 'this-week')">
+                    <span>Diese Woche</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="setDateFilter('date', 'this-month')">
+                    <span>Dieser Monat</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="clearColumnFilter('date')">
+                    <span>Filter aus 'Zuletzt gebucht' entfernen</span>
                   </div>
                 </div>
               </th>
-              <th>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+              <th style="position: relative;">
+                <div class="excel-filter-header" onclick="event.stopPropagation(); toggleExcelFilter('status')">
                   <span>Status</span>
-                  <div class="filter-container">
-                    <button class="filter-btn" onclick="event.stopPropagation(); toggleFilter('status')" title="Filter">
-                      🔽
-                    </button>
-                    <div id="filter-status" class="filter-dropdown" style="display: none;">
-                      <div>
-                        <label>
-                          <input type="checkbox" value="all" checked onchange="applyFilters()">Alle
-                        </label>
-                        <label>
-                          <input type="checkbox" value="active" checked onchange="applyFilters()">Aktiv
-                        </label>
-                        <label>
-                          <input type="checkbox" value="inactive" checked onchange="applyFilters()">Inaktiv
-                        </label>
-                        <button onclick="clearFilter('status'); applyFilters()">Filter löschen</button>
-                      </div>
-                    </div>
+                  <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                </div>
+                <div id="excel-filter-status" class="excel-filter-menu" style="display: none;">
+                  <div class="excel-filter-menu-item" onclick="sortColumn('status', 'asc')">
+                    <span>Von A bis Z sortieren</span>
+                    <span style="font-size: 12px;">A→Z</span>
+                  </div>
+                  <div class="excel-filter-menu-item" onclick="sortColumn('status', 'desc')">
+                    <span>Von Z bis A sortieren</span>
+                    <span style="font-size: 12px;">Z→A</span>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="showValueFilter('status')">
+                    <span>Werte filtern</span>
+                    <span>▶</span>
+                  </div>
+                  <div id="excel-valuefilter-status" class="excel-valuefilter-submenu" style="display: none;">
+                    <input type="text" id="excel-search-status" placeholder="Suchen..." oninput="filterValueList('status')" style="width: 100%; padding: 4px; margin-bottom: 4px;">
+                    <div class="excel-checkbox-list" id="excel-checkbox-list-status"></div>
+                    <button class="excel-apply-btn" onclick="applyValueFilter('status')">Übernehmen</button>
+                  </div>
+                  <div class="excel-filter-divider"></div>
+                  <div class="excel-filter-menu-item" onclick="clearColumnFilter('status')">
+                    <span>Filter aus 'Status' entfernen</span>
                   </div>
                 </div>
               </th>
-                  <th style="width: 100px;">Aktion</th>
+              <th style="width: 100px;">Aktion</th>
             </tr>
             </thead>
               <tbody id="warehouseBody">
@@ -1502,12 +1598,215 @@
             </tbody>
           </table>
         </div>
-      </section>
+        </div>
+        </div>
+
+        <!-- Tab: Gesamtübersicht -->
+        <div id="inventory-tab-content-overall" class="inventory-tab-content" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Lagerbestand - Gesamtübersicht</div>
+              <div class="card-subtitle">
+                Alle Einträge auf einen Blick - direkt ohne Aufklappen
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="clearAllOverallFilters()" style="margin-right: 8px;">
+                🗑️ Alle Filter löschen
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="loadOverallInventory()">
+                🔄 Aktualisieren
+              </button>
+            </div>
+          </div>
+
+          <!-- Statistik -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px;">
+            <div style="background: var(--bg-soft); padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--gxo-orange);">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Einträge gesamt</div>
+              <div style="font-size: 18px; font-weight: 600; color: var(--text-main);" id="overallStatTotal">0</div>
+            </div>
+            <div style="background: var(--bg-soft); padding: 8px 10px; border-radius: 6px; border-left: 3px solid #4CAF50;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Kartons gesamt</div>
+              <div style="font-size: 18px; font-weight: 600; color: var(--text-main);" id="overallStatCartons">0</div>
+            </div>
+            <div style="background: var(--bg-soft); padding: 8px 10px; border-radius: 6px; border-left: 3px solid #2196F3;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Stellplätze belegt</div>
+              <div style="font-size: 18px; font-weight: 600; color: var(--text-main);" id="overallStatLocations">0</div>
+            </div>
+          </div>
+
+          <!-- Tabelle -->
+          <div style="overflow-x: auto;">
+            <table id="overallInventoryTable">
+              <thead>
+                <tr>
+                  <th style="position: relative; min-width: 120px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('location_code')">
+                      <span>Stellplatz</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-location_code" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 60px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('id')">
+                      <span>ID</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-id" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('cw')">
+                      <span>CW</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-cw" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 100px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('aufgenommen_am')">
+                      <span>Datum</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-aufgenommen_am" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 100px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('carrier_name')">
+                      <span>Carrier</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-carrier_name" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 140px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('carrier_tracking_nr')">
+                      <span>Tracking Nr.</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-carrier_tracking_nr" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 160px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('olpn')">
+                      <span>OLPN</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-olpn" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('dn')">
+                      <span>DN</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-dn" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('shi')">
+                      <span>SHI</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-shi" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('planned_carton')">
+                      <span>Planned</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-planned_carton" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('actual_carton')">
+                      <span>Actual</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-actual_carton" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 100px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('customer_id')">
+                      <span>Customer ID</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-customer_id" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 120px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('customer_name')">
+                      <span>Customer Name</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-customer_name" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 100px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('asn_ra_no')">
+                      <span>ASN/RA</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-asn_ra_no" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('area')">
+                      <span>Area</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-area" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 60px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('land')">
+                      <span>Land</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-land" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 100px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('ship_status')">
+                      <span>Ship Status</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-ship_status" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 60px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('ignore_flag')">
+                      <span>Ignore</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-ignore_flag" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 150px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('kommentar')">
+                      <span>Kommentar</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-kommentar" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 140px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('created_at')">
+                      <span>Gebucht am</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-created_at" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="position: relative; min-width: 80px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('added_by')">
+                      <span>Von</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-added_by" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
+                  <th style="width: 80px;">Aktion</th>
+                </tr>
+              </thead>
+              <tbody id="overallInventoryBody">
+                <tr>
+                  <td colspan="22" class="muted">Lade Einträge...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+        </div>
 
       <!-- Wareneingang Simple -->
       <section class="view" id="view-inbound">
-        <!-- Carrier Auswahl Übersicht (nur für Einstellungsseite, hier ausgeblendet) -->
-        <div class="card" id="carrierSelectionView" style="display: none;">
+        <!-- Carrier Auswahl Übersicht -->
+        <div class="card" id="carrierSelectionView" style="display: block; margin-bottom: 20px;">
           <div class="card-header">
             <div>
               <div class="card-title">Versanddienstleister auswählen</div>
@@ -1517,13 +1816,13 @@
             </div>
           </div>
 
-          <div id="carrierButtonsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:10px;">
+          <div id="carrierButtonsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:16px;padding:0 4px 16px 4px;">
             <!-- Carrier Cards werden hier dynamisch geladen -->
           </div>
         </div>
         
         <!-- Liste der letzten Einträge -->
-        <div class="card" id="inboundListSection">
+        <div class="card" id="inboundListSection" style="display: block; margin-bottom: 0;">
           <div class="card-header">
             <div>
               <div class="card-title">Letzte Einträge Wareneingang</div>
@@ -1556,8 +1855,8 @@
           </div>
         </div>
 
-        <!-- Detailansicht (standardmäßig sichtbar, Carrier-Auswahl nur auf Einstellungsseite) -->
-        <div id="inboundDetailView" style="display:block;">
+        <!-- Detailansicht (versteckt bis Carrier ausgewählt wird) -->
+        <div id="inboundDetailView" style="display: none;">
           <div class="card">
             <div class="card-header">
               <div>
@@ -2146,6 +2445,27 @@
     status: { active: true, inactive: true }
   };
   
+  // Excel-Filter-Variablen
+  let excelSortState = {
+    column: null,
+    direction: null // 'asc' oder 'desc'
+  };
+  
+  let excelTextFilters = {
+    location: null,
+    area: null
+  };
+  
+  let excelNumberFilters = {
+    cartons: null
+  };
+  
+  let excelValueFilters = {
+    location: [],
+    area: [],
+    status: []
+  };
+  
   // Filter-Dropdowns öffnen/schließen
   function toggleFilter(filterName) {
     const dropdown = document.getElementById(`filter-${filterName}`);
@@ -2444,9 +2764,90 @@
         return;
       }
 
-    // Daten filtern
+    // Daten filtern (Excel-Filter + alte Filter)
     let filteredData = warehouseData.filter(location => {
-      // Location-Filter
+      // Excel Text-Filter: Location
+      if (excelTextFilters.location) {
+        const filter = excelTextFilters.location;
+        const value = (location.code || '').toLowerCase();
+        const searchValue = (filter.value || '').toLowerCase();
+        
+        if (filter.operator === 'equals' && value !== searchValue) return false;
+        if (filter.operator === 'not-equals' && value === searchValue) return false;
+        if (filter.operator === 'begins' && !value.startsWith(searchValue)) return false;
+        if (filter.operator === 'ends' && !value.endsWith(searchValue)) return false;
+        if (filter.operator === 'contains' && !value.includes(searchValue)) return false;
+        if (filter.operator === 'not-contains' && value.includes(searchValue)) return false;
+      }
+      
+      // Excel Werte-Filter: Location
+      if (excelValueFilters.location && excelValueFilters.location.length > 0) {
+        if (!excelValueFilters.location.includes(location.code)) return false;
+      }
+      
+      // Excel Text-Filter: Area
+      if (excelTextFilters.area) {
+        const filter = excelTextFilters.area;
+        const value = (location.area || '').toLowerCase();
+        const searchValue = (filter.value || '').toLowerCase();
+        
+        if (filter.operator === 'equals' && value !== searchValue) return false;
+        if (filter.operator === 'not-equals' && value === searchValue) return false;
+        if (filter.operator === 'begins' && !value.startsWith(searchValue)) return false;
+        if (filter.operator === 'ends' && !value.endsWith(searchValue)) return false;
+        if (filter.operator === 'contains' && !value.includes(searchValue)) return false;
+        if (filter.operator === 'not-contains' && value.includes(searchValue)) return false;
+      }
+      
+      // Excel Werte-Filter: Area
+      if (excelValueFilters.area && excelValueFilters.area.length > 0) {
+        if (!excelValueFilters.area.includes(location.area)) return false;
+      }
+      
+      // Excel Zahlen-Filter: Cartons
+      if (excelNumberFilters.cartons) {
+        const filter = excelNumberFilters.cartons;
+        const cartons = location.total_cartons || 0;
+        
+        if (filter.operator === 'equals' && cartons !== filter.value) return false;
+        if (filter.operator === 'not-equals' && cartons === filter.value) return false;
+        if (filter.operator === 'greater' && cartons <= filter.value) return false;
+        if (filter.operator === 'less' && cartons >= filter.value) return false;
+        if (filter.operator === 'greater-equal' && cartons < filter.value) return false;
+        if (filter.operator === 'less-equal' && cartons > filter.value) return false;
+      }
+      
+      // Excel Datum-Filter
+      if (excelTextFilters.date) {
+        const filter = excelTextFilters.date;
+        const bookedDate = location.last_booked_at ? new Date(location.last_booked_at) : null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (filter.operator === 'empty' && bookedDate) return false;
+        if (filter.operator === 'not-empty' && !bookedDate) return false;
+        if (filter.operator === 'today' && bookedDate) {
+          const todayEnd = new Date(today);
+          todayEnd.setHours(23, 59, 59, 999);
+          if (bookedDate < today || bookedDate > todayEnd) return false;
+        }
+        if (filter.operator === 'this-week' && bookedDate) {
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay());
+          if (bookedDate < weekStart) return false;
+        }
+        if (filter.operator === 'this-month' && bookedDate) {
+          if (bookedDate.getMonth() !== today.getMonth() || bookedDate.getFullYear() !== today.getFullYear()) return false;
+        }
+      }
+      
+      // Excel Werte-Filter: Status
+      if (excelValueFilters.status && excelValueFilters.status.length > 0) {
+        const status = location.is_active ? 'Aktiv' : 'Inaktiv';
+        if (!excelValueFilters.status.includes(status)) return false;
+      }
+      
+      // Alte Filter (für Kompatibilität)
       if (activeFilters.location) {
         const searchTerm = activeFilters.location.toLowerCase();
         const code = (location.code || '').toLowerCase();
@@ -2456,14 +2857,12 @@
         }
       }
       
-      // Area-Filter
       if (activeFilters.area.length > 0) {
         if (!activeFilters.area.includes(location.area)) {
           return false;
         }
       }
       
-      // Cartons-Filter
       const cartons = location.total_cartons || 0;
       const cartonsFilter = activeFilters.cartons;
       if (cartonsFilter.operator === 'empty' && cartons !== 0) return false;
@@ -2472,7 +2871,6 @@
       if (cartonsFilter.operator === 'lt' && cartonsFilter.value && cartons >= parseInt(cartonsFilter.value)) return false;
       if (cartonsFilter.operator === 'eq' && cartonsFilter.value && cartons !== parseInt(cartonsFilter.value)) return false;
       
-      // Date-Filter
       const dateFilter = activeFilters.date;
       if (dateFilter.operator !== 'all' && location.last_booked_at) {
         const bookedDate = new Date(location.last_booked_at);
@@ -2508,12 +2906,47 @@
         return false;
       }
       
-      // Status-Filter
       if (!activeFilters.status.active && location.is_active) return false;
       if (!activeFilters.status.inactive && !location.is_active) return false;
       
       return true;
     });
+    
+    // Sortierung anwenden
+    if (excelSortState.column && excelSortState.direction) {
+      filteredData.sort((a, b) => {
+        let aVal, bVal;
+        
+        if (excelSortState.column === 'location') {
+          aVal = (a.code || '').toLowerCase();
+          bVal = (b.code || '').toLowerCase();
+        } else if (excelSortState.column === 'area') {
+          aVal = (a.area || '').toLowerCase();
+          bVal = (b.area || '').toLowerCase();
+        } else if (excelSortState.column === 'cartons') {
+          aVal = a.total_cartons || 0;
+          bVal = b.total_cartons || 0;
+        } else if (excelSortState.column === 'date') {
+          aVal = a.last_booked_at ? new Date(a.last_booked_at).getTime() : 0;
+          bVal = b.last_booked_at ? new Date(b.last_booked_at).getTime() : 0;
+        } else if (excelSortState.column === 'status') {
+          aVal = a.is_active ? 'Aktiv' : 'Inaktiv';
+          bVal = b.is_active ? 'Aktiv' : 'Inaktiv';
+        } else {
+          return 0;
+        }
+        
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return excelSortState.direction === 'asc' 
+            ? aVal.localeCompare(bVal, 'de')
+            : bVal.localeCompare(aVal, 'de');
+        } else {
+          return excelSortState.direction === 'asc' 
+            ? aVal - bVal
+            : bVal - aVal;
+        }
+      });
+    }
 
     if (filteredData.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" class="muted">Keine Einträge gefunden (Filter aktiv)</td></tr>';
@@ -2751,6 +3184,1221 @@
     expandedLocations.clear();
     loadWarehouse();
     showCustomModal("✓ Lagerbestand aktualisiert", "success");
+  }
+  
+  // ========== EXCEL-FILTER FUNKTIONEN ==========
+  
+  // Excel-Filter-Menü öffnen/schließen
+  function toggleExcelFilter(column) {
+    const menu = document.getElementById(`excel-filter-${column}`);
+    if (!menu) return;
+    
+    const header = menu.closest('th');
+    if (!header) return;
+    
+    // Alle anderen Menüs schließen
+    document.querySelectorAll('.excel-filter-menu').forEach(m => {
+      if (m !== menu) m.style.display = 'none';
+    });
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-valuefilter-submenu').forEach(m => m.style.display = 'none');
+    
+    // Aktuelles Menü umschalten
+    if (menu.style.display === 'none' || !menu.style.display) {
+      menu.style.display = 'block';
+      
+      // Position berechnen (relativ zum Header)
+      const rect = header.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+      menu.style.zIndex = '10000';
+      
+      // Sicherstellen, dass Menü nicht außerhalb des Viewports ist
+      setTimeout(() => {
+        const menuRect = menu.getBoundingClientRect();
+        if (menuRect.right > window.innerWidth) {
+          menu.style.left = (window.innerWidth - menuRect.width - 10) + 'px';
+        }
+        if (menuRect.bottom > window.innerHeight) {
+          menu.style.top = (rect.top - menuRect.height - 4) + 'px';
+        }
+      }, 0);
+      
+      // Werte-Filter-Listen füllen
+      if (['location', 'area', 'status'].includes(column)) {
+        populateValueFilterList(column);
+      }
+    } else {
+      menu.style.display = 'none';
+    }
+    
+    // Klick außerhalb schließt Menü
+    setTimeout(() => {
+      const closeHandler = (e) => {
+        if (!menu.contains(e.target) && !e.target.closest(`.excel-filter-header`)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      document.addEventListener('click', closeHandler);
+    }, 10);
+  }
+  
+  // Spalte sortieren
+  function sortColumn(column, direction) {
+    excelSortState.column = column;
+    excelSortState.direction = direction;
+    
+    // Sortier-Indikator aktualisieren
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.removeAttribute('data-sort');
+    });
+    const header = document.querySelector(`#excel-filter-${column}`)?.closest('th');
+    if (header) {
+      header.setAttribute('data-sort', direction);
+    }
+    
+    // Menü schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Textfilter anzeigen
+  function showTextFilter(column) {
+    const submenu = document.getElementById(`excel-textfilter-${column}`);
+    if (!submenu) return;
+    
+    const menu = submenu.closest('.excel-filter-menu');
+    if (!menu) return;
+    
+    // Alle anderen Submenüs schließen
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => {
+      if (m !== submenu) m.style.display = 'none';
+    });
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-valuefilter-submenu').forEach(m => m.style.display = 'none');
+    
+    if (submenu.style.display === 'none' || !submenu.style.display) {
+      submenu.style.display = 'block';
+      
+      // Position berechnen (rechts neben dem Hauptmenü)
+      const menuRect = menu.getBoundingClientRect();
+      submenu.style.position = 'fixed';
+      submenu.style.top = menuRect.top + 'px';
+      submenu.style.left = (menuRect.right + 4) + 'px';
+      submenu.style.zIndex = '10001';
+      
+      // Sicherstellen, dass Submenü nicht außerhalb des Viewports ist
+      setTimeout(() => {
+        const submenuRect = submenu.getBoundingClientRect();
+        if (submenuRect.right > window.innerWidth) {
+          submenu.style.left = (menuRect.left - submenuRect.width - 4) + 'px';
+        }
+      }, 0);
+    } else {
+      submenu.style.display = 'none';
+    }
+  }
+  
+  // Textfilter setzen (Legacy - ruft die erweiterte Version auf)
+  function setTextFilter(column, operator) {
+    setTextFilter(column, operator, 'warehouse');
+  }
+  
+  // Textfilter anwenden
+  function applyTextFilter(column, operator) {
+    const input = document.getElementById('excel-filter-input-value');
+    if (!input) return;
+    
+    const value = input.value.trim();
+    
+    if (value) {
+      excelTextFilters[column] = { operator, value };
+    } else {
+      delete excelTextFilters[column];
+    }
+    
+    // Modal schließen
+    closeFilterInputModal();
+    
+    // Filter-Indikator aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Menü schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Filter-Input-Modal schließen
+  function closeFilterInputModal() {
+    const modal = document.querySelector('.excel-filter-input-modal');
+    if (modal) modal.remove();
+  }
+  
+  // Zahlenfilter anzeigen
+  function showNumberFilter(column) {
+    const submenu = document.getElementById(`excel-numberfilter-${column}`);
+    if (!submenu) return;
+    
+    const menu = submenu.closest('.excel-filter-menu');
+    if (!menu) return;
+    
+    // Alle anderen Submenüs schließen
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => {
+      if (m !== submenu) m.style.display = 'none';
+    });
+    document.querySelectorAll('.excel-valuefilter-submenu').forEach(m => m.style.display = 'none');
+    
+    if (submenu.style.display === 'none' || !submenu.style.display) {
+      submenu.style.display = 'block';
+      
+      // Position berechnen (rechts neben dem Hauptmenü)
+      const menuRect = menu.getBoundingClientRect();
+      submenu.style.position = 'fixed';
+      submenu.style.top = menuRect.top + 'px';
+      submenu.style.left = (menuRect.right + 4) + 'px';
+      submenu.style.zIndex = '10001';
+      
+      // Sicherstellen, dass Submenü nicht außerhalb des Viewports ist
+      setTimeout(() => {
+        const submenuRect = submenu.getBoundingClientRect();
+        if (submenuRect.right > window.innerWidth) {
+          submenu.style.left = (menuRect.left - submenuRect.width - 4) + 'px';
+        }
+      }, 0);
+    } else {
+      submenu.style.display = 'none';
+    }
+  }
+  
+  // Zahlenfilter setzen
+  function setNumberFilter(column, operator) {
+    // Submenü schließen
+    document.getElementById(`excel-numberfilter-${column}`).style.display = 'none';
+    
+    // Eingabefeld-Modal anzeigen
+    const operatorLabels = {
+      'equals': 'Ist gleich',
+      'not-equals': 'Ist nicht gleich',
+      'greater': 'Größer als',
+      'less': 'Kleiner als',
+      'greater-equal': 'Größer oder gleich',
+      'less-equal': 'Kleiner oder gleich'
+    };
+    
+    const label = operatorLabels[operator] || operator;
+    const currentValue = excelNumberFilters[column]?.operator === operator ? excelNumberFilters[column].value : '';
+    
+    const modalHtml = `
+      <div class="excel-filter-input-modal">
+        <div class="excel-filter-input-content">
+          <div class="excel-filter-input-header">
+            <span>${label}</span>
+            <button onclick="closeFilterInputModal()" class="excel-filter-close-btn">×</button>
+          </div>
+          <div class="excel-filter-input-body">
+            <input type="number" id="excel-filter-input-value" placeholder="Zahl eingeben..." value="${currentValue}" autofocus step="any">
+            <div class="excel-filter-input-actions">
+              <button onclick="applyNumberFilter('${column}', '${operator}')" class="excel-filter-apply-btn">Übernehmen</button>
+              <button onclick="closeFilterInputModal()" class="excel-filter-cancel-btn">Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Altes Modal entfernen falls vorhanden
+    const oldModal = document.querySelector('.excel-filter-input-modal');
+    if (oldModal) oldModal.remove();
+    
+    // Neues Modal hinzufügen
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Enter-Taste unterstützen
+    document.getElementById('excel-filter-input-value').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        applyNumberFilter(column, operator);
+      } else if (e.key === 'Escape') {
+        closeFilterInputModal();
+      }
+    });
+  }
+  
+  // Zahlenfilter anwenden
+  function applyNumberFilter(column, operator) {
+    const input = document.getElementById('excel-filter-input-value');
+    if (!input) return;
+    
+    const value = input.value.trim();
+    
+    if (value === '') {
+      delete excelNumberFilters[column];
+    } else {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) {
+        alert('Bitte geben Sie eine gültige Zahl ein.');
+        return;
+      }
+      excelNumberFilters[column] = { operator, value: numValue };
+    }
+    
+    // Modal schließen
+    closeFilterInputModal();
+    
+    // Filter-Indikator aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Menü schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Werte-Filter anzeigen
+  function showValueFilter(column) {
+    const submenu = document.getElementById(`excel-valuefilter-${column}`);
+    if (!submenu) return;
+    
+    const menu = submenu.closest('.excel-filter-menu');
+    if (!menu) return;
+    
+    // Alle anderen Submenüs schließen
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-valuefilter-submenu').forEach(m => {
+      if (m !== submenu) m.style.display = 'none';
+    });
+    
+    if (submenu.style.display === 'none' || !submenu.style.display) {
+      submenu.style.display = 'flex';
+      populateValueFilterList(column);
+    } else {
+      submenu.style.display = 'none';
+    }
+  }
+  
+  // Werte-Filter-Liste füllen
+  function populateValueFilterList(column) {
+    const container = document.getElementById(`excel-checkbox-list-${column}`);
+    if (!container || !warehouseData || warehouseData.length === 0) return;
+    
+    let uniqueValues = [];
+    
+    if (column === 'location') {
+      uniqueValues = [...new Set(warehouseData.map(l => l.code).filter(v => v))].sort();
+    } else if (column === 'area') {
+      uniqueValues = [...new Set(warehouseData.map(l => l.area).filter(v => v))].sort();
+    } else if (column === 'status') {
+      uniqueValues = ['Aktiv', 'Inaktiv'];
+    }
+    
+    const selectedValues = excelValueFilters[column] || [];
+    
+    container.innerHTML = `
+      <label style="display: flex; align-items: center; padding: 4px 8px; cursor: pointer;">
+        <input type="checkbox" id="excel-select-all-${column}" ${selectedValues.length === 0 || selectedValues.length === uniqueValues.length ? 'checked' : ''} onchange="toggleSelectAll('${column}')" style="margin-right: 8px;">
+        <span>Alles auswählen</span>
+      </label>
+      ${uniqueValues.map(value => `
+        <label style="display: flex; align-items: center; padding: 4px 8px; cursor: pointer;">
+          <input type="checkbox" value="${value}" ${selectedValues.length === 0 || selectedValues.includes(value) ? 'checked' : ''} style="margin-right: 8px;">
+          <span>${value || '(Leere)'}</span>
+        </label>
+      `).join('')}
+    `;
+  }
+  
+  // Alle auswählen/abwählen
+  function toggleSelectAll(column) {
+    const selectAll = document.getElementById(`excel-select-all-${column}`);
+    const checkboxes = document.querySelectorAll(`#excel-checkbox-list-${column} input[type="checkbox"]:not(#excel-select-all-${column})`);
+    
+    checkboxes.forEach(cb => {
+      cb.checked = selectAll.checked;
+    });
+  }
+  
+  // Werte-Filter-Liste filtern (Suche)
+  function filterValueList(column) {
+    const searchTerm = document.getElementById(`excel-search-${column}`)?.value.toLowerCase() || '';
+    const labels = document.querySelectorAll(`#excel-checkbox-list-${column} label`);
+    
+    labels.forEach(label => {
+      const text = label.textContent.toLowerCase();
+      if (text.includes('Alles auswählen')) return;
+      label.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+    });
+  }
+  
+  // Werte-Filter anwenden
+  function applyValueFilter(column) {
+    const checkboxes = document.querySelectorAll(`#excel-checkbox-list-${column} input[type="checkbox"]:not(#excel-select-all-${column}):checked`);
+    const selectedValues = Array.from(checkboxes).map(cb => cb.value);
+    
+    excelValueFilters[column] = selectedValues;
+    
+    // Filter-Indikator aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Menüs schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    document.getElementById(`excel-valuefilter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Datum-Filter setzen
+  function setDateFilter(column, operator) {
+    excelTextFilters[column] = { operator, value: null };
+    
+    // Filter-Indikator aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Menü schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Spalten-Filter löschen
+  function clearColumnFilter(column) {
+    if (excelTextFilters[column]) {
+      delete excelTextFilters[column];
+    }
+    if (excelNumberFilters[column]) {
+      delete excelNumberFilters[column];
+    }
+    if (excelValueFilters[column]) {
+      excelValueFilters[column] = [];
+    }
+    
+    // Filter-Indikator aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Menü schließen
+    document.getElementById(`excel-filter-${column}`).style.display = 'none';
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+  }
+  
+  // Alle Filter löschen
+  function clearAllFilters() {
+    // Excel-Filter zurücksetzen
+    excelSortState = { column: null, direction: null };
+    excelTextFilters = { location: null, area: null, date: null };
+    excelNumberFilters = { cartons: null };
+    excelValueFilters = { location: [], area: [], status: [] };
+    
+    // Alte Filter zurücksetzen
+    activeFilters = {
+      location: null,
+      area: [],
+      cartons: { operator: 'all', value: null },
+      date: { operator: 'all', value: null },
+      status: { active: true, inactive: true }
+    };
+    
+    // Sortier-Indikatoren entfernen
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.removeAttribute('data-sort');
+    });
+    
+    // Filter-Indikatoren aktualisieren
+    updateExcelFilterIndicators();
+    
+    // Alle Menüs schließen
+    document.querySelectorAll('.excel-filter-menu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-valuefilter-submenu').forEach(m => m.style.display = 'none');
+    
+    // Tabelle neu rendern
+    renderWarehouseTable();
+    
+    showCustomModal("✓ Alle Filter wurden gelöscht", "success");
+  }
+  
+  // ========== OVERALL INVENTORY ANSICHT ==========
+  
+  let overallInventoryData = [];
+  let overallSortState = { column: null, direction: null };
+  let overallFilters = {};
+  
+  // Overall Inventory laden
+  async function loadOverallInventory() {
+    const tbody = document.getElementById("overallInventoryBody");
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="22" class="muted">Lade Einträge...</td></tr>';
+    
+    try {
+      const response = await fetch("/api/warehouse/all-entries?limit=10000");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      overallInventoryData = await response.json();
+      renderOverallInventory();
+      updateOverallStats();
+    } catch (err) {
+      console.error("Fehler beim Laden der Overall-Ansicht:", err);
+      tbody.innerHTML = '<tr><td colspan="22" class="muted">Fehler beim Laden der Daten</td></tr>';
+    }
+  }
+  
+  // Overall Inventory rendern
+  function renderOverallInventory() {
+    const tbody = document.getElementById("overallInventoryBody");
+    if (!tbody) return;
+    
+    tbody.innerHTML = "";
+    
+    if (!overallInventoryData || overallInventoryData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="22" class="muted">Keine Einträge gefunden</td></tr>';
+      return;
+    }
+    
+    // Filter anwenden
+    let filteredData = overallInventoryData.filter(entry => {
+      for (const [column, filter] of Object.entries(overallFilters)) {
+        if (!filter) continue;
+        
+        const value = entry[column];
+        const filterValue = filter.value;
+        
+        if (filter.type === 'text') {
+          const val = (value || '').toLowerCase();
+          const searchVal = (filterValue || '').toLowerCase();
+          
+          if (filter.operator === 'equals' && val !== searchVal) return false;
+          if (filter.operator === 'not-equals' && val === searchVal) return false;
+          if (filter.operator === 'begins' && !val.startsWith(searchVal)) return false;
+          if (filter.operator === 'ends' && !val.endsWith(searchVal)) return false;
+          if (filter.operator === 'contains' && !val.includes(searchVal)) return false;
+          if (filter.operator === 'not-contains' && val.includes(searchVal)) return false;
+        } else if (filter.type === 'number') {
+          const numVal = parseFloat(value) || 0;
+          const numFilter = parseFloat(filterValue) || 0;
+          
+          if (filter.operator === 'equals' && numVal !== numFilter) return false;
+          if (filter.operator === 'not-equals' && numVal === numFilter) return false;
+          if (filter.operator === 'greater' && numVal <= numFilter) return false;
+          if (filter.operator === 'less' && numVal >= numFilter) return false;
+          if (filter.operator === 'greater-equal' && numVal < numFilter) return false;
+          if (filter.operator === 'less-equal' && numVal > numFilter) return false;
+        } else if (filter.type === 'value') {
+          if (!filter.values.includes(value)) return false;
+        }
+      }
+      return true;
+    });
+    
+    // Sortierung anwenden
+    if (overallSortState.column && overallSortState.direction) {
+      filteredData.sort((a, b) => {
+        let aVal = a[overallSortState.column];
+        let bVal = b[overallSortState.column];
+        
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+          return overallSortState.direction === 'asc' 
+            ? aVal.localeCompare(bVal, 'de')
+            : bVal.localeCompare(aVal, 'de');
+        } else {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+          return overallSortState.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+      });
+    }
+    
+    // Tabelle rendern
+    filteredData.forEach(entry => {
+      const tr = document.createElement("tr");
+      tr.className = "data-row";
+      tr.style.borderBottom = "1px solid var(--border-soft)";
+      
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          return new Date(dateStr).toLocaleDateString('de-DE');
+        } catch (e) {
+          return dateStr;
+        }
+      };
+      
+      const formatDateTime = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          return new Date(dateStr).toLocaleString('de-DE');
+        } catch (e) {
+          return dateStr;
+        }
+      };
+      
+      tr.innerHTML = `
+        <td style="padding: 6px 8px; font-size: 11px;">
+          <div style="font-weight: 600;">${entry.location_code || '-'}</div>
+          ${entry.location_description ? `<div style="font-size: 10px; color: var(--text-muted);">${entry.location_description}</div>` : ''}
+        </td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">#${entry.id || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.cw || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatDate(entry.aufgenommen_am)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.carrier_name || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.carrier_tracking_nr || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.olpn || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.dn || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.shi || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.planned_carton || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: ${entry.actual_carton > 0 ? 'var(--gxo-orange)' : 'var(--text-muted)'}; font-weight: ${entry.actual_carton > 0 ? '600' : 'normal'};">
+          ${entry.actual_carton || '-'}
+        </td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_id || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_name || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.asn_ra_no || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">
+          ${entry.area ? `<span class="pill">${entry.area}</span>` : '-'}
+        </td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.land || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.ship_status || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; text-align: center;">
+          ${entry.ignore_flag ? '<span style="color: var(--gxo-orange);">✗</span>' : '-'}
+        </td>
+        <td style="padding: 6px 8px; font-size: 11px;">${entry.kommentar || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatDateTime(entry.created_at)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${entry.added_by || '-'}</td>
+        <td style="padding: 6px 8px; text-align: center;">
+          <button class="btn btn-ghost btn-sm" onclick="showInboundEntryDetails(${entry.id})" title="Details anzeigen">
+            ✏️
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(tr);
+    });
+  }
+  
+  // Overall Stats aktualisieren
+  function updateOverallStats() {
+    const total = overallInventoryData.length;
+    const totalCartons = overallInventoryData.reduce((sum, e) => sum + (e.actual_carton || 0), 0);
+    const uniqueLocations = new Set(overallInventoryData.filter(e => e.location_code).map(e => e.location_code)).size;
+    
+    document.getElementById("overallStatTotal").textContent = total;
+    document.getElementById("overallStatCartons").textContent = totalCartons;
+    document.getElementById("overallStatLocations").textContent = uniqueLocations;
+  }
+  
+  // Overall Filter-Menü öffnen
+  function toggleOverallFilter(column) {
+    const menu = document.getElementById(`overall-filter-${column}`);
+    if (!menu) return;
+    
+    const header = menu.closest('th');
+    if (!header) return;
+    
+    // Alle anderen Menüs schließen
+    document.querySelectorAll('#overallInventoryTable .excel-filter-menu').forEach(m => {
+      if (m !== menu) m.style.display = 'none';
+    });
+    
+    if (menu.style.display === 'none' || !menu.style.display) {
+      menu.style.display = 'block';
+      
+      // Position berechnen
+      const rect = header.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+      menu.style.zIndex = '10000';
+      
+      // Menü-Inhalt generieren (vereinfacht - nur Sortierung und Textfilter)
+      const columnLabels = {
+        'location_code': 'Stellplatz',
+        'id': 'ID',
+        'cw': 'CW',
+        'aufgenommen_am': 'Datum',
+        'carrier_name': 'Carrier',
+        'carrier_tracking_nr': 'Tracking Nr.',
+        'olpn': 'OLPN',
+        'dn': 'DN',
+        'shi': 'SHI',
+        'planned_carton': 'Planned',
+        'actual_carton': 'Actual',
+        'customer_id': 'Customer ID',
+        'customer_name': 'Customer Name',
+        'asn_ra_no': 'ASN/RA',
+        'area': 'Area',
+        'land': 'Land',
+        'ship_status': 'Ship Status',
+        'ignore_flag': 'Ignore',
+        'kommentar': 'Kommentar',
+        'created_at': 'Gebucht am',
+        'added_by': 'Von'
+      };
+      
+      const label = columnLabels[column] || column;
+      
+      menu.innerHTML = `
+        <div class="excel-filter-menu-item" onclick="overallSortColumn('${column}', 'asc')">
+          <span>Aufsteigend sortieren</span>
+          <span style="font-size: 12px;">↑</span>
+        </div>
+        <div class="excel-filter-menu-item" onclick="overallSortColumn('${column}', 'desc')">
+          <span>Absteigend sortieren</span>
+          <span style="font-size: 12px;">↓</span>
+        </div>
+        <div class="excel-filter-divider"></div>
+        <div class="excel-filter-menu-item" onclick="overallShowTextFilter('${column}')">
+          <span>Textfilter</span>
+          <span>▶</span>
+        </div>
+        <div id="overall-textfilter-${column}" class="excel-textfilter-submenu" style="display: none;">
+          <div onclick="overallSetTextFilter('${column}', 'equals')">Ist gleich...</div>
+          <div onclick="overallSetTextFilter('${column}', 'not-equals')">Ist nicht gleich...</div>
+          <div onclick="overallSetTextFilter('${column}', 'begins')">Beginnt mit...</div>
+          <div onclick="overallSetTextFilter('${column}', 'ends')">Endet mit...</div>
+          <div onclick="overallSetTextFilter('${column}', 'contains')">Enthält...</div>
+          <div onclick="overallSetTextFilter('${column}', 'not-contains')">Enthält nicht...</div>
+        </div>
+        ${['planned_carton', 'actual_carton', 'id'].includes(column) ? `
+        <div class="excel-filter-menu-item" onclick="overallShowNumberFilter('${column}')">
+          <span>Zahlenfilter</span>
+          <span>▶</span>
+        </div>
+        <div id="overall-numberfilter-${column}" class="excel-numberfilter-submenu" style="display: none;">
+          <div onclick="overallSetNumberFilter('${column}', 'equals')">Ist gleich...</div>
+          <div onclick="overallSetNumberFilter('${column}', 'not-equals')">Ist nicht gleich...</div>
+          <div onclick="overallSetNumberFilter('${column}', 'greater')">Größer als...</div>
+          <div onclick="overallSetNumberFilter('${column}', 'less')">Kleiner als...</div>
+          <div onclick="overallSetNumberFilter('${column}', 'greater-equal')">Größer oder gleich...</div>
+          <div onclick="overallSetNumberFilter('${column}', 'less-equal')">Kleiner oder gleich...</div>
+        </div>
+        ` : ''}
+        <div class="excel-filter-divider"></div>
+        <div class="excel-filter-menu-item" onclick="overallClearColumnFilter('${column}')">
+          <span>Filter aus '${label}' entfernen</span>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        const closeHandler = (e) => {
+          if (!menu.contains(e.target) && !e.target.closest(`.excel-filter-header`)) {
+            menu.style.display = 'none';
+            document.removeEventListener('click', closeHandler);
+          }
+        };
+        document.addEventListener('click', closeHandler);
+      }, 10);
+    } else {
+      menu.style.display = 'none';
+    }
+  }
+  
+  // Overall Spalte sortieren
+  function overallSortColumn(column, direction) {
+    overallSortState.column = column;
+    overallSortState.direction = direction;
+    
+    document.querySelectorAll('#overallInventoryTable th[data-sort]').forEach(th => {
+      th.removeAttribute('data-sort');
+    });
+    const header = document.querySelector(`#overall-filter-${column}`)?.closest('th');
+    if (header) header.setAttribute('data-sort', direction);
+    
+    document.getElementById(`overall-filter-${column}`).style.display = 'none';
+    renderOverallInventory();
+  }
+  
+  // Overall Textfilter anzeigen
+  function overallShowTextFilter(column) {
+    const submenu = document.getElementById(`overall-textfilter-${column}`);
+    if (!submenu) return;
+    
+    const menu = submenu.closest('.excel-filter-menu');
+    if (!menu) return;
+    
+    // Alle anderen Submenüs schließen
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => {
+      if (m !== submenu) m.style.display = 'none';
+    });
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => m.style.display = 'none');
+    
+    if (submenu.style.display === 'none' || !submenu.style.display) {
+      submenu.style.display = 'block';
+      
+      // Position berechnen (rechts neben dem Hauptmenü)
+      const menuRect = menu.getBoundingClientRect();
+      submenu.style.position = 'fixed';
+      submenu.style.top = menuRect.top + 'px';
+      submenu.style.left = (menuRect.right + 4) + 'px';
+      submenu.style.zIndex = '10001';
+      
+      // Sicherstellen, dass Submenü nicht außerhalb des Viewports ist
+      setTimeout(() => {
+        const submenuRect = submenu.getBoundingClientRect();
+        if (submenuRect.right > window.innerWidth) {
+          submenu.style.left = (menuRect.left - submenuRect.width - 4) + 'px';
+        }
+      }, 0);
+    } else {
+      submenu.style.display = 'none';
+    }
+  }
+  
+  // Overall Textfilter setzen
+  function overallSetTextFilter(column, operator) {
+    const submenu = document.getElementById(`overall-textfilter-${column}`);
+    if (submenu) submenu.style.display = 'none';
+    setTextFilter(column, operator, 'overall');
+  }
+  
+  // Overall Zahlenfilter anzeigen
+  function overallShowNumberFilter(column) {
+    const submenu = document.getElementById(`overall-numberfilter-${column}`);
+    if (!submenu) return;
+    
+    const menu = submenu.closest('.excel-filter-menu');
+    if (!menu) return;
+    
+    // Alle anderen Submenüs schließen
+    document.querySelectorAll('.excel-textfilter-submenu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.excel-numberfilter-submenu').forEach(m => {
+      if (m !== submenu) m.style.display = 'none';
+    });
+    
+    if (submenu.style.display === 'none' || !submenu.style.display) {
+      submenu.style.display = 'block';
+      
+      // Position berechnen (rechts neben dem Hauptmenü)
+      const menuRect = menu.getBoundingClientRect();
+      submenu.style.position = 'fixed';
+      submenu.style.top = menuRect.top + 'px';
+      submenu.style.left = (menuRect.right + 4) + 'px';
+      submenu.style.zIndex = '10001';
+      
+      // Sicherstellen, dass Submenü nicht außerhalb des Viewports ist
+      setTimeout(() => {
+        const submenuRect = submenu.getBoundingClientRect();
+        if (submenuRect.right > window.innerWidth) {
+          submenu.style.left = (menuRect.left - submenuRect.width - 4) + 'px';
+        }
+      }, 0);
+    } else {
+      submenu.style.display = 'none';
+    }
+  }
+  
+  // Overall Zahlenfilter setzen
+  function overallSetNumberFilter(column, operator) {
+    const submenu = document.getElementById(`overall-numberfilter-${column}`);
+    if (submenu) submenu.style.display = 'none';
+    setNumberFilter(column, operator, 'overall');
+  }
+  
+  // Overall Spalten-Filter löschen
+  function overallClearColumnFilter(column) {
+    delete overallFilters[column];
+    document.getElementById(`overall-filter-${column}`).style.display = 'none';
+    updateOverallFilterIndicators();
+    renderOverallInventory();
+  }
+  
+  // Overall Filter-Indikatoren aktualisieren
+  function updateOverallFilterIndicators() {
+    document.querySelectorAll('#overallInventoryTable th[data-filter-active]').forEach(th => {
+      th.removeAttribute('data-filter-active');
+    });
+    
+    Object.keys(overallFilters).forEach(column => {
+      if (overallFilters[column]) {
+        const header = document.querySelector(`#overall-filter-${column}`)?.closest('th');
+        if (header) header.setAttribute('data-filter-active', 'true');
+      }
+    });
+  }
+  
+  // Alle Overall-Filter löschen
+  function clearAllOverallFilters() {
+    overallSortState = { column: null, direction: null };
+    overallFilters = {};
+    document.querySelectorAll('#overallInventoryTable th[data-sort]').forEach(th => {
+      th.removeAttribute('data-sort');
+    });
+    document.querySelectorAll('#overallInventoryTable .excel-filter-menu').forEach(m => m.style.display = 'none');
+    renderOverallInventory();
+    showCustomModal("✓ Alle Filter wurden gelöscht", "success");
+  }
+  
+  // Tab-Wechsel für Lagerbestand
+  function switchInventoryTab(tabName) {
+    // Alle Tab-Contents verstecken
+    document.querySelectorAll('.inventory-tab-content').forEach(content => {
+      content.style.display = 'none';
+    });
+    
+    // Alle Tab-Buttons deaktivieren
+    document.querySelectorAll('.inventory-tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    // Gewählten Tab aktivieren
+    const content = document.getElementById(`inventory-tab-content-${tabName}`);
+    const button = document.getElementById(`inventory-tab-${tabName}`);
+    
+    if (content) {
+      content.style.display = 'block';
+    }
+    if (button) {
+      button.classList.add('active');
+    }
+    
+    // Daten laden wenn nötig
+    if (tabName === 'overall' && typeof loadOverallInventory === 'function') {
+      loadOverallInventory();
+    } else if (tabName === 'locations' && typeof loadWarehouse === 'function') {
+      loadWarehouse();
+    }
+  }
+  
+  // Textfilter setzen (erweitert für Overall)
+  function setTextFilter(column, operator, context = 'warehouse') {
+    // Submenü schließen falls vorhanden
+    if (context === 'overall') {
+      const submenu = document.getElementById(`overall-textfilter-${column}`);
+      if (submenu) submenu.style.display = 'none';
+    } else {
+      const submenu = document.getElementById(`excel-textfilter-${column}`);
+      if (submenu) submenu.style.display = 'none';
+    }
+    
+    const operatorLabels = {
+      'equals': 'Ist gleich',
+      'not-equals': 'Ist nicht gleich',
+      'begins': 'Beginnt mit',
+      'ends': 'Endet mit',
+      'contains': 'Enthält',
+      'not-contains': 'Enthält nicht'
+    };
+    
+    const label = operatorLabels[operator] || operator;
+    const currentValue = context === 'overall' 
+      ? (overallFilters[column]?.operator === operator ? (overallFilters[column].value || '') : '')
+      : (excelTextFilters[column]?.operator === operator ? (excelTextFilters[column].value || '') : '');
+    
+    // Verfügbare Werte für Autocomplete sammeln
+    const suggestions = getColumnSuggestions(column, context);
+    
+    const modalHtml = `
+      <div class="excel-filter-input-modal">
+        <div class="excel-filter-input-content">
+          <div class="excel-filter-input-header">
+            <span>${label}</span>
+            <button onclick="closeFilterInputModal()" class="excel-filter-close-btn">×</button>
+          </div>
+          <div class="excel-filter-input-body">
+            <div style="position: relative;">
+              <input type="text" id="excel-filter-input-value" placeholder="Wert eingeben..." value="${currentValue}" autofocus autocomplete="off">
+              <div id="excel-filter-autocomplete" class="excel-filter-autocomplete" style="display: none;"></div>
+            </div>
+            <div class="excel-filter-input-actions">
+              <button onclick="applyTextFilter('${column}', '${operator}', '${context}')" class="excel-filter-apply-btn">Übernehmen</button>
+              <button onclick="closeFilterInputModal()" class="excel-filter-cancel-btn">Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const oldModal = document.querySelector('.excel-filter-input-modal');
+    if (oldModal) oldModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const inputElement = document.getElementById('excel-filter-input-value');
+    const autocompleteDiv = document.getElementById('excel-filter-autocomplete');
+    let selectedIndex = -1;
+    
+    if (inputElement) {
+      // Autocomplete beim Tippen
+      inputElement.addEventListener('input', (e) => {
+        const value = e.target.value.toLowerCase().trim();
+        if (value.length === 0) {
+          autocompleteDiv.style.display = 'none';
+          return;
+        }
+        
+        // Passende Vorschläge filtern
+        const filtered = suggestions.filter(s => 
+          s.toLowerCase().includes(value) && s.toLowerCase() !== value
+        ).slice(0, 10); // Maximal 10 Vorschläge
+        
+        if (filtered.length > 0) {
+          autocompleteDiv.innerHTML = filtered.map((suggestion, idx) => 
+            `<div class="excel-filter-autocomplete-item" data-index="${idx}" onclick="selectAutocompleteSuggestion('${suggestion.replace(/'/g, "\\'")}')">${highlightMatch(suggestion, value)}</div>`
+          ).join('');
+          autocompleteDiv.style.display = 'block';
+          selectedIndex = -1;
+        } else {
+          autocompleteDiv.style.display = 'none';
+        }
+      });
+      
+      // Tastatur-Navigation
+      inputElement.addEventListener('keydown', (e) => {
+        const items = autocompleteDiv.querySelectorAll('.excel-filter-autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateAutocompleteSelection(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateAutocompleteSelection(items, selectedIndex);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (selectedIndex >= 0 && items[selectedIndex]) {
+            selectAutocompleteSuggestion(items[selectedIndex].textContent);
+          } else {
+            applyTextFilter(column, operator, context);
+          }
+        } else if (e.key === 'Escape') {
+          autocompleteDiv.style.display = 'none';
+          closeFilterInputModal();
+        }
+      });
+      
+      // Autocomplete schließen wenn außerhalb geklickt wird
+      document.addEventListener('click', (e) => {
+        if (!inputElement.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+          autocompleteDiv.style.display = 'none';
+        }
+      }, { once: false });
+      
+      // Focus setzen
+      setTimeout(() => inputElement.focus(), 100);
+    }
+  }
+  
+  // Vorschläge für eine Spalte sammeln
+  function getColumnSuggestions(column, context = 'warehouse') {
+    const suggestions = new Set();
+    
+    if (context === 'overall') {
+      if (overallInventoryData && overallInventoryData.length > 0) {
+        overallInventoryData.forEach(row => {
+          const value = row[column];
+          if (value !== null && value !== undefined && value !== '') {
+            suggestions.add(String(value));
+          }
+        });
+      }
+    } else {
+      if (warehouseData && warehouseData.length > 0) {
+        warehouseData.forEach(location => {
+          if (location.cartons && location.cartons.length > 0) {
+            location.cartons.forEach(carton => {
+              const value = carton[column];
+              if (value !== null && value !== undefined && value !== '') {
+                suggestions.add(String(value));
+              }
+            });
+          }
+        });
+      }
+    }
+    
+    return Array.from(suggestions).sort();
+  }
+  
+  // Text-Hervorhebung für Autocomplete
+  function highlightMatch(text, searchTerm) {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  }
+  
+  // Autocomplete-Auswahl aktualisieren
+  function updateAutocompleteSelection(items, selectedIndex) {
+    items.forEach((item, idx) => {
+      if (idx === selectedIndex) {
+        item.classList.add('selected');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('selected');
+      }
+    });
+  }
+  
+  // Autocomplete-Vorschlag auswählen
+  function selectAutocompleteSuggestion(value) {
+    const input = document.getElementById('excel-filter-input-value');
+    if (input) {
+      input.value = value;
+      const autocompleteDiv = document.getElementById('excel-filter-autocomplete');
+      if (autocompleteDiv) autocompleteDiv.style.display = 'none';
+      input.focus();
+    }
+  }
+  
+  // Textfilter anwenden (erweitert)
+  function applyTextFilter(column, operator, context = 'warehouse') {
+    const input = document.getElementById('excel-filter-input-value');
+    if (!input) return;
+    
+    const value = input.value.trim();
+    
+    if (context === 'overall') {
+      if (value) {
+        overallFilters[column] = { type: 'text', operator, value };
+      } else {
+        delete overallFilters[column];
+      }
+      closeFilterInputModal();
+      const menu = document.getElementById(`overall-filter-${column}`);
+      if (menu) menu.style.display = 'none';
+      updateOverallFilterIndicators();
+      renderOverallInventory();
+    } else {
+      if (value) {
+        excelTextFilters[column] = { operator, value };
+      } else {
+        delete excelTextFilters[column];
+      }
+      closeFilterInputModal();
+      updateExcelFilterIndicators();
+      const menu = document.getElementById(`excel-filter-${column}`);
+      if (menu) menu.style.display = 'none';
+      renderWarehouseTable();
+    }
+  }
+  
+  // Zahlenfilter setzen (erweitert)
+  function setNumberFilter(column, operator, context = 'warehouse') {
+    const operatorLabels = {
+      'equals': 'Ist gleich',
+      'not-equals': 'Ist nicht gleich',
+      'greater': 'Größer als',
+      'less': 'Kleiner als',
+      'greater-equal': 'Größer oder gleich',
+      'less-equal': 'Kleiner oder gleich'
+    };
+    
+    const label = operatorLabels[operator] || operator;
+    const currentValue = context === 'overall'
+      ? (overallFilters[column]?.value || '')
+      : (excelNumberFilters[column]?.operator === operator ? excelNumberFilters[column].value : '');
+    
+    const modalHtml = `
+      <div class="excel-filter-input-modal">
+        <div class="excel-filter-input-content">
+          <div class="excel-filter-input-header">
+            <span>${label}</span>
+            <button onclick="closeFilterInputModal()" class="excel-filter-close-btn">×</button>
+          </div>
+          <div class="excel-filter-input-body">
+            <input type="number" id="excel-filter-input-value" placeholder="Zahl eingeben..." value="${currentValue}" autofocus step="any">
+            <div class="excel-filter-input-actions">
+              <button onclick="applyNumberFilter('${column}', '${operator}', '${context}')" class="excel-filter-apply-btn">Übernehmen</button>
+              <button onclick="closeFilterInputModal()" class="excel-filter-cancel-btn">Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const oldModal = document.querySelector('.excel-filter-input-modal');
+    if (oldModal) oldModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('excel-filter-input-value').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        applyNumberFilter(column, operator, context);
+      } else if (e.key === 'Escape') {
+        closeFilterInputModal();
+      }
+    });
+  }
+  
+  // Zahlenfilter anwenden (erweitert)
+  function applyNumberFilter(column, operator, context = 'warehouse') {
+    const input = document.getElementById('excel-filter-input-value');
+    if (!input) return;
+    
+    const value = input.value.trim();
+    
+    if (context === 'overall') {
+      if (value === '') {
+        delete overallFilters[column];
+      } else {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          alert('Bitte geben Sie eine gültige Zahl ein.');
+          return;
+        }
+        overallFilters[column] = { type: 'number', operator, value: numValue };
+      }
+      closeFilterInputModal();
+      const menu = document.getElementById(`overall-filter-${column}`);
+      if (menu) menu.style.display = 'none';
+      updateOverallFilterIndicators();
+      renderOverallInventory();
+    } else {
+      if (value === '') {
+        delete excelNumberFilters[column];
+      } else {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          alert('Bitte geben Sie eine gültige Zahl ein.');
+          return;
+        }
+        excelNumberFilters[column] = { operator, value: numValue };
+      }
+      closeFilterInputModal();
+      updateExcelFilterIndicators();
+      document.getElementById(`excel-filter-${column}`).style.display = 'none';
+      renderWarehouseTable();
+    }
+  }
+  
+  // Filter-Indikatoren aktualisieren
+  function updateExcelFilterIndicators() {
+    document.querySelectorAll('th[data-filter-active]').forEach(th => {
+      th.removeAttribute('data-filter-active');
+    });
+    
+    Object.keys(excelTextFilters).forEach(column => {
+      if (excelTextFilters[column]) {
+        const header = document.querySelector(`#excel-filter-${column}`)?.closest('th');
+        if (header) header.setAttribute('data-filter-active', 'true');
+      }
+    });
+    
+    Object.keys(excelNumberFilters).forEach(column => {
+      if (excelNumberFilters[column]) {
+        const header = document.querySelector(`#excel-filter-${column}`)?.closest('th');
+        if (header) header.setAttribute('data-filter-active', 'true');
+      }
+    });
+    
+    Object.keys(excelValueFilters).forEach(column => {
+      if (excelValueFilters[column] && excelValueFilters[column].length > 0) {
+        const header = document.querySelector(`#excel-filter-${column}`)?.closest('th');
+        if (header) header.setAttribute('data-filter-active', 'true');
+      }
+    });
   }
   
   function viewLocationDetails(locationId) {
@@ -5179,6 +6827,10 @@
 
       if (viewName === "inventory") {
         try {
+          // Standard-Tab aktivieren
+          if (typeof switchInventoryTab === 'function') {
+            switchInventoryTab('locations');
+          }
           if (typeof loadInventory === 'function') {
         loadInventory();
           }
@@ -5480,6 +7132,11 @@
               },
               scales: {
                 x: {
+                  title: {
+                    display: true,
+                    text: 'CW',
+                    color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
+                  },
                   ticks: {
                     color: getComputedStyle(document.body).getPropertyValue("--text-soft").trim()
                   },
@@ -8088,16 +9745,33 @@
   // Kartons für einen Stellplatz laden (als Checkbox-Liste)
   async function loadInboundEntriesForLocation(locationId, selectId) {
     try {
-      const response = await fetch(`/api/warehouse/locations/${locationId}/details`);
+      const container = document.getElementById('moveCartonList');
+      const countDisplay = document.getElementById('moveCartonCount');
+      
+      if (!container) return;
+      
+      // Wenn locationId null ist, lade Einträge ohne Stellplatz
+      let response;
+      if (locationId === null || locationId === 'null') {
+        response = await fetch('/api/warehouse/cartons-without-location');
+      } else {
+        response = await fetch(`/api/warehouse/locations/${locationId}/details`);
+      }
+      
       if (response.ok) {
-        const data = await response.json();
-        const container = document.getElementById('moveCartonList');
-        const countDisplay = document.getElementById('moveCartonCount');
+        let cartons;
+        if (locationId === null || locationId === 'null') {
+          cartons = await response.json();
+        } else {
+          const data = await response.json();
+          cartons = data.cartons || [];
+        }
         
-        if (!container) return;
-        
-        if (!data.cartons || data.cartons.length === 0) {
-          container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px;">Keine Kartons auf diesem Stellplatz</div>';
+        if (!cartons || cartons.length === 0) {
+          const message = locationId === null || locationId === 'null' 
+            ? 'Keine Einträge ohne Stellplatz gefunden'
+            : 'Keine Kartons auf diesem Stellplatz';
+          container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px;">${message}</div>`;
           countDisplay.style.display = 'none';
           updateSingleMovePreview();
           return;
@@ -8105,7 +9779,7 @@
         
         container.innerHTML = '';
         
-        data.cartons.forEach(carton => {
+        cartons.forEach(carton => {
           const item = document.createElement('div');
           item.style.cssText = 'display: flex; align-items: center; padding: 8px; margin-bottom: 4px; border-radius: 4px; transition: background 0.15s ease;';
           item.className = 'carton-select-item';
@@ -8243,13 +9917,14 @@
   
   // Einzelbuchung durchführen (mehrere Kartons)
   async function executeSingleMove() {
-    const fromLocationId = document.getElementById('moveFromLocation')?.getAttribute('data-value');
+    const noLocationCheckbox = document.getElementById('moveFromNoLocation');
+    const fromLocationId = noLocationCheckbox?.checked ? null : document.getElementById('moveFromLocation')?.getAttribute('data-value');
     const toLocationId = document.getElementById('moveToLocation')?.getAttribute('data-value');
     const checkboxes = document.querySelectorAll('.carton-checkbox:checked');
     const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
     const reason = document.getElementById('moveReason')?.value;
     
-    if (!fromLocationId || !toLocationId || selectedIds.length === 0) {
+    if ((!fromLocationId && !noLocationCheckbox?.checked) || !toLocationId || selectedIds.length === 0) {
       showCustomModal('❌ Bitte wählen Sie mindestens einen Karton aus', 'error');
       return;
     }
@@ -8285,7 +9960,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inbound_ids: selectedIds,
-          from_location_id: parseInt(fromLocationId),
+          from_location_id: fromLocationId === 'null' || fromLocationId === null ? null : parseInt(fromLocationId),
           to_location_id: parseInt(toLocationId),
           moved_by: movedBy,
           reason: reason || null
@@ -8617,12 +10292,13 @@
   
   // Archivierung durchführen
   async function executeArchive() {
-    const locationId = document.getElementById('archiveLocation')?.getAttribute('data-value');
+    const noLocationCheckbox = document.getElementById('archiveNoLocation');
+    const locationId = noLocationCheckbox?.checked ? null : document.getElementById('archiveLocation')?.getAttribute('data-value');
     const inboundId = document.getElementById('archiveInboundSelect')?.value;
     const reason = document.getElementById('archiveReason')?.value;
     const notes = document.getElementById('archiveNotes')?.value;
     
-    if (!locationId || !inboundId || !reason || reason.trim() === '') {
+    if (!inboundId || !reason || reason.trim() === '') {
       showCustomModal('❌ Bitte füllen Sie alle Pflichtfelder aus', 'error');
       return;
     }
@@ -8895,8 +10571,16 @@
   
   // Archiv-Formular zurücksetzen
   function clearArchiveForm() {
-    document.getElementById('archiveLocation').value = '';
-    document.getElementById('archiveLocation').removeAttribute('data-value');
+    const noLocationCheckbox = document.getElementById('archiveNoLocation');
+    if (noLocationCheckbox) {
+      noLocationCheckbox.checked = false;
+    }
+    const archiveLocationInput = document.getElementById('archiveLocation');
+    if (archiveLocationInput) {
+      archiveLocationInput.value = '';
+      archiveLocationInput.removeAttribute('data-value');
+      archiveLocationInput.disabled = false;
+    }
     document.getElementById('archiveInboundSelect').innerHTML = '<option value="">-- Bitte zuerst Stellplatz wählen --</option>';
     document.getElementById('archiveReason').value = '';
     document.getElementById('archiveNotes').value = '';
@@ -8994,8 +10678,16 @@
   
   // Formular zurücksetzen
   function clearMoveForm() {
-    document.getElementById('moveFromLocation').value = '';
-    document.getElementById('moveFromLocation').removeAttribute('data-value');
+    const noLocationCheckbox = document.getElementById('moveFromNoLocation');
+    if (noLocationCheckbox) {
+      noLocationCheckbox.checked = false;
+    }
+    const fromLocationInput = document.getElementById('moveFromLocation');
+    if (fromLocationInput) {
+      fromLocationInput.value = '';
+      fromLocationInput.removeAttribute('data-value');
+      fromLocationInput.disabled = false;
+    }
     document.getElementById('moveToLocation').value = '';
     document.getElementById('moveToLocation').removeAttribute('data-value');
     const cartonList = document.getElementById('moveCartonList');
@@ -9017,6 +10709,46 @@
     document.getElementById('moveBulkReason').value = '';
     document.getElementById('moveBulkPreview').style.display = 'none';
     document.getElementById('btnExecuteBulkMove').disabled = true;
+  }
+  
+  // Toggle für "Einträge ohne Stellplatz" bei Umlagerung
+  function toggleMoveFromLocation() {
+    const checkbox = document.getElementById('moveFromNoLocation');
+    const input = document.getElementById('moveFromLocation');
+    const dropdown = document.getElementById('moveFromLocationDropdown');
+    
+    if (checkbox.checked) {
+      input.disabled = true;
+      input.value = '';
+      input.removeAttribute('data-value');
+      loadInboundEntriesForLocation(null, 'moveInboundSelect');
+    } else {
+      input.disabled = false;
+      const container = document.getElementById('moveCartonList');
+      if (container) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px;">Bitte zuerst Quell-Stellplatz wählen</div>';
+      }
+    }
+  }
+  
+  // Toggle für "Einträge ohne Stellplatz" bei Archivierung
+  function toggleArchiveLocation() {
+    const checkbox = document.getElementById('archiveNoLocation');
+    const input = document.getElementById('archiveLocation');
+    const dropdown = document.getElementById('archiveLocationDropdown');
+    
+    if (checkbox.checked) {
+      input.disabled = true;
+      input.value = '';
+      input.removeAttribute('data-value');
+      loadArchiveInbounds(null);
+    } else {
+      input.disabled = false;
+      const select = document.getElementById('archiveInboundSelect');
+      if (select) {
+        select.innerHTML = '<option value="">-- Bitte zuerst Stellplatz wählen --</option>';
+      }
+    }
   }
   
   // Beim Laden der Umlagerungs-Seite
@@ -9342,6 +11074,32 @@
   window.toggleFilter = toggleFilter;
   window.applyFilters = applyFilters;
   window.clearFilter = clearFilter;
+  window.toggleExcelFilter = toggleExcelFilter;
+  window.sortColumn = sortColumn;
+  window.showTextFilter = showTextFilter;
+  window.setTextFilter = setTextFilter;
+  window.showNumberFilter = showNumberFilter;
+  window.setNumberFilter = setNumberFilter;
+  window.showValueFilter = showValueFilter;
+  window.toggleSelectAll = toggleSelectAll;
+  window.filterValueList = filterValueList;
+  window.applyValueFilter = applyValueFilter;
+  window.setDateFilter = setDateFilter;
+  window.clearColumnFilter = clearColumnFilter;
+  window.clearAllFilters = clearAllFilters;
+  window.applyTextFilter = applyTextFilter;
+  window.applyNumberFilter = applyNumberFilter;
+  window.closeFilterInputModal = closeFilterInputModal;
+  window.loadOverallInventory = loadOverallInventory;
+  window.clearAllOverallFilters = clearAllOverallFilters;
+  window.toggleOverallFilter = toggleOverallFilter;
+  window.overallSortColumn = overallSortColumn;
+  window.overallShowTextFilter = overallShowTextFilter;
+  window.overallSetTextFilter = overallSetTextFilter;
+  window.overallShowNumberFilter = overallShowNumberFilter;
+  window.overallSetNumberFilter = overallSetNumberFilter;
+  window.overallClearColumnFilter = overallClearColumnFilter;
+  window.switchInventoryTab = switchInventoryTab;
   
   // Stelle sicher, dass Multi-Action-Funktionen global verfügbar sind
   if (typeof multiEditLocations !== 'undefined') {
