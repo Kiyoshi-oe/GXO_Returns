@@ -1,6 +1,27 @@
 // LVS Returns - Utility Functions
 // Modal, Lightbox, und andere Hilfsfunktionen
 
+/**
+ * Debounce-Funktion: Verzögert die Ausführung einer Funktion
+ * @param {Function} func - Die zu debouncende Funktion
+ * @param {number} wait - Wartezeit in Millisekunden
+ * @returns {Function} Die debounced Funktion
+ */
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Globale Verfügbarkeit
+window.debounce = debounce;
+
 // Custom Modal
 function showModal(title, message, icon = "ℹ️", showCancel = false) {
   return new Promise((resolve) => {

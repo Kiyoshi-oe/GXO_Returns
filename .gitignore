@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+npm-debug.log*
+server_error.txt
+server_output.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.backup
+*_backup.*
+index_backup.html
+
+# Environment
+.env
+.env.local
+
+# Build/Output
+dist/
+build/
+*.min.js
+*.min.css
+

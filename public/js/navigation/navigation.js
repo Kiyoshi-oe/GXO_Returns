@@ -2,47 +2,19 @@
 
 function initNavigation() {
   const navItems = document.querySelectorAll(".nav-item");
-  const views = document.querySelectorAll(".view");
-  const topbarTitle = document.getElementById("topbarTitle");
-  const topbarSubtitle = document.getElementById("topbarSubtitle");
 
   navItems.forEach(item => {
     item.addEventListener("click", () => {
       const viewName = item.getAttribute("data-view");
-
-      navItems.forEach(n => n.classList.remove("active"));
-      item.classList.add("active");
-
-      views.forEach(v => v.classList.remove("active"));
-      const viewElement = document.getElementById("view-" + viewName);
-      if (viewElement) {
-        viewElement.classList.add("active");
-      }
-
-      if (viewMeta[viewName]) {
-        topbarTitle.textContent = viewMeta[viewName].title;
-        topbarSubtitle.textContent = viewMeta[viewName].subtitle;
-      }
       
-      // Nach oben scrollen beim View-Wechsel
-      setTimeout(() => {
-        const mainContent = document.querySelector(".main");
-        if (mainContent) {
-          mainContent.scrollTop = 0;
-        }
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 0);
-
-      // Settings Content nur auf der Einstellungen-Seite anzeigen
-      const settingsContent = document.getElementById("settingsContent");
-      if (viewName !== "settings" && settingsContent) {
-        settingsContent.style.display = "none";
+      // Routing-System verwenden statt direkter View-Wechsel
+      if (typeof navigateToView === 'function') {
+        navigateToView(viewName);
+      } else {
+        // Fallback falls Routing noch nicht geladen ist
+        console.warn('⚠️ Routing-System noch nicht geladen, verwende Fallback');
+        handleDirectViewSwitch(viewName);
       }
-
-      // View-spezifische Logik
-      handleViewSwitch(viewName);
     });
   });
 
@@ -50,14 +22,68 @@ function initNavigation() {
   document.querySelectorAll("[data-jump]").forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.getAttribute("data-jump");
-      const navTarget = document.querySelector('.nav-item[data-view="' + target + '"]');
-      if (navTarget) {
-        navTarget.click();
+      
+      // Routing-System verwenden
+      if (typeof navigateToView === 'function') {
+        navigateToView(target);
+      } else {
+        // Fallback
+        const navTarget = document.querySelector('.nav-item[data-view="' + target + '"]');
+        if (navTarget) {
+          navTarget.click();
+        }
       }
     });
   });
   
   console.log("✅ Navigation initialisiert");
+}
+
+/**
+ * Fallback-Funktion für direkten View-Wechsel (wenn Routing nicht verfügbar)
+ */
+function handleDirectViewSwitch(viewName) {
+  const navItems = document.querySelectorAll(".nav-item");
+  const views = document.querySelectorAll(".view");
+  const topbarTitle = document.getElementById("topbarTitle");
+  const topbarSubtitle = document.getElementById("topbarSubtitle");
+
+  navItems.forEach(n => n.classList.remove("active"));
+  const clickedItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
+  if (clickedItem) {
+    clickedItem.classList.add("active");
+  }
+
+  views.forEach(v => v.classList.remove("active"));
+  const viewElement = document.getElementById("view-" + viewName);
+  if (viewElement) {
+    viewElement.classList.add("active");
+  }
+
+  if (viewMeta[viewName]) {
+    if (topbarTitle) topbarTitle.textContent = viewMeta[viewName].title;
+    if (topbarSubtitle) topbarSubtitle.textContent = viewMeta[viewName].subtitle;
+  }
+  
+  // Nach oben scrollen beim View-Wechsel
+  setTimeout(() => {
+    const mainContent = document.querySelector(".main");
+    if (mainContent) {
+      mainContent.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, 0);
+
+  // Settings Content nur auf der Einstellungen-Seite anzeigen
+  const settingsContent = document.getElementById("settingsContent");
+  if (viewName !== "settings" && settingsContent) {
+    settingsContent.style.display = "none";
+  }
+
+  // View-spezifische Logik
+  handleViewSwitch(viewName);
 }
 
 function handleViewSwitch(viewName) {

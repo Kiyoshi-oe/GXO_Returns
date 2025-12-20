@@ -169,15 +169,25 @@ body[data-theme="light"] .app {
   cursor: pointer;
   color: var(--text-main);
   transition: background 0.12s ease, color 0.12s ease;
+  text-decoration: none;
+}
+
+.nav-item:visited,
+.nav-item:link {
+  text-decoration: none;
+  color: var(--text-main);
 }
 
 .nav-item:hover {
   background: var(--bg-soft);
+  text-decoration: none;
+  color: var(--text-main);
 }
 
 .nav-item.active {
   background: linear-gradient(90deg, rgba(245,59,1,0.12), transparent);
   color: var(--gxo-orange);
+  text-decoration: none;
 }
 
 .nav-icon {

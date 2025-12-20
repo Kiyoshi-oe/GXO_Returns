@@ -6,6 +6,7 @@ const XLSX = require("xlsx");
 const ExcelJS = require("exceljs");
 const fs = require("fs");
 const multer = require("multer");
+const { getCached, invalidateCache } = require("./server/utils/cache");
 
 const app = express();
 const port = 3000;
@@ -24,6 +25,9 @@ const upload = multer({
 
 // Datenbank öffnen
 const db = new Database(path.join(__dirname, "lager.db"));
+
+// Prepared Statements Cache (wird nach initDb() initialisiert)
+let stmts = {};
 
 function initDb() {
   db.exec(`
@@ -525,6 +529,96 @@ function initDb() {
 
 initDb();
 
+// Prepared Statements initialisieren (nach DB-Initialisierung)
+function initPreparedStatements() {
+  stmts = {
+    // Carrier
+    carriers: db.prepare(`
+      SELECT id, name, display_name, country, default_area, default_stage, 
+             default_last_stage, default_ship_status, label_image, label_help_text,
+             visible_fields, field_placeholders, olpn_validation, tracking_validation,
+             bulk_fixed_fields, bulk_variable_fields 
+      FROM carrier 
+      WHERE is_active = 1 
+      ORDER BY display_name
+    `),
+    
+    // Locations
+    locations: db.prepare(`
+      SELECT id, code, description, area, is_active, created_at
+      FROM location
+      WHERE is_active = 1
+      ORDER BY code
+    `),
+    
+    // Dropdown Options
+    dropdownOptions: {
+      area: db.prepare(`
+        SELECT id, option_value, option_label, sort_order
+        FROM dropdown_options
+        WHERE field_name = 'area' AND is_active = 1
+        ORDER BY sort_order
+      `),
+      land: db.prepare(`
+        SELECT id, option_value, option_label, sort_order
+        FROM dropdown_options
+        WHERE field_name = 'land' AND is_active = 1
+        ORDER BY sort_order
+      `)
+    },
+    
+    // Dashboard Stats
+    dashboardStats: {
+      totalLocations: db.prepare(`
+        SELECT count(*) as c 
+        FROM location 
+        WHERE is_active = 1
+      `),
+      occupiedLocations: db.prepare(`
+        SELECT count(distinct location_id) as c 
+        FROM inbound_simple 
+        WHERE location_id IS NOT NULL AND ignore_flag = 0
+      `),
+      totalCartons: db.prepare(`
+        SELECT coalesce(sum(actual_carton), 0) as total
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND actual_carton IS NOT NULL
+      `),
+      totalEntries: db.prepare(`
+        SELECT count(*) as c
+        FROM inbound_simple
+        WHERE ignore_flag = 0
+      `),
+      openRAs: db.prepare(`
+        SELECT count(*) as c
+        FROM inbound_simple
+        WHERE asn_ra_no IS NOT NULL AND asn_ra_no != '' 
+          AND (mh_status IS NULL OR mh_status != 'geschlossen')
+          AND ignore_flag = 0
+      `),
+      unclearRAs: db.prepare(`
+        SELECT count(*) as c
+        FROM inbound_simple
+        WHERE (neue_ra IS NOT NULL AND neue_ra != '') 
+           OR (new_reopen_ra IS NOT NULL AND new_reopen_ra != '')
+          AND ignore_flag = 0
+      `)
+    },
+    
+    // Warehouse
+    warehouseAreas: db.prepare(`
+      SELECT DISTINCT area
+      FROM location
+      WHERE area IS NOT NULL AND area != '' AND is_active = 1
+      ORDER BY area
+    `)
+  };
+  
+  console.log("✅ Prepared Statements initialisiert");
+}
+
+initPreparedStatements();
+
 /* API Lagerbestand - Erweiterte Sicht mit Stellplätzen */
 app.get("/api/warehouse/locations", (req, res) => {
   try {
@@ -682,6 +776,19 @@ app.get("/api/warehouse/all-entries", (req, res) => {
 /* API Alle Areas abrufen */
 app.get("/api/warehouse/areas", (req, res) => {
   try {
+    const areas = getCached('warehouse-areas', () => {
+      return stmts.warehouseAreas.all().map(row => row.area);
+    });
+    res.json(areas);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Areas:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* API Alle Areas abrufen (alte Version - entfernt) */
+app.get("/api/warehouse/areas-old", (req, res) => {
+  try {
     const areas = db.prepare(`
       select distinct area
       from location
@@ -808,26 +915,45 @@ app.get("/api/inventory", (req, res) => {
 
 /* Carrier Liste für Buttons */
 app.get("/api/carriers", (req, res) => {
-  const rows = db
-    .prepare(
-      `select id, name, display_name, country, default_area, default_stage, 
-       default_last_stage, default_ship_status, label_image, label_help_text,
-       visible_fields, field_placeholders, olpn_validation, tracking_validation,
-       bulk_fixed_fields, bulk_variable_fields 
-       from carrier where is_active = 1 order by display_name`
-    )
-    .all();
+  const rows = getCached('carriers', () => stmts.carriers.all());
   res.json(rows);
+});
+
+/* Batch-API für Wareneingang-Initialisierung - lädt alle benötigten Daten auf einmal */
+app.get("/api/wareneingang/init", (req, res) => {
+  try {
+    const data = {
+      carriers: getCached('carriers', () => stmts.carriers.all()),
+      areas: getCached('dropdown-area', () => stmts.dropdownOptions.area.all()),
+      lands: getCached('dropdown-land', () => stmts.dropdownOptions.land.all()),
+      locations: getCached('locations', () => stmts.locations.all())
+    };
+    res.json(data);
+  } catch (err) {
+    console.error("Fehler beim Initialisieren der Wareneingang-Daten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 /* Dropdown Optionen */
 app.get("/api/dropdown-options/:fieldName", (req, res) => {
   const { fieldName } = req.params;
-  const rows = db
-    .prepare(
-      "select id, option_value, option_label, sort_order from dropdown_options where field_name = ? and is_active = 1 order by sort_order"
-    )
-    .all(fieldName);
+  
+  // Verwende gecachte Prepared Statements wenn verfügbar
+  let rows;
+  if (fieldName === 'area' && stmts.dropdownOptions.area) {
+    rows = getCached(`dropdown-${fieldName}`, () => stmts.dropdownOptions.area.all());
+  } else if (fieldName === 'land' && stmts.dropdownOptions.land) {
+    rows = getCached(`dropdown-${fieldName}`, () => stmts.dropdownOptions.land.all());
+  } else {
+    // Fallback für andere fieldNames
+    rows = db
+      .prepare(
+        "SELECT id, option_value, option_label, sort_order FROM dropdown_options WHERE field_name = ? AND is_active = 1 ORDER BY sort_order"
+      )
+      .all(fieldName);
+  }
+  
   res.json(rows);
 });
 
@@ -1016,6 +1142,9 @@ app.put("/api/carriers/:id", (req, res) => {
       id
     );
 
+    // Cache invalidieren
+    invalidateCache('carriers');
+    
     res.json({ ok: true });
   } catch (err) {
     console.error("Fehler beim Update Carrier:", err);
@@ -1034,6 +1163,10 @@ app.post("/api/dropdown-options", (req, res) => {
     `);
 
     const info = stmt.run(field_name, option_value, option_label, sort_order || 0);
+    
+    // Cache invalidieren
+    invalidateCache(`dropdown-${field_name}`);
+    
     res.json({ ok: true, id: info.lastInsertRowid });
   } catch (err) {
     console.error("Fehler beim Hinzufügen Dropdown Option:", err);
@@ -1051,8 +1184,14 @@ app.put("/api/dropdown-options/:id", (req, res) => {
       return res.status(400).json({ ok: false, error: "Option Label darf nicht leer sein" });
     }
     
-    db.prepare("update dropdown_options set option_label = ?, option_value = ? where id = ?")
-      .run(option_label.trim(), option_label.trim(), id);
+    const updated = db.prepare("SELECT field_name FROM dropdown_options WHERE id = ?").get(id);
+    if (updated) {
+      db.prepare("update dropdown_options set option_label = ?, option_value = ? where id = ?")
+        .run(option_label.trim(), option_label.trim(), id);
+      
+      // Cache invalidieren
+      invalidateCache(`dropdown-${updated.field_name}`);
+    }
     
     res.json({ ok: true });
   } catch (err) {
@@ -1076,6 +1215,9 @@ app.put("/api/dropdown-options/reorder/:fieldName", (req, res) => {
     orderedIds.forEach((id, index) => {
       updateStmt.run(index, id);
     });
+    
+    // Cache invalidieren
+    invalidateCache(`dropdown-${fieldName}`);
     
     res.json({ ok: true });
   } catch (err) {
@@ -1193,6 +1335,10 @@ app.post("/api/inbound-simple", (req, res) => {
     );
 
     console.log("Erfolgreich gespeichert mit ID:", info.lastInsertRowid);
+    
+    // Cache invalidieren nach Änderung
+    invalidateCache('dashboard-stats');
+    
     res.json({ ok: true, id: info.lastInsertRowid });
   } catch (err) {
     console.error("Fehler beim Speichern inbound simple:", err);
@@ -1397,56 +1543,18 @@ app.put("/api/inbound-simple/:id", (req, res) => {
 // Dashboard KPI-Statistiken
 app.get("/api/dashboard/stats", (req, res) => {
   try {
-    // Gesamt Stellplätze
-    const totalLocations = db.prepare("select count(*) as c from location where is_active = 1").get().c;
-    
-    // Belegte Stellplätze (mit mindestens einem Eintrag)
-    const occupiedLocations = db.prepare(`
-      select count(distinct location_id) as c 
-      from inbound_simple 
-      where location_id is not null and ignore_flag = 0
-    `).get().c;
-    
-    // Gesamt Kartons
-    const totalCartons = db.prepare(`
-      select coalesce(sum(actual_carton), 0) as total
-      from inbound_simple
-      where ignore_flag = 0 and actual_carton is not null
-    `).get().total || 0;
-    
-    // Gesamt Einträge (Kartons)
-    const totalEntries = db.prepare(`
-      select count(*) as c
-      from inbound_simple
-      where ignore_flag = 0
-    `).get().c;
-    
-    // Offene RA Positionen (mit asn_ra_no aber ohne mh_status oder mh_status != 'geschlossen')
-    const openRAs = db.prepare(`
-      select count(*) as c
-      from inbound_simple
-      where asn_ra_no is not null and asn_ra_no != '' 
-        and (mh_status is null or mh_status != 'geschlossen')
-        and ignore_flag = 0
-    `).get().c;
-    
-    // RA Positionen mit unklarer Nummer (neue_ra oder new_reopen_ra)
-    const unclearRAs = db.prepare(`
-      select count(*) as c
-      from inbound_simple
-      where (neue_ra is not null and neue_ra != '') 
-         or (new_reopen_ra is not null and new_reopen_ra != '')
-         and ignore_flag = 0
-    `).get().c;
-    
-    res.json({
-      totalLocations,
-      occupiedLocations,
-      totalCartons,
-      totalEntries,
-      openRAs,
-      unclearRAs
+    const stats = getCached('dashboard-stats', () => {
+      return {
+        totalLocations: stmts.dashboardStats.totalLocations.get().c,
+        occupiedLocations: stmts.dashboardStats.occupiedLocations.get().c,
+        totalCartons: stmts.dashboardStats.totalCartons.get().total || 0,
+        totalEntries: stmts.dashboardStats.totalEntries.get().c,
+        openRAs: stmts.dashboardStats.openRAs.get().c,
+        unclearRAs: stmts.dashboardStats.unclearRAs.get().c
+      };
     });
+    
+    res.json(stats);
   } catch (err) {
     console.error("Fehler beim Abrufen der Dashboard-Statistiken:", err);
     res.status(500).json({ ok: false, error: err.message });
@@ -3374,8 +3482,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Statischer Ordner für index.html und Bilder (NACH allen API-Routen)
-app.use(express.static(path.join(__dirname)));
+// Statischer Ordner für statische Dateien (Bilder, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false // Verhindert automatisches Servieren von index.html
+}));
+
+// Route-Mapping für separate Seiten
+const pageRoutes = {
+  '/': 'dashboard.html',
+  '/dashboard': 'dashboard.html',
+  '/lagerbestand': 'lagerbestand.html',
+  '/wareneingang': 'wareneingang.html',
+  '/umlagerung': 'umlagerung.html',
+  '/archive': 'archive.html',
+  '/ra-import': 'ra-import.html',
+  '/einstellungen': 'einstellungen.html',
+  '/import': 'import.html',
+  '/export': 'export.html'
+};
+
+// Separate Seiten servieren
+app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/einstellungen', '/import', '/export'], (req, res) => {
+  // API-Routen nicht abfangen
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  
+  const pageFile = pageRoutes[req.path] || pageRoutes['/'];
+  const pagePath = path.join(__dirname, 'public', 'pages', pageFile);
+  
+  // Prüfe ob Datei existiert
+  if (fs.existsSync(pagePath)) {
+    res.sendFile(pagePath);
+  } else {
+    // Fallback auf index.html wenn Seite nicht existiert
+    res.sendFile(path.join(__dirname, 'index.html'));
+  }
+});
+
+// Catch-All-Route: Alle anderen Routen auf Dashboard umleiten
+app.use((req, res, next) => {
+  // API-Routen nicht abfangen
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  // Alle anderen Routen auf Dashboard umleiten
+  res.redirect('/dashboard');
+});
 
 // Globaler Error-Handler - muss nach allen Routes kommen
 app.use((err, req, res, next) => {
