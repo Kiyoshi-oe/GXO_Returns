@@ -107,3 +107,4 @@ Für neue Features:
 3. API-Route in `server/routes/` erstellen (wenn nötig)
 4. Dokumentation in `docs/` aktualisieren
 
+

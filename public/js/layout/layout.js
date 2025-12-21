@@ -13,12 +13,17 @@ function createSidebar(activePage) {
     move: { icon: '↔️', label: 'Umlagerung', route: '/umlagerung' },
     archive: { icon: '🗂️', label: 'Archiv', route: '/archive' },
     ra: { icon: '📑', label: 'RA Import', route: '/ra-import' },
+    suche: { icon: '🔍', label: 'Globale Suche', route: '/suche' },
+    reporting: { icon: '📈', label: 'Reporting', route: '/reporting' },
+    audit: { icon: '📋', label: 'Audit-Logs', route: '/audit' },
+    performance: { icon: '⚡', label: 'Performance', route: '/performance' },
+    barcodeGenerator: { icon: '📊', label: 'Barcode Generator', route: '/barcode-generator' },
     settings: { icon: '⚙️', label: 'Einstellungen', route: '/einstellungen' },
     import: { icon: '📥', label: 'Import', route: '/import' },
     export: { icon: '📤', label: 'Export', route: '/export' }
   };
 
-  const viewPages = ['dashboard', 'inventory', 'inbound', 'move', 'archive', 'ra'];
+  const viewPages = ['dashboard', 'inventory', 'inbound', 'move', 'archive', 'ra', 'suche', 'reporting', 'audit', 'performance', 'barcodeGenerator'];
   const adminPages = ['settings', 'import', 'export'];
 
   let sidebarHTML = `

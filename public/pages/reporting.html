@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporting & Analytics - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+</div>
+
+<div id="customModal" class="custom-modal">
+  <div class="custom-modal-content">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon" id="modalIcon">ℹ️</span>
+      <span class="custom-modal-title" id="modalTitle">Information</span>
+      <span class="custom-modal-close" id="modalClose">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="modalBody">Nachricht hier</div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-primary" id="modalOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="/lagerbestand" class="nav-item"><span class="nav-icon">📦</span><span>Lagerbestand</span></a>
+      <a href="/wareneingang" class="nav-item"><span class="nav-icon">📥</span><span>Wareneingang</span></a>
+      <a href="/umlagerung" class="nav-item"><span class="nav-icon">↔️</span><span>Umlagerung</span></a>
+      <a href="/archive" class="nav-item"><span class="nav-icon">🗂️</span><span>Archiv</span></a>
+      <a href="/ra-import" class="nav-item"><span class="nav-icon">📑</span><span>RA Import</span></a>
+      <a href="/suche" class="nav-item"><span class="nav-icon">🔍</span><span>Globale Suche</span></a>
+      <a href="/reporting" class="nav-item active"><span class="nav-icon">📈</span><span>Reporting</span></a>
+      <a href="/audit" class="nav-item"><span class="nav-icon">📋</span><span>Audit-Logs</span></a>
+      <a href="/performance" class="nav-item"><span class="nav-icon">⚡</span><span>Performance</span></a>
+      <a href="/barcode-generator" class="nav-item"><span class="nav-icon">📊</span><span>Barcode Generator</span></a>
+    </nav>
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item"><span class="nav-icon">⚙️</span><span>Einstellungen</span></a>
+    <a href="/import" class="nav-item"><span class="nav-icon">📥</span><span>Import</span></a>
+    <a href="/export" class="nav-item"><span class="nav-icon">📤</span><span>Export</span></a>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">📈 Reporting & Analytics</div>
+        <div class="topbar-subtitle">Trend-Analysen, KPIs und automatische Reports</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Report-Konfiguration -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📊 Report erstellen</div>
+            <div class="card-subtitle">Wählen Sie Zeitraum, Metriken und Format</div>
+          </div>
+        </div>
+        <div style="padding: 20px;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Report-Typ</label>
+              <select id="reportType" onchange="updateReportOptions()">
+                <option value="trend">Trend-Analyse (Wareneingänge)</option>
+                <option value="kpi">Performance-KPIs</option>
+                <option value="carrier">Carrier-Statistik</option>
+                <option value="location">Stellplatz-Auslastung</option>
+                <option value="custom">Custom Report</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Zeitraum</label>
+              <select id="timeRange">
+                <option value="today">Heute</option>
+                <option value="week">Diese Woche</option>
+                <option value="month">Dieser Monat</option>
+                <option value="quarter">Dieses Quartal</option>
+                <option value="year">Dieses Jahr</option>
+                <option value="custom">Benutzerdefiniert</option>
+              </select>
+            </div>
+            <div class="form-group" id="dateFromGroup" style="display: none;">
+              <label>Von</label>
+              <input type="date" id="dateFrom">
+            </div>
+            <div class="form-group" id="dateToGroup" style="display: none;">
+              <label>Bis</label>
+              <input type="date" id="dateTo">
+            </div>
+            <div class="form-group">
+              <label>Format</label>
+              <select id="exportFormat">
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Automatisierung</label>
+              <select id="scheduleType">
+                <option value="once">Einmalig</option>
+                <option value="daily">Täglich</option>
+                <option value="weekly">Wöchentlich</option>
+                <option value="monthly">Monatlich</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top: 20px;">
+            <button class="btn btn-primary" onclick="generateReport()">📊 Report generieren</button>
+            <button class="btn btn-secondary" onclick="previewReport()">👁️ Vorschau</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Performance-KPIs</div>
+          </div>
+          <div style="padding: 20px;" id="kpiContainer">
+            <div style="text-align: center; padding: 40px;">Lade KPIs...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📈 Trend-Analyse</div>
+          </div>
+          <div style="padding: 20px;">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report-Vorschau -->
+      <div class="card" id="previewCard" style="display: none; margin-top: 20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">👁️ Report-Vorschau</div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="exportReport()">📤 Exportieren</button>
+        </div>
+        <div style="padding: 20px;" id="reportPreview">
+          <!-- Vorschau wird hier eingefügt -->
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/utils.js"></script>
+<script>
+  let trendChart = null;
+
+  function updateReportOptions() {
+    const timeRange = document.getElementById('timeRange').value;
+    document.getElementById('dateFromGroup').style.display = timeRange === 'custom' ? 'block' : 'none';
+    document.getElementById('dateToGroup').style.display = timeRange === 'custom' ? 'block' : 'none';
+  }
+
+  async function generateReport() {
+    const reportType = document.getElementById('reportType').value;
+    const timeRange = document.getElementById('timeRange').value;
+    const format = document.getElementById('exportFormat').value;
+    
+    let dateFrom, dateTo;
+    if (timeRange === 'custom') {
+      dateFrom = document.getElementById('dateFrom').value;
+      dateTo = document.getElementById('dateTo').value;
+    } else {
+      // Berechne Datum basierend auf timeRange
+      const now = new Date();
+      const ranges = {
+        today: { from: now, to: now },
+        week: { from: new Date(now.getTime() - 7*24*60*60*1000), to: now },
+        month: { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now },
+        quarter: { from: new Date(now.getFullYear(), Math.floor(now.getMonth()/3)*3, 1), to: now },
+        year: { from: new Date(now.getFullYear(), 0, 1), to: now }
+      };
+      const range = ranges[timeRange];
+      dateFrom = range.from.toISOString().split('T')[0];
+      dateTo = range.to.toISOString().split('T')[0];
+    }
+
+    try {
+      const response = await fetch('/api/reporting/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportType, dateFrom, dateTo, format })
+      });
+
+      if (!response.ok) throw new Error('Report-Generierung fehlgeschlagen');
+
+      if (format === 'pdf') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${reportType}_${dateFrom}_${dateTo}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showCustomModal('PDF erfolgreich heruntergeladen!', 'success');
+      } else if (format === 'excel' || format === 'csv') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = format === 'excel' ? 'xlsx' : 'csv';
+        a.download = `report_${reportType}_${dateFrom}_${dateTo}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showCustomModal(`${format.toUpperCase()} erfolgreich heruntergeladen!`, 'success');
+      } else {
+        const data = await response.json();
+        showCustomModal('Report erfolgreich generiert!', 'success');
+      }
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  async function previewReport() {
+    const reportType = document.getElementById('reportType').value;
+    const timeRange = document.getElementById('timeRange').value;
+    
+    let dateFrom, dateTo;
+    if (timeRange === 'custom') {
+      dateFrom = document.getElementById('dateFrom').value;
+      dateTo = document.getElementById('dateTo').value;
+      if (!dateFrom || !dateTo) {
+        showCustomModal('Bitte wählen Sie ein Datum für den benutzerdefinierten Zeitraum', 'warning');
+        return;
+      }
+    } else {
+      const now = new Date();
+      const ranges = {
+        today: { from: now, to: now },
+        week: { from: new Date(now.getTime() - 7*24*60*60*1000), to: now },
+        month: { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now },
+        quarter: { from: new Date(now.getFullYear(), Math.floor(now.getMonth()/3)*3, 1), to: now },
+        year: { from: new Date(now.getFullYear(), 0, 1), to: now }
+      };
+      const range = ranges[timeRange];
+      dateFrom = range.from.toISOString().split('T')[0];
+      dateTo = range.to.toISOString().split('T')[0];
+    }
+    
+    try {
+      const response = await fetch(`/api/reporting/preview?type=${reportType}&dateFrom=${dateFrom}&dateTo=${dateTo}`);
+      if (!response.ok) throw new Error('Vorschau konnte nicht geladen werden');
+      const data = await response.json();
+      
+      document.getElementById('reportPreview').innerHTML = data.html || 'Keine Daten verfügbar';
+      document.getElementById('previewCard').style.display = 'block';
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  async function loadKPIs() {
+    try {
+      const response = await fetch('/api/reporting/kpis');
+      const kpis = await response.json();
+      
+      let html = '<div class="grid-2">';
+      Object.keys(kpis).forEach(key => {
+        html += `<div style="text-align: center; padding: 16px; background: var(--bg-soft); border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: var(--gxo-orange);">${kpis[key]}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${key}</div>
+        </div>`;
+      });
+      html += '</div>';
+      document.getElementById('kpiContainer').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler beim Laden der KPIs:', err);
+    }
+  }
+
+  async function loadTrendChart() {
+    try {
+      const response = await fetch('/api/reporting/trends');
+      const data = await response.json();
+      
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (trendChart) trendChart.destroy();
+      
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels || [],
+          datasets: [{
+            label: 'Wareneingänge',
+            data: data.values || [],
+            borderColor: 'var(--gxo-orange)',
+            backgroundColor: 'rgba(245, 59, 1, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      });
+    } catch (err) {
+      console.error('Fehler beim Laden des Charts:', err);
+    }
+  }
+
+  async function exportReport() {
+    const reportType = document.getElementById('reportType').value;
+    const timeRange = document.getElementById('timeRange').value;
+    const format = document.getElementById('exportFormat').value;
+    
+    let dateFrom, dateTo;
+    if (timeRange === 'custom') {
+      dateFrom = document.getElementById('dateFrom').value;
+      dateTo = document.getElementById('dateTo').value;
+      if (!dateFrom || !dateTo) {
+        showCustomModal('Bitte wählen Sie ein Datum für den benutzerdefinierten Zeitraum', 'warning');
+        return;
+      }
+    } else {
+      const now = new Date();
+      const ranges = {
+        today: { from: now, to: now },
+        week: { from: new Date(now.getTime() - 7*24*60*60*1000), to: now },
+        month: { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now },
+        quarter: { from: new Date(now.getFullYear(), Math.floor(now.getMonth()/3)*3, 1), to: now },
+        year: { from: new Date(now.getFullYear(), 0, 1), to: now }
+      };
+      const range = ranges[timeRange];
+      dateFrom = range.from.toISOString().split('T')[0];
+      dateTo = range.to.toISOString().split('T')[0];
+    }
+    
+    try {
+      const response = await fetch('/api/reporting/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportType, dateFrom, dateTo, format })
+      });
+
+      if (!response.ok) throw new Error('Export fehlgeschlagen');
+
+      if (format === 'pdf') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${reportType}_${dateFrom}_${dateTo}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showCustomModal('PDF erfolgreich heruntergeladen!', 'success');
+      } else if (format === 'excel' || format === 'csv') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = format === 'excel' ? 'xlsx' : 'csv';
+        a.download = `report_${reportType}_${dateFrom}_${dateTo}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showCustomModal(`${format.toUpperCase()} erfolgreich heruntergeladen!`, 'success');
+      } else {
+        const data = await response.json();
+        showCustomModal('Report erfolgreich generiert!', 'success');
+      }
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  function showCustomModal(message, type = 'info') {
+    const modal = document.getElementById('customModal');
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    document.getElementById('modalIcon').textContent = icons[type] || 'ℹ️';
+    document.getElementById('modalBody').textContent = message;
+    modal.classList.add('active');
+    document.getElementById('modalOkBtn').onclick = () => modal.classList.remove('active');
+    document.getElementById('modalClose').onclick = () => modal.classList.remove('active');
+  }
+
+  document.getElementById('timeRange').addEventListener('change', updateReportOptions);
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    loadKPIs();
+    loadTrendChart();
+    updateReportOptions();
+    
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }, 500);
+  });
+</script>
+
+</body>
+</html>
+
+

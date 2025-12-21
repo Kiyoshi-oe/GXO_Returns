@@ -139,3 +139,4 @@ Weitere mögliche Optimierungen:
 - ✅ Batch-API liefert korrekte Daten
 - ✅ Debouncing funktioniert
 
+

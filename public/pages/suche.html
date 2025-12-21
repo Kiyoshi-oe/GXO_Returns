@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Globale Suche - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+</div>
+
+<!-- Custom Modal -->
+<div id="customModal" class="custom-modal">
+  <div class="custom-modal-content">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon" id="modalIcon">ℹ️</span>
+      <span class="custom-modal-title" id="modalTitle">Information</span>
+      <span class="custom-modal-close" id="modalClose">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="modalBody">Nachricht hier</div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-primary" id="modalOkBtn">OK</button>
+      <button class="btn btn-ghost" id="modalCancelBtn" style="display:none;">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Name Modal -->
+<div id="filterNameModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 500px;">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon">💾</span>
+      <span class="custom-modal-title">Filter speichern</span>
+      <span class="custom-modal-close" onclick="closeFilterNameModal()">&times;</span>
+    </div>
+    <div class="custom-modal-body">
+      <div class="form-group">
+        <label>Filter-Name:</label>
+        <input type="text" id="filterNameInput" placeholder="z.B. Meine Standard-Suche" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 6px; margin-top: 8px;" autofocus>
+      </div>
+      <div class="form-group" style="margin-top: 12px;">
+        <label>
+          <input type="checkbox" id="filterFavoriteCheckbox"> Als Favorit markieren
+        </label>
+      </div>
+    </div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-primary" onclick="confirmSaveFilter()">Speichern</button>
+      <button class="btn btn-ghost" onclick="closeFilterNameModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Management Modal -->
+<div id="filterManagementModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 700px;">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon">⚙️</span>
+      <span class="custom-modal-title">Filter verwalten</span>
+      <span class="custom-modal-close" onclick="closeFilterManagement()">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="filterManagementList" style="max-height: 400px; overflow-y: auto;">
+      <div style="text-align: center; padding: 20px; color: var(--text-muted);">Lade Filter...</div>
+    </div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-ghost" onclick="closeFilterManagement()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="/lagerbestand" class="nav-item"><span class="nav-icon">📦</span><span>Lagerbestand</span></a>
+      <a href="/wareneingang" class="nav-item"><span class="nav-icon">📥</span><span>Wareneingang</span></a>
+      <a href="/umlagerung" class="nav-item"><span class="nav-icon">↔️</span><span>Umlagerung</span></a>
+      <a href="/archive" class="nav-item"><span class="nav-icon">🗂️</span><span>Archiv</span></a>
+      <a href="/ra-import" class="nav-item"><span class="nav-icon">📑</span><span>RA Import</span></a>
+      <a href="/suche" class="nav-item active"><span class="nav-icon">🔍</span><span>Globale Suche</span></a>
+      <a href="/reporting" class="nav-item"><span class="nav-icon">📈</span><span>Reporting</span></a>
+      <a href="/audit" class="nav-item"><span class="nav-icon">📋</span><span>Audit-Logs</span></a>
+      <a href="/performance" class="nav-item"><span class="nav-icon">⚡</span><span>Performance</span></a>
+      <a href="/barcode-generator" class="nav-item"><span class="nav-icon">📊</span><span>Barcode Generator</span></a>
+    </nav>
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item"><span class="nav-icon">⚙️</span><span>Einstellungen</span></a>
+    <a href="/import" class="nav-item"><span class="nav-icon">📥</span><span>Import</span></a>
+    <a href="/export" class="nav-item"><span class="nav-icon">📤</span><span>Export</span></a>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">🔍 Globale Suche</div>
+        <div class="topbar-subtitle">Multi-Suche über alle Module (SAP-Style)</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔍 Globale Suche</div>
+            <div class="card-subtitle">Suchen Sie nach OLPN, Tracking-Nummern, RA-Nummern, Kunden, Stellplätzen und mehr</div>
+          </div>
+        </div>
+
+        <!-- Multi-Suche Eingabe (SAP-Style) -->
+        <div style="padding: 20px;">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>Suchbegriffe (ein Begriff pro Zeile, Enter für neue Zeile)</label>
+            <div style="position: relative;">
+              <textarea 
+                id="searchInput" 
+                placeholder="Geben Sie mehrere Suchbegriffe ein (z.B. OLPN, Tracking-Nr., RA-Nr., Kundenname, Stellplatz)...&#10;Drücken Sie Enter für eine neue Zeile&#10;&#10;Beispiel:&#10;00050197980027746580&#10;885733208991&#10;70378154"
+                style="width: 100%; min-height: 150px; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 14px; resize: vertical;"
+                rows="8"
+              ></textarea>
+              <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-secondary" onclick="clearSearch()" title="Löschen">🗑️</button>
+                <button class="btn btn-sm btn-secondary" onclick="loadSavedFilters()" title="Gespeicherte Filter">⭐</button>
+              </div>
+            </div>
+            <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="performSearch()">
+                🔍 Suchen
+              </button>
+              <button class="btn btn-secondary" onclick="saveCurrentFilter()">
+                💾 Filter speichern
+              </button>
+              <select id="savedFiltersSelect" onchange="loadSavedFilter(this.value)" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); min-width: 200px;">
+                <option value="">Gespeicherte Filter...</option>
+              </select>
+              <button class="btn btn-sm btn-secondary" onclick="showFilterManagement()" title="Filter verwalten">⚙️</button>
+            </div>
+          </div>
+
+          <!-- Suchoptionen -->
+          <div class="card" style="margin-top: 20px; background: var(--bg-soft);">
+            <div class="card-header">
+              <div class="card-title" style="font-size: 14px;">⚙️ Suchoptionen</div>
+            </div>
+            <div style="padding: 16px;">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInOLPN" checked> OLPN
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInTracking" checked> Tracking-Nummern
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInRA" checked> RA-Nummern
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInCustomer" checked> Kunden
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInLocation" checked> Stellplätze
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInCarrier" checked> Carrier
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchInComments"> Kommentare
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="searchExactMatch"> Exakte Übereinstimmung
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suchergebnisse -->
+      <div class="card" id="resultsCard" style="display: none;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📊 Suchergebnisse</div>
+            <div class="card-subtitle" id="resultsCount">0 Ergebnisse gefunden</div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="exportResults()">📤 Exportieren</button>
+        </div>
+        <div style="padding: 20px;">
+          <div id="searchResults" style="overflow-x: auto;">
+            <!-- Ergebnisse werden hier eingefügt -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/utils.js"></script>
+<script>
+  // Globale Suche Funktionalität
+  let currentSearchTerms = [];
+  let searchResults = [];
+
+  // Suche ausführen
+  async function performSearch() {
+    const textarea = document.getElementById('searchInput');
+    const terms = textarea.value.split('\n')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+    
+    if (terms.length === 0) {
+      showCustomModal('Bitte geben Sie mindestens einen Suchbegriff ein.', 'warning');
+      return;
+    }
+
+    currentSearchTerms = terms;
+    
+    const options = {
+      olpn: document.getElementById('searchInOLPN').checked,
+      tracking: document.getElementById('searchInTracking').checked,
+      ra: document.getElementById('searchInRA').checked,
+      customer: document.getElementById('searchInCustomer').checked,
+      location: document.getElementById('searchInLocation').checked,
+      carrier: document.getElementById('searchInCarrier').checked,
+      comments: document.getElementById('searchInComments').checked,
+      exactMatch: document.getElementById('searchExactMatch').checked
+    };
+
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = '<div style="text-align: center; padding: 40px;">🔄 Suche läuft...</div>';
+    resultsCard.style.display = 'block';
+
+    try {
+      const response = await fetch('/api/search/global', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ terms, options })
+      });
+
+      if (!response.ok) throw new Error('Suche fehlgeschlagen');
+
+      const data = await response.json();
+      searchResults = data.results || [];
+      
+      renderResults(searchResults);
+      document.getElementById('resultsCount').textContent = `${searchResults.length} Ergebnisse gefunden`;
+    } catch (err) {
+      console.error('Suche-Fehler:', err);
+      resultsDiv.innerHTML = `<div style="color: var(--error); padding: 20px;">❌ Fehler: ${err.message}</div>`;
+    }
+  }
+
+  // Ergebnisse rendern
+  function renderResults(results) {
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+      resultsDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Ergebnisse gefunden</div>';
+      return;
+    }
+
+    let html = '<table class="data-table" style="width: 100%;">';
+    html += '<thead><tr>';
+    html += '<th>Typ</th><th>ID</th><th>OLPN</th><th>Tracking</th><th>RA-Nr.</th><th>Kunde</th><th>Stellplatz</th><th>Carrier</th><th>Aktionen</th>';
+    html += '</tr></thead><tbody>';
+
+    results.forEach(result => {
+      html += '<tr>';
+      html += `<td>${result.type || '-'}</td>`;
+      html += `<td>${result.id || '-'}</td>`;
+      html += `<td>${result.olpn || '-'}</td>`;
+      html += `<td>${result.tracking_nr || '-'}</td>`;
+      html += `<td>${result.ra_no || '-'}</td>`;
+      html += `<td>${result.customer_name || '-'}</td>`;
+      html += `<td>${result.location_code || '-'}</td>`;
+      html += `<td>${result.carrier_name || '-'}</td>`;
+      html += `<td><button class="btn btn-sm btn-primary" onclick="viewDetails(${result.id}, '${result.type}')">Details</button></td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    resultsDiv.innerHTML = html;
+  }
+
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('resultsCard').style.display = 'none';
+    searchResults = [];
+  }
+
+  function viewDetails(id, type) {
+    // Navigation zu entsprechendem Modul
+    if (type === 'inbound') {
+      window.location.href = `/wareneingang?highlight=${id}`;
+    } else if (type === 'location') {
+      window.location.href = `/lagerbestand?highlight=${id}`;
+    }
+  }
+
+  function saveCurrentFilter() {
+    const textarea = document.getElementById('searchInput');
+    const terms = textarea.value.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+    
+    if (terms.length === 0) {
+      showCustomModal('Bitte geben Sie mindestens einen Suchbegriff ein.', 'warning');
+      return;
+    }
+    
+    // Öffne Modal für Filter-Namen
+    document.getElementById('filterNameInput').value = '';
+    document.getElementById('filterFavoriteCheckbox').checked = false;
+    document.getElementById('filterNameModal').classList.add('active');
+    document.getElementById('filterNameInput').focus();
+  }
+
+  function closeFilterNameModal() {
+    document.getElementById('filterNameModal').classList.remove('active');
+  }
+
+  async function confirmSaveFilter() {
+    const name = document.getElementById('filterNameInput').value.trim();
+    if (!name) {
+      showCustomModal('Bitte geben Sie einen Filter-Namen ein.', 'warning');
+      return;
+    }
+
+    const textarea = document.getElementById('searchInput');
+    const terms = textarea.value.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+    
+    if (terms.length === 0) {
+      showCustomModal('Bitte geben Sie mindestens einen Suchbegriff ein.', 'warning');
+      return;
+    }
+    
+    const filterConfig = {
+      terms,
+      options: {
+        olpn: document.getElementById('searchInOLPN').checked,
+        tracking: document.getElementById('searchInTracking').checked,
+        ra: document.getElementById('searchInRA').checked,
+        customer: document.getElementById('searchInCustomer').checked,
+        location: document.getElementById('searchInLocation').checked,
+        carrier: document.getElementById('searchInCarrier').checked,
+        comments: document.getElementById('searchInComments').checked,
+        exactMatch: document.getElementById('searchExactMatch').checked
+      }
+    };
+
+    try {
+      // Benutzer-Info holen
+      let currentUser = 'System';
+      try {
+        const userResponse = await fetch('/api/current-user');
+        const userData = await userResponse.json();
+        if (userData.ok) {
+          currentUser = userData.username || userData.displayName || 'System';
+        }
+      } catch (e) {
+        console.warn('Konnte Benutzer nicht laden:', e);
+      }
+
+      const isFavorite = document.getElementById('filterFavoriteCheckbox').checked ? 1 : 0;
+
+      const response = await fetch('/api/filters/save', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({
+          name,
+          module: 'global_search',
+          filters: filterConfig,
+          is_favorite: isFavorite
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.ok) {
+        closeFilterNameModal();
+        showCustomModal('✅ Filter erfolgreich gespeichert!', 'success');
+        loadSavedFilters();
+      } else {
+        throw new Error(result.error || 'Unbekannter Fehler');
+      }
+    } catch (err) {
+      console.error('Fehler beim Speichern:', err);
+      showCustomModal('❌ Fehler beim Speichern: ' + err.message, 'error');
+    }
+  }
+
+  // Enter-Taste im Filter-Name-Input
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterNameInput = document.getElementById('filterNameInput');
+    if (filterNameInput) {
+      filterNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmSaveFilter();
+        }
+      });
+    }
+  });
+
+  async function loadSavedFilters() {
+    try {
+      const response = await fetch('/api/filters?module=global_search');
+      if (!response.ok) throw new Error('Fehler beim Laden der Filter');
+      
+      const filters = await response.json();
+      
+      const select = document.getElementById('savedFiltersSelect');
+      select.innerHTML = '<option value="">Gespeicherte Filter...</option>';
+      
+      if (filters && filters.length > 0) {
+        filters.forEach(filter => {
+          const option = document.createElement('option');
+          option.value = filter.id;
+          const favoriteIcon = filter.is_favorite ? '⭐ ' : '';
+          const date = filter.created_at ? new Date(filter.created_at).toLocaleDateString('de-DE') : '';
+          option.textContent = `${favoriteIcon}${filter.name}${date ? ' (' + date + ')' : ''}`;
+          select.appendChild(option);
+        });
+      } else {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Keine gespeicherten Filter';
+        option.disabled = true;
+        select.appendChild(option);
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Filter:', err);
+      showCustomModal('Fehler beim Laden der gespeicherten Filter: ' + err.message, 'error');
+    }
+  }
+
+  async function loadSavedFilter(filterId) {
+    if (!filterId) return;
+    
+    try {
+      const response = await fetch(`/api/filters/${filterId}`);
+      if (!response.ok) throw new Error('Filter nicht gefunden');
+      
+      const filter = await response.json();
+      
+      // Parse filter config (kann als String oder bereits als Objekt sein)
+      let config;
+      if (typeof filter.filters === 'string') {
+        config = JSON.parse(filter.filters);
+      } else {
+        config = filter.filters;
+      }
+      
+      if (!config) {
+        showCustomModal('Filter-Konfiguration ungültig', 'error');
+        return;
+      }
+      
+      // Lade Suchbegriffe
+      if (config.terms && Array.isArray(config.terms)) {
+        document.getElementById('searchInput').value = config.terms.join('\n');
+      }
+      
+      // Lade Optionen
+      if (config.options) {
+        document.getElementById('searchInOLPN').checked = config.options.olpn !== undefined ? config.options.olpn : true;
+        document.getElementById('searchInTracking').checked = config.options.tracking !== undefined ? config.options.tracking : true;
+        document.getElementById('searchInRA').checked = config.options.ra !== undefined ? config.options.ra : true;
+        document.getElementById('searchInCustomer').checked = config.options.customer !== undefined ? config.options.customer : true;
+        document.getElementById('searchInLocation').checked = config.options.location !== undefined ? config.options.location : true;
+        document.getElementById('searchInCarrier').checked = config.options.carrier !== undefined ? config.options.carrier : true;
+        document.getElementById('searchInComments').checked = config.options.comments || false;
+        document.getElementById('searchExactMatch').checked = config.options.exactMatch || false;
+      }
+      
+      showCustomModal('✅ Filter geladen! Klicken Sie auf "Suchen" um die Suche auszuführen.', 'success');
+    } catch (err) {
+      console.error('Fehler beim Laden des Filters:', err);
+      showCustomModal('❌ Fehler beim Laden des Filters: ' + err.message, 'error');
+    }
+  }
+
+  function exportResults() {
+    if (searchResults.length === 0) {
+      showCustomModal('Keine Ergebnisse zum Exportieren', 'warning');
+      return;
+    }
+    
+    // Helper-Funktion: Formatiert CSV-Werte als Text (mit Anführungszeichen)
+    function csvEscape(value) {
+      if (value === null || value === undefined) {
+        return '""';
+      }
+      // Konvertiere zu String
+      const str = String(value);
+      // Escape Anführungszeichen (doppelte Anführungszeichen)
+      const escaped = str.replace(/"/g, '""');
+      // Alle Werte in Anführungszeichen setzen (damit Excel sie als Text behandelt)
+      return `"${escaped}"`;
+    }
+    
+    // Export als CSV mit BOM für korrekte UTF-8 Erkennung
+    let csv = '\uFEFF';
+    csv += 'Typ,ID,OLPN,Tracking,RA-Nr.,Kunde,Stellplatz,Carrier\n';
+    searchResults.forEach(r => {
+      csv += `${csvEscape(r.type)},${csvEscape(r.id)},${csvEscape(r.olpn)},${csvEscape(r.tracking_nr)},${csvEscape(r.ra_no)},${csvEscape(r.customer_name)},${csvEscape(r.location_code)},${csvEscape(r.carrier_name)}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suche_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  // Enter-Taste für Suche
+  document.getElementById('searchInput').addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      performSearch();
+    }
+  });
+
+  // Initialisierung
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSavedFilters();
+    
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const current = document.body.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('lvsTheme', next);
+        themeToggle.textContent = next === 'light' ? '☾' : '☀';
+      });
+    }
+    
+    // Loading Screen ausblenden
+    setTimeout(() => {
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+      }
+    }, 500);
+  });
+
+  // showCustomModal Funktion
+  function showCustomModal(message, type = 'info') {
+    const modal = document.getElementById('customModal');
+    if (!modal) {
+      alert(message);
+      return;
+    }
+    
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    document.getElementById('modalIcon').textContent = icons[type] || 'ℹ️';
+    document.getElementById('modalTitle').textContent = type === 'error' ? 'Fehler' : type === 'warning' ? 'Warnung' : 'Information';
+    document.getElementById('modalBody').textContent = message;
+    modal.classList.add('active');
+    
+    document.getElementById('modalOkBtn').onclick = () => {
+      modal.classList.remove('active');
+    };
+    document.getElementById('modalClose').onclick = () => {
+      modal.classList.remove('active');
+    };
+  }
+
+  async function showFilterManagement() {
+    const modal = document.getElementById('filterManagementModal');
+    const listDiv = document.getElementById('filterManagementList');
+    
+    listDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Lade Filter...</div>';
+    modal.classList.add('active');
+    
+    try {
+      const response = await fetch('/api/filters?module=global_search');
+      if (!response.ok) throw new Error('Fehler beim Laden der Filter');
+      
+      const filters = await response.json();
+      
+      if (!filters || filters.length === 0) {
+        listDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine gespeicherten Filter</div>';
+        return;
+      }
+      
+      let html = '<div style="display: grid; gap: 12px;">';
+      filters.forEach(filter => {
+        const date = filter.created_at ? new Date(filter.created_at).toLocaleDateString('de-DE') : '';
+        const createdBy = filter.created_by || 'System';
+        
+        html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1;">
+            <div style="font-weight: bold; margin-bottom: 4px;">
+              ${filter.is_favorite ? '⭐ ' : ''}${filter.name}
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted);">
+              Erstellt: ${date} von ${createdBy}
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-primary" onclick="loadSavedFilter(${filter.id}); closeFilterManagement();">Laden</button>
+            <button class="btn btn-sm btn-secondary" onclick="toggleFilterFavorite(${filter.id}, ${filter.is_favorite ? 0 : 1})">
+              ${filter.is_favorite ? '⭐' : '☆'}
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteFilter(${filter.id})">🗑️</button>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      listDiv.innerHTML = html;
+    } catch (err) {
+      console.error('Fehler beim Laden der Filter:', err);
+      listDiv.innerHTML = `<div style="color: var(--error); padding: 20px;">❌ Fehler: ${err.message}</div>`;
+    }
+  }
+
+  function closeFilterManagement() {
+    document.getElementById('filterManagementModal').classList.remove('active');
+  }
+
+  async function toggleFilterFavorite(filterId, newFavorite) {
+    try {
+      const response = await fetch(`/api/filters/favorite/${filterId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_favorite: newFavorite })
+      });
+      
+      if (response.ok) {
+        showFilterManagement();
+        loadSavedFilters();
+      } else {
+        throw new Error('Fehler beim Aktualisieren des Favoriten');
+      }
+    } catch (err) {
+      console.error('Fehler:', err);
+      showCustomModal('❌ Fehler beim Aktualisieren: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteFilter(filterId) {
+    if (!confirm('Möchten Sie diesen Filter wirklich löschen?')) return;
+    
+    try {
+      const response = await fetch(`/api/filters/delete/${filterId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        showCustomModal('✅ Filter erfolgreich gelöscht!', 'success');
+        showFilterManagement();
+        loadSavedFilters();
+      } else {
+        throw new Error('Fehler beim Löschen des Filters');
+      }
+    } catch (err) {
+      console.error('Fehler:', err);
+      showCustomModal('❌ Fehler beim Löschen: ' + err.message, 'error');
+    }
+  }
+</script>
+
+</body>
+</html>
+

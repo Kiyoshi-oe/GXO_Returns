@@ -71,42 +71,62 @@
 
     <nav class="nav">
       <div class="nav-section-title">Ansichten</div>
-      <a href="/dashboard" class="nav-item ">
+      <a href="/dashboard" class="nav-item " data-view="dashboard">
         <span class="nav-icon">📊</span>
         <span>Dashboard</span>
       </a>
-      <a href="/lagerbestand" class="nav-item ">
+      <a href="/lagerbestand" class="nav-item " data-view="inventory">
         <span class="nav-icon">📦</span>
         <span>Lagerbestand</span>
       </a>
-      <a href="/wareneingang" class="nav-item ">
+      <a href="/wareneingang" class="nav-item " data-view="inbound">
         <span class="nav-icon">📥</span>
         <span>Wareneingang</span>
       </a>
-      <a href="/umlagerung" class="nav-item ">
+      <a href="/umlagerung" class="nav-item " data-view="move">
         <span class="nav-icon">↔️</span>
         <span>Umlagerung</span>
       </a>
-      <a href="/archive" class="nav-item ">
+      <a href="/archive" class="nav-item " data-view="archive">
         <span class="nav-icon">🗂️</span>
         <span>Archiv</span>
       </a>
-      <a href="/ra-import" class="nav-item ">
+      <a href="/ra-import" class="nav-item " data-view="ra">
         <span class="nav-icon">📑</span>
         <span>RA Import</span>
+      </a>
+      <a href="/suche" class="nav-item " data-view="suche">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+      <a href="/reporting" class="nav-item " data-view="reporting">
+        <span class="nav-icon">📈</span>
+        <span>Reporting</span>
+      </a>
+      <a href="/audit" class="nav-item " data-view="audit">
+        <span class="nav-icon">📋</span>
+        <span>Audit-Logs</span>
+      </a>
+      <a href="/performance" class="nav-item " data-view="performance">
+        <span class="nav-icon">⚡</span>
+        <span>Performance</span>
+      </a>
+      <a href="/barcode-generator" class="nav-item " data-view="barcodeGenerator">
+        <span class="nav-icon">📊</span>
+        <span>Barcode Generator</span>
       </a>
     </nav>
 
     <div class="nav-section-title">Administration</div>
-    <a href="/einstellungen" class="nav-item active">
+    <a href="/einstellungen" class="nav-item active" data-view="settings">
       <span class="nav-icon">⚙️</span>
       <span>Einstellungen</span>
     </a>
-    <a href="/import" class="nav-item ">
+    <a href="/import" class="nav-item " data-view="import">
       <span class="nav-icon">📥</span>
       <span>Import</span>
     </a>
-    <a href="/export" class="nav-item ">
+    <a href="/export" class="nav-item " data-view="export">
       <span class="nav-icon">📤</span>
       <span>Export</span>
     </a>
@@ -172,8 +192,11 @@
           <button class="settings-tab-btn" data-tab="locations" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             📍 Stellplätze
           </button>
-          <button class="settings-tab-btn" data-tab="audit" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+          <a href="/audit" class="settings-tab-btn" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease; text-decoration: none; display: flex; align-items: center; justify-content: center;">
             📋 Audit-Logs
+          </a>
+          <button class="settings-tab-btn" data-tab="backup" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            💾 Backup & Wiederherstellung
           </button>
           <button class="settings-tab-btn" data-tab="system" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             ⚙️ System Info
@@ -621,68 +644,164 @@
         </div>
       </div>
 
-      <!-- Audit-Logs Tab -->
+      <!-- Audit-Logs Tab - Weiterleitung zur Audit-Logs-Seite -->
       <div class="settings-tab-content" id="tab-audit" style="display:none;">
         <div class="card">
           <div class="card-header">
             <div>
               <div class="card-title">📋 Audit-Logs</div>
-              <div class="card-subtitle">Änderungshistorie aller Wareneingangs-Einträge</div>
-            </div>
-            <div class="card-actions">
-              <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs()">
-                🔄 Aktualisieren
-              </button>
+              <div class="card-subtitle">Alle Audit-Logs wurden in eine zentrale Seite zusammengeführt</div>
             </div>
           </div>
+          <div style="padding: 40px; text-align: center;">
+            <p style="margin-bottom: 24px; color: var(--text-muted); font-size: 16px;">
+              Die Audit-Logs-Funktionalität wurde in eine zentrale Seite verschoben, die sowohl<br>
+              System-Audit-Logs als auch Wareneingang-Audit-Logs in einer übersichtlichen Ansicht kombiniert.
+            </p>
+            <a href="/audit" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+              📋 Zur Audit-Logs-Seite
+            </a>
+          </div>
+        </div>
+      </div>
 
-          <!-- Filter -->
-          <div class="form-grid" style="margin-bottom: 20px;">
-            <div class="form-group">
-              <label>Eintrag ID</label>
-              <input type="number" id="auditFilterInboundId" placeholder="Eintrag ID..." oninput="filterAuditLogs()">
-            </div>
-            <div class="form-group">
-              <label>Geändertes Feld</label>
-              <input type="text" id="auditFilterField" placeholder="Feldname..." oninput="filterAuditLogs()">
-            </div>
-            <div class="form-group">
-              <label>Geändert von</label>
-              <input type="text" id="auditFilterChangedBy" placeholder="Benutzer..." oninput="filterAuditLogs()">
-            </div>
-            <div class="form-group">
-              <label>Von Datum</label>
-              <input type="datetime-local" id="auditFilterFromDate" onchange="filterAuditLogs()">
-            </div>
-            <div class="form-group">
-              <label>Bis Datum</label>
-              <input type="datetime-local" id="auditFilterToDate" onchange="filterAuditLogs()">
+      <!-- Backup & Wiederherstellung Tab -->
+      <div class="settings-tab-content" id="tab-backup" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">💾 Backup & Wiederherstellung</div>
+              <div class="card-subtitle">Automatische Backups, Point-in-Time-Recovery und Datenexport</div>
             </div>
           </div>
+          <div style="padding: 20px;">
+            <!-- Backup erstellen -->
+            <div class="card" style="background: var(--bg-soft); margin-bottom: 20px;">
+              <div class="card-header">
+                <div class="card-title">📦 Backup erstellen</div>
+              </div>
+              <div style="padding: 16px;">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Backup-Name</label>
+                    <input type="text" id="backupName" placeholder="z.B. backup_2024-01-15" value={`backup_${new Date().toISOString().split('T')[0]}`}>
+                  </div>
+                  <div class="form-group">
+                    <label>Beschreibung</label>
+                    <input type="text" id="backupDescription" placeholder="Optional: Beschreibung des Backups">
+                  </div>
+                  <div class="form-group">
+                    <label>Backup-Typ</label>
+                    <select id="backupType">
+                      <option value="manual">Manuell</option>
+                      <option value="full">Vollständig (Datenbank + Dateien)</option>
+                      <option value="database">Nur Datenbank</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-top: 16px;">
+                  <button class="btn btn-primary" onclick="createBackup()">💾 Backup erstellen</button>
+                </div>
+              </div>
+            </div>
 
-          <!-- Audit-Logs Tabelle -->
-          <div style="overflow-x: auto;">
-            <table class="data-table" id="auditLogsTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Eintrag ID</th>
-                  <th>Feld</th>
-                  <th>Alter Wert</th>
-                  <th>Neuer Wert</th>
-                  <th>Geändert von</th>
-                  <th>Grund</th>
-                  <th>Geändert am</th>
-                </tr>
-              </thead>
-              <tbody id="auditLogsTableBody">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                    🔄 Lade Audit-Logs...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <!-- Automatische Backups -->
+            <div class="card" style="background: var(--bg-soft); margin-bottom: 20px;">
+              <div class="card-header">
+                <div class="card-title">⏰ Automatische Backups</div>
+              </div>
+              <div style="padding: 16px;">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" id="autoBackupEnabled"> Automatische Backups aktivieren
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>Intervall</label>
+                    <select id="backupInterval">
+                      <option value="daily">Täglich</option>
+                      <option value="weekly">Wöchentlich</option>
+                      <option value="monthly">Monatlich</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Anzahl Backups behalten</label>
+                    <input type="number" id="backupRetention" value="30" min="1" max="365">
+                  </div>
+                </div>
+                <div style="margin-top: 16px;">
+                  <button class="btn btn-secondary" onclick="saveBackupSettings()">💾 Einstellungen speichern</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backup-Liste -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">📋 Verfügbare Backups</div>
+                  <div class="card-subtitle">Wiederherstellung und Verwaltung</div>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="loadBackups()">🔄 Aktualisieren</button>
+              </div>
+              <div style="padding: 20px; overflow-x: auto;">
+                <table class="data-table" style="width: 100%;">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Typ</th>
+                      <th>Größe</th>
+                      <th>Erstellt am</th>
+                      <th>Erstellt von</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="backupsTableBody">
+                    <tr><td colspan="6" style="text-align: center; padding: 40px;">Lade Backups...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Datenexport für Compliance -->
+            <div class="card" style="margin-top: 20px;">
+              <div class="card-header">
+                <div class="card-title">📤 Datenexport für Compliance</div>
+              </div>
+              <div style="padding: 20px;">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Export-Typ</label>
+                    <select id="complianceExportType">
+                      <option value="full">Vollständiger Export</option>
+                      <option value="audit">Nur Audit-Logs</option>
+                      <option value="inbound">Nur Wareneingänge</option>
+                      <option value="locations">Nur Stellplätze</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Von Datum</label>
+                    <input type="date" id="complianceDateFrom">
+                  </div>
+                  <div class="form-group">
+                    <label>Bis Datum</label>
+                    <input type="date" id="complianceDateTo">
+                  </div>
+                  <div class="form-group">
+                    <label>Format</label>
+                    <select id="complianceFormat">
+                      <option value="json">JSON</option>
+                      <option value="csv">CSV</option>
+                      <option value="sql">SQL Dump</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-top: 16px;">
+                  <button class="btn btn-primary" onclick="exportCompliance()">📤 Compliance-Export erstellen</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -706,6 +825,28 @@
             <div style="padding: 20px; background: var(--bg-soft); border-radius: 12px; border-left: 4px solid var(--gxo-orange);">
               <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">🖥️ Computer Name</div>
               <div style="font-size: 20px; font-weight: 600; color: var(--text-main);" id="settingsComputerName">-</div>
+            </div>
+          </div>
+          
+          <!-- Server-Neustart-Passwort -->
+          <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🔄 Server-Neustart-Passwort</div>
+                <div class="card-subtitle">Passwort für Server-Neustart auf der Performance-Seite festlegen</div>
+              </div>
+            </div>
+            <div style="padding: 20px;">
+              <div class="form-group">
+                <label>Server-Neustart-Passwort:</label>
+                <input type="password" id="restartPasswordSetting" placeholder="Passwort eingeben..." style="width: 100%; max-width: 400px; margin-top: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                  ⚠️ Dieses Passwort wird benötigt, um den Server von der Performance-Seite aus neu zu starten.
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="window.saveRestartPassword()" style="margin-top: 12px;">
+                💾 Passwort speichern
+              </button>
             </div>
           </div>
           
@@ -5333,41 +5474,9 @@
   }
   
   // Navigation-Initialisierung - einfache, direkte Lösung
-  function initNavigation() {
-    const navItems = document.querySelectorAll(".nav-item");
-    console.log("🧭 Initialisiere Navigation, gefundene Items:", navItems.length);
-    
-    if (navItems.length === 0) {
-      console.warn("⚠️ Keine Navigation-Items gefunden");
-      return;
-    }
-    
-    navItems.forEach((item) => {
-      // Entferne alte Event-Handler (falls vorhanden)
-      const newItem = item.cloneNode(true);
-      item.parentNode.replaceChild(newItem, item);
-      
-      // Füge Event-Handler hinzu
-      newItem.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const viewName = this.getAttribute("data-view");
-        console.log("🖱️ Navigation-Item geklickt:", viewName);
-        if (viewName) {
-          handleNavigationClick(viewName);
-        } else {
-          console.warn("⚠️ Kein data-view Attribut gefunden");
-        }
-      });
-      
-      // Mache Element klickbar (Cursor)
-      newItem.style.cursor = "pointer";
-      newItem.style.userSelect = "none";
-    });
-    
-    console.log("✅ Navigation initialisiert");
-  }
+  // Verwende die globale initNavigation aus navigation.js
+  // Lokale Funktion entfernt, um Konflikte zu vermeiden
+  // Die globale Funktion verwendet navigateToView aus routing.js
   
   // Routing und Navigation initialisieren - mehrfach versuchen falls nötig
   function setupNavigation() {
@@ -5383,12 +5492,17 @@
           console.warn("⚠️ Routing-System noch nicht geladen");
         }
         
-        // Dann Navigation initialisieren
-        if (typeof initNavigation === 'function') {
-          initNavigation();
-        } else {
-          console.warn("⚠️ Navigation-Funktion noch nicht verfügbar");
-        }
+        // Dann Navigation initialisieren (verwende globale Funktion aus navigation.js)
+        // Warte kurz, damit navigation.js geladen ist
+        setTimeout(() => {
+          if (typeof window.initNavigation === 'function') {
+            window.initNavigation();
+          } else if (typeof initNavigation === 'function') {
+            initNavigation();
+          } else {
+            console.warn("⚠️ Navigation-Funktion noch nicht verfügbar");
+          }
+        }, 100);
       } else {
         console.warn("⚠️ Navigation-Items noch nicht verfügbar, versuche erneut...");
         setTimeout(tryInit, 100);
@@ -5415,40 +5529,72 @@
   
   setupNavigation();
   
-  // Event-Delegation Fallback für Navigation (funktioniert immer, auch wenn direkte Handler fehlschlagen)
+  // Einfache Event-Delegation für Navigation (garantiert funktioniert)
   function setupEventDelegation() {
     const navElement = document.querySelector('.nav');
-    if (navElement) {
-      // Entferne alte Handler falls vorhanden
-      const newNavElement = navElement.cloneNode(true);
-      navElement.parentNode.replaceChild(newNavElement, navElement);
+    if (!navElement) {
+      console.warn("⚠️ .nav Element nicht gefunden, versuche später erneut");
+      setTimeout(setupEventDelegation, 200);
+      return;
+    }
+    
+    // Entferne alle alten Event-Handler durch Klonen
+    const newNavElement = navElement.cloneNode(true);
+    navElement.parentNode.replaceChild(newNavElement, navElement);
+    
+    // Ein einziger Event-Handler für alle Navigation-Items
+    newNavElement.addEventListener('click', function(e) {
+      const navItem = e.target.closest('.nav-item');
+      if (!navItem) return;
       
-      newNavElement.addEventListener('click', function(e) {
-        const navItem = e.target.closest('.nav-item');
-        if (navItem && navItem.hasAttribute('data-view')) {
-          e.preventDefault();
-          e.stopPropagation();
-          const viewName = navItem.getAttribute('data-view');
-          console.log("🧭 Event-Delegation: Navigation zu View:", viewName);
-          if (viewName) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const viewName = navItem.getAttribute('data-view');
+      const href = navItem.getAttribute('href');
+      
+      console.log('🖱️ Navigation geklickt:', { viewName, href });
+      
+      if (viewName) {
+        // Versuche zuerst Routing-System
+        if (typeof navigateToView === 'function') {
+          navigateToView(viewName);
+        } else if (typeof window.navigateToView === 'function') {
+          window.navigateToView(viewName);
+        } else {
+          // Fallback: Verwende handleNavigationClick oder direkte Navigation
+          if (typeof handleNavigationClick === 'function') {
             handleNavigationClick(viewName);
+          } else if (href) {
+            window.location.href = href;
+          } else {
+            console.error('❌ Keine Navigation-Methode verfügbar');
           }
         }
-      });
-      console.log("✅ Event-Delegation Handler für Navigation hinzugefügt");
-    } else {
-      console.warn("⚠️ .nav Element nicht gefunden für Event-Delegation");
-      // Versuche später erneut
-      setTimeout(setupEventDelegation, 200);
-    }
+      } else if (href) {
+        // Kein data-view, aber href vorhanden
+        window.location.href = href;
+      } else {
+        console.warn('⚠️ Kein data-view oder href gefunden');
+      }
+    });
+    
+    console.log('✅ Event-Delegation für Navigation eingerichtet');
   }
   
   // Event-Delegation sofort einrichten
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupEventDelegation);
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(setupEventDelegation, 100);
+    });
   } else {
-    setupEventDelegation();
+    setTimeout(setupEventDelegation, 100);
   }
+  
+  // Zusätzlicher Fallback nach window.load
+  window.addEventListener('load', () => {
+    setTimeout(setupEventDelegation, 200);
+  });
 
   document.querySelectorAll("[data-jump]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -5868,6 +6014,11 @@
       }
     } catch (err) {
       console.error("❌ Fehler beim Laden der System-Info:", err);
+    }
+    
+    // Server-Neustart-Passwort laden
+    if (typeof window.loadRestartPassword === 'function') {
+      window.loadRestartPassword();
     }
     
     console.log("✅ Einstellungsdaten vollständig geladen");
@@ -9305,9 +9456,13 @@
           // Spezielle Aktionen für bestimmte Tabs
           if (tabName === 'locations') {
             loadSettingsLocations();
-          } else if (tabName === 'audit') {
-            loadAuditLogs();
+          } else if (tabName === 'system') {
+            // Lade Server-Neustart-Passwort wenn System Info Tab geöffnet wird
+            if (typeof window.loadRestartPassword === 'function') {
+              window.loadRestartPassword();
+            }
           }
+          // Audit-Tab zeigt jetzt nur eine Weiterleitung zur Audit-Logs-Seite
         }
       });
     });
@@ -9402,7 +9557,9 @@
     } else if (message && (message.includes('<') && message.includes('>'))) {
       modalBody.innerHTML = message;
     } else {
-      modalBody.textContent = message;
+      // Unterstütze Zeilenumbrüche (\n) durch <br> ersetzen
+      const messageWithBreaks = message ? message.replace(/\n/g, '<br>') : '';
+      modalBody.innerHTML = messageWithBreaks;
     }
     modalIcon.style.color = modalConfig.color;
     
@@ -9563,6 +9720,7 @@
 
 </script>
 
+<script src="/js/navigation/navigation.js"></script>
 <script src="/js/navigation/routing.js"></script>
 <script src="/js/features/import.js"></script>
 <script src="/js/features/export.js"></script>
@@ -9571,19 +9729,24 @@
 
 <!-- Seiten-spezifische Initialisierung -->
 <script>
-  // Initialisiere Theme
-  const themeToggle = document.getElementById('themeToggle');
-  const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
-  document.body.setAttribute('data-theme', savedTheme);
-  themeToggle.textContent = savedTheme === 'light' ? '☀' : '☾';
-  
-  themeToggle.addEventListener('click', () => {
-    const current = document.body.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', next);
-    localStorage.setItem('lvsTheme', next);
-    themeToggle.textContent = next === 'light' ? '☀' : '☾';
-  });
+  // Initialisiere Theme (nur wenn noch nicht initialisiert)
+  if (!window.themeToggleInitialized) {
+    const themeToggleEl = document.getElementById('themeToggle');
+    if (themeToggleEl) {
+      const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
+      document.body.setAttribute('data-theme', savedTheme);
+      themeToggleEl.textContent = savedTheme === 'light' ? '☀' : '☾';
+      
+      themeToggleEl.addEventListener('click', () => {
+        const current = document.body.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('lvsTheme', next);
+        themeToggleEl.textContent = next === 'light' ? '☀' : '☾';
+      });
+    }
+    window.themeToggleInitialized = true;
+  }
   
   // Lade Benutzer-Informationen
   fetch('/api/current-user')
@@ -9597,6 +9760,287 @@
       }
     })
     .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+
+  // Backup-Funktionen
+  async function createBackup() {
+    const name = document.getElementById('backupName').value.trim();
+    const description = document.getElementById('backupDescription').value.trim();
+    const type = document.getElementById('backupType').value;
+    
+    if (!name) {
+      alert('Bitte geben Sie einen Backup-Namen ein!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/backup/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, type })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert('Backup erfolgreich erstellt!');
+        loadBackups();
+      } else {
+        throw new Error('Backup-Erstellung fehlgeschlagen');
+      }
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  async function loadBackups() {
+    try {
+      const response = await fetch('/api/backup/list');
+      const backups = await response.json();
+      
+      const tbody = document.getElementById('backupsTableBody');
+      if (backups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Keine Backups vorhanden</td></tr>';
+        return;
+      }
+
+      let html = '';
+      backups.forEach(backup => {
+        const sizeMB = backup.file_size ? (backup.file_size / 1024 / 1024).toFixed(2) + ' MB' : '-';
+        html += '<tr>';
+        html += `<td>${backup.backup_name}</td>`;
+        html += `<td>${backup.backup_type}</td>`;
+        html += `<td>${sizeMB}</td>`;
+        html += `<td>${new Date(backup.created_at).toLocaleString('de-DE')}</td>`;
+        html += `<td>${backup.created_by || '-'}</td>`;
+        html += `<td>
+          <button class="btn btn-sm btn-primary" onclick="restoreBackup(${backup.id})">↩️ Wiederherstellen</button>
+          <button class="btn btn-sm btn-secondary" onclick="downloadBackup(${backup.id})">📥 Download</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBackup(${backup.id})">🗑️ Löschen</button>
+        </td>`;
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    } catch (err) {
+      console.error('Fehler beim Laden der Backups:', err);
+    }
+  }
+
+  async function restoreBackup(backupId) {
+    if (!confirm('Möchten Sie dieses Backup wirklich wiederherstellen? Alle aktuellen Daten werden überschrieben!')) return;
+
+    try {
+      const response = await fetch(`/api/backup/restore/${backupId}`, { method: 'POST' });
+      if (response.ok) {
+        alert('Backup erfolgreich wiederhergestellt! Bitte Seite neu laden.');
+        window.location.reload();
+      } else {
+        throw new Error('Wiederherstellung fehlgeschlagen');
+      }
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  async function downloadBackup(backupId) {
+    try {
+      const response = await fetch(`/api/backup/download/${backupId}`);
+      if (!response.ok) throw new Error('Download fehlgeschlagen');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${backupId}.db`;
+      a.click();
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  async function deleteBackup(backupId) {
+    if (!confirm('Möchten Sie dieses Backup wirklich löschen?')) return;
+
+    try {
+      const response = await fetch(`/api/backup/delete/${backupId}`, { method: 'DELETE' });
+      if (response.ok) {
+        alert('Backup gelöscht!');
+        loadBackups();
+      } else {
+        throw new Error('Löschen fehlgeschlagen');
+      }
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  async function saveBackupSettings() {
+    const enabled = document.getElementById('autoBackupEnabled').checked;
+    const interval = document.getElementById('backupInterval').value;
+    const retention = parseInt(document.getElementById('backupRetention').value);
+
+    try {
+      const response = await fetch('/api/backup/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, interval, retention })
+      });
+
+      if (response.ok) {
+        alert('Einstellungen gespeichert!');
+      }
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  async function exportCompliance() {
+    const type = document.getElementById('complianceExportType').value;
+    const dateFrom = document.getElementById('complianceDateFrom').value;
+    const dateTo = document.getElementById('complianceDateTo').value;
+    const format = document.getElementById('complianceFormat').value;
+
+    try {
+      const response = await fetch('/api/backup/compliance-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, dateFrom, dateTo, format })
+      });
+
+      if (!response.ok) throw new Error('Export fehlgeschlagen');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compliance_export_${new Date().toISOString().split('T')[0]}.${format}`;
+      a.click();
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  // Server-Neustart-Passwort Funktionen
+  // Mache Funktionen global verfügbar für onclick-Handler
+  window.loadRestartPassword = async function() {
+    try {
+      console.log('📥 Lade Server-Neustart-Passwort...');
+      const response = await fetch('/api/settings/restart-password');
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Passwort geladen:', { hasPassword: !!result.password, passwordLength: result.password ? result.password.length : 0 });
+        const input = document.getElementById('restartPasswordSetting');
+        if (input) {
+          // Zeige das Passwort nicht an (Sicherheit), aber setze einen Platzhalter
+          if (result.password) {
+            input.placeholder = 'Passwort ist gesetzt (eingeben zum Ändern)';
+            input.value = ''; // Leer lassen aus Sicherheitsgründen
+          } else {
+            input.placeholder = 'Passwort eingeben...';
+            input.value = '';
+          }
+        }
+      } else {
+        console.warn('⚠️ Konnte Passwort nicht laden:', response.status);
+      }
+    } catch (err) {
+      console.error('❌ Fehler beim Laden des Passworts:', err);
+    }
+  }
+
+  window.saveRestartPassword = async function() {
+    const passwordInput = document.getElementById('restartPasswordSetting');
+    if (!passwordInput) {
+      showCustomModal('❌ Fehler: Passwort-Eingabefeld nicht gefunden!', 'error');
+      return;
+    }
+    
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+      showCustomModal('⚠️ Bitte geben Sie ein Passwort ein!', 'warning');
+      passwordInput.focus();
+      return;
+    }
+    
+    // Zeige Lade-Indikator
+    const saveButton = passwordInput.nextElementSibling?.nextElementSibling || 
+                       document.querySelector('button[onclick="saveRestartPassword()"]');
+    const originalButtonText = saveButton ? saveButton.textContent : '';
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = '💾 Speichere...';
+    }
+    
+    try {
+      // Hole aktuellen Benutzer
+      let currentUser = 'System';
+      try {
+        const userResponse = await fetch('/api/current-user');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          currentUser = userData.username || userData.displayName || 'System';
+        }
+      } catch (e) {
+        console.warn('Konnte Benutzer nicht laden:', e);
+      }
+      
+      console.log('📤 Sende Passwort-Speichern-Anfrage...', { passwordLength: password.length, user: currentUser });
+      
+      const response = await fetch('/api/settings/restart-password', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({ password })
+      });
+      
+      const result = await response.json();
+      
+      console.log('📥 Passwort-Speichern Antwort:', { 
+        status: response.status, 
+        responseOk: response.ok, 
+        result 
+      });
+      
+      if (response.ok && result.ok) {
+        // Erfolgreich gespeichert
+        showCustomModal('✅ Passwort erfolgreich gespeichert!<br><br>Das neue Passwort ist jetzt aktiv und wird für Server-Neustarts verwendet.', 'success');
+        
+        // Aktualisiere Platzhalter und leere das Feld
+        passwordInput.placeholder = 'Passwort ist gesetzt (eingeben zum Ändern)';
+        passwordInput.value = ''; // Leer lassen aus Sicherheitsgründen
+        
+        // Verifiziere, dass es gespeichert wurde, indem wir es laden
+        setTimeout(async () => {
+          if (typeof window.loadRestartPassword === 'function') {
+            await window.loadRestartPassword();
+          }
+        }, 500);
+      } else {
+        const errorMsg = result.error || 'Unbekannter Fehler';
+        console.error('❌ Fehler beim Speichern:', errorMsg);
+        showCustomModal('❌ Fehler beim Speichern:<br><br>' + errorMsg, 'error');
+      }
+    } catch (err) {
+      console.error('❌ Fehler beim Speichern:', err);
+      showCustomModal('❌ Fehler beim Speichern:<br><br>' + err.message + '<br><br>Bitte prüfen Sie die Server-Logs für weitere Details.', 'error');
+    } finally {
+      // Button wieder aktivieren
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = originalButtonText || '💾 Passwort speichern';
+      }
+    }
+  }
+
+  // Lade Backups beim Öffnen des Backup-Tabs
+  document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.getAttribute('data-tab') === 'backup') {
+        loadBackups();
+      }
+    });
+  });
 </script>
 
 </body>

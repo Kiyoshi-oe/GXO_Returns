@@ -22,6 +22,11 @@ const viewToRoute = {
   'move': '/umlagerung',
   'archive': '/archive',
   'ra': '/ra-import',
+  'suche': '/suche',
+  'reporting': '/reporting',
+  'audit': '/audit',
+  'performance': '/performance',
+  'barcodeGenerator': '/barcode-generator',
   'settings': '/einstellungen',
   'import': '/import',
   'export': '/export'
@@ -146,7 +151,11 @@ function activateView(viewName) {
   }
   
   // View-spezifische Logik ausführen
-  handleViewSwitch(viewName);
+  if (typeof handleViewSwitch === 'function') {
+    handleViewSwitch(viewName);
+  } else {
+    console.warn('handleViewSwitch ist nicht definiert. Bitte navigation.js vor routing.js laden.');
+  }
 }
 
 /**

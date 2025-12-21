@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Performance-Monitoring - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+</div>
+
+<!-- Server-Neustart Modal -->
+<div id="restartModal" class="custom-modal" style="display: none;">
+  <div class="custom-modal-content" style="max-width: 400px;">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon">🔄</span>
+      <span class="custom-modal-title">Server neu starten</span>
+      <span class="custom-modal-close" onclick="closeRestartModal()">&times;</span>
+    </div>
+    <div class="custom-modal-body">
+      <div class="form-group">
+        <label>Passwort:</label>
+        <input type="password" id="restartPasswordInput" placeholder="Server-Neustart-Passwort" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 6px; margin-top: 8px;" autofocus>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          ⚠️ Der Server wird nach Bestätigung neu gestartet!
+        </div>
+      </div>
+    </div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-danger" onclick="confirmRestart()">Neustart ausführen</button>
+      <button class="btn btn-ghost" onclick="closeRestartModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="/lagerbestand" class="nav-item"><span class="nav-icon">📦</span><span>Lagerbestand</span></a>
+      <a href="/wareneingang" class="nav-item"><span class="nav-icon">📥</span><span>Wareneingang</span></a>
+      <a href="/umlagerung" class="nav-item"><span class="nav-icon">↔️</span><span>Umlagerung</span></a>
+      <a href="/archive" class="nav-item"><span class="nav-icon">🗂️</span><span>Archiv</span></a>
+      <a href="/ra-import" class="nav-item"><span class="nav-icon">📑</span><span>RA Import</span></a>
+      <a href="/suche" class="nav-item"><span class="nav-icon">🔍</span><span>Globale Suche</span></a>
+      <a href="/reporting" class="nav-item"><span class="nav-icon">📈</span><span>Reporting</span></a>
+      <a href="/audit" class="nav-item"><span class="nav-icon">📋</span><span>Audit-Logs</span></a>
+      <a href="/performance" class="nav-item active"><span class="nav-icon">⚡</span><span>Performance</span></a>
+      <a href="/barcode-generator" class="nav-item"><span class="nav-icon">📊</span><span>Barcode Generator</span></a>
+    </nav>
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item"><span class="nav-icon">⚙️</span><span>Einstellungen</span></a>
+    <a href="/import" class="nav-item"><span class="nav-icon">📥</span><span>Import</span></a>
+    <a href="/export" class="nav-item"><span class="nav-icon">📤</span><span>Export</span></a>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">⚡ Performance-Monitoring</div>
+        <div class="topbar-subtitle">System-Health, Performance-Metriken und Benutzer-Aktivitäten</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- System Health -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">💚 System-Health</div>
+          </div>
+          <div style="padding: 20px;" id="systemHealth">
+            <div style="text-align: center; padding: 40px;">Lade System-Status...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Performance-Metriken</div>
+          </div>
+          <div style="padding: 20px;" id="performanceMetrics">
+            <div style="text-align: center; padding: 40px;">Lade Metriken...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response Time Chart -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+          <div class="card-title">⏱️ Response-Zeiten</div>
+        </div>
+        <div style="padding: 20px;">
+          <canvas id="responseTimeChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Fehler-Logs -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">❌ Fehler-Logs</div>
+            <div class="card-subtitle">Letzte Fehler und Warnungen</div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="clearErrorLogs()">🗑️ Löschen</button>
+        </div>
+        <div style="padding: 20px; overflow-x: auto;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Zeitpunkt</th>
+                <th>Endpoint</th>
+                <th>Status</th>
+                <th>Response-Zeit</th>
+                <th>Fehler</th>
+                <th>Benutzer</th>
+              </tr>
+            </thead>
+            <tbody id="errorLogsBody">
+              <tr><td colspan="6" style="text-align: center; padding: 40px;">Lade Fehler-Logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Benutzer-Aktivitäten -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">👥 Benutzer-Aktivitäten</div>
+            <div class="card-subtitle">Aktuelle und historische Aktivitäten</div>
+          </div>
+        </div>
+        <div style="padding: 20px; overflow-x: auto;">
+          <table class="data-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Zeitpunkt</th>
+                <th>Benutzer</th>
+                <th>Aktion</th>
+                <th>Modul</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="userActivitiesBody">
+              <tr><td colspan="5" style="text-align: center; padding: 40px;">Lade Aktivitäten...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/utils.js"></script>
+<script>
+  // Hilfsfunktion für deutsches Datumsformat: "21.12.2025 18:46 Uhr"
+  function formatGermanDateTime(dateString) {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}.${month}.${year} ${hours}:${minutes} Uhr`;
+    } catch (e) {
+      return '-';
+    }
+  }
+
+  let responseTimeChart = null;
+
+  async function loadSystemHealth() {
+    try {
+      const response = await fetch('/api/performance/health');
+      const health = await response.json();
+      
+      let html = '<div style="display: grid; gap: 12px;">';
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">Datenbank</div>
+        <div style="font-size: 18px; font-weight: bold; color: ${health.database === 'ok' ? '#4CAF50' : '#F44336'};">${health.database === 'ok' ? '✅ Online' : '❌ Offline'}</div>
+      </div>`;
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">Speicher</div>
+        <div style="font-size: 18px; font-weight: bold;">${health.memory || 'N/A'}</div>
+      </div>`;
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">Uptime</div>
+        <div style="font-size: 18px; font-weight: bold;">${health.uptime || 'N/A'}</div>
+      </div>`;
+      html += '</div>';
+      
+      // Server-Neustart Button
+      html += '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-soft);">';
+      html += '<button class="btn btn-danger" onclick="showRestartModal()" style="width: 100%;">🔄 Server neu starten</button>';
+      html += '</div>';
+      
+      document.getElementById('systemHealth').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  async function loadPerformanceMetrics() {
+    try {
+      const response = await fetch('/api/performance/metrics');
+      const metrics = await response.json();
+      
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">';
+      
+      // Basis-Metriken
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Requests heute</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${metrics.requestsToday || 0}</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Response-Zeit</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${metrics.avgResponseTime || 0}ms</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">P95 Response-Zeit</div>
+        <div style="font-size: 20px; font-weight: bold; color: ${(metrics.p95ResponseTime || 0) > 1000 ? '#F44336' : '#4CAF50'};">
+          ${metrics.p95ResponseTime || 0}ms
+        </div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">P99 Response-Zeit</div>
+        <div style="font-size: 20px; font-weight: bold; color: ${(metrics.p99ResponseTime || 0) > 2000 ? '#F44336' : '#4CAF50'};">
+          ${metrics.p99ResponseTime || 0}ms
+        </div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Fehlerrate</div>
+        <div style="font-size: 20px; font-weight: bold; color: ${(metrics.errorRate || 0) > 5 ? '#F44336' : '#4CAF50'};">
+          ${metrics.errorRate || 0}%
+        </div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Aktive Benutzer</div>
+        <div style="font-size: 20px; font-weight: bold;">${metrics.uniqueUsers || 0}</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Peak-Stunde</div>
+        <div style="font-size: 20px; font-weight: bold;">${metrics.peakHour || '-'}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${metrics.requestsPerHour || 0} Requests</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø DB-Query-Zeit</div>
+        <div style="font-size: 20px; font-weight: bold; color: ${(metrics.avgDbQueryTime || 0) > 100 ? '#F44336' : '#4CAF50'};">
+          ${metrics.avgDbQueryTime || 0}ms
+        </div>
+      </div>`;
+      
+      html += '</div>';
+      
+      // Top-Endpunkte
+      if (metrics.topEndpoints && metrics.topEndpoints.length > 0) {
+        html += '<div style="margin-top: 20px; padding: 12px; background: var(--bg-soft); border-radius: 8px;">';
+        html += '<div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--text-muted);">Top 5 Endpunkte (heute):</div>';
+        html += '<div style="display: grid; gap: 6px;">';
+        metrics.topEndpoints.forEach(ep => {
+          html += `<div style="display: flex; justify-content: space-between; padding: 6px; background: var(--bg-card); border-radius: 4px;">
+            <span style="font-size: 11px; font-family: monospace;">${ep.endpoint}</span>
+            <span style="font-size: 11px; color: var(--text-muted);">${ep.count}× (Ø ${Math.round(ep.avg_time)}ms)</span>
+          </div>`;
+        });
+        html += '</div></div>';
+      }
+      
+      document.getElementById('performanceMetrics').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  async function loadResponseTimeChart() {
+    try {
+      const response = await fetch('/api/performance/response-times');
+      const data = await response.json();
+      
+      const ctx = document.getElementById('responseTimeChart').getContext('2d');
+      if (responseTimeChart) responseTimeChart.destroy();
+      
+      responseTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels || [],
+          datasets: [{
+            label: 'Response-Zeit (ms)',
+            data: data.values || [],
+            borderColor: 'var(--gxo-orange)',
+            backgroundColor: 'rgba(245, 59, 1, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      });
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  async function loadErrorLogs() {
+    try {
+      const response = await fetch('/api/performance/errors');
+      const errors = await response.json();
+      
+      const tbody = document.getElementById('errorLogsBody');
+      if (errors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Keine Fehler</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      errors.forEach(error => {
+        html += '<tr>';
+        html += `<td>${formatGermanDateTime(error.timestamp)}</td>`;
+        html += `<td>${error.endpoint || '-'}</td>`;
+        html += `<td><span style="padding: 4px 8px; border-radius: 4px; background: ${error.status_code >= 500 ? '#F44336' : '#FF9800'}; color: white;">${error.status_code || '-'}</span></td>`;
+        html += `<td>${error.response_time || '-'}ms</td>`;
+        html += `<td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${error.error_message || '-'}</td>`;
+        html += `<td>${error.user || '-'}</td>`;
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  async function loadUserActivities() {
+    try {
+      const response = await fetch('/api/performance/activities');
+      const activities = await response.json();
+      
+      const tbody = document.getElementById('userActivitiesBody');
+      if (activities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">Keine Aktivitäten</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      activities.forEach(activity => {
+        // Format Details für Anzeige
+        let detailsText = '-';
+        if (activity.details) {
+          if (typeof activity.details === 'object') {
+            // Entferne interne Felder
+            const { username, displayName, ...otherDetails } = activity.details;
+            const detailKeys = Object.keys(otherDetails);
+            if (detailKeys.length > 0) {
+              detailsText = detailKeys.map(key => {
+                const value = otherDetails[key];
+                if (value && typeof value === 'object') {
+                  return `${key}: ${JSON.stringify(value)}`;
+                }
+                return `${key}: ${value}`;
+              }).join(', ');
+            } else {
+              detailsText = activity.details.raw || '-';
+            }
+          } else {
+            detailsText = String(activity.details);
+          }
+        } else if (activity.detailsRaw) {
+          detailsText = String(activity.detailsRaw);
+        }
+        
+        // Format Zeitpunkt im deutschen Format
+        const timestamp = formatGermanDateTime(activity.timestamp);
+        
+        html += '<tr>';
+        html += `<td style="white-space: nowrap;">${timestamp}</td>`;
+        html += `<td style="font-weight: 600; color: var(--gxo-orange);">${activity.user || 'Unbekannt'}</td>`;
+        html += `<td>${activity.action || '-'}</td>`;
+        html += `<td><span style="padding: 4px 8px; background: var(--bg-soft); border-radius: 4px; font-size: 11px;">${activity.module || '-'}</span></td>`;
+        html += `<td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${detailsText.replace(/"/g, '&quot;')}">${detailsText}</td>`;
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+      const tbody = document.getElementById('userActivitiesBody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--error);">Fehler beim Laden der Aktivitäten</td></tr>';
+    }
+  }
+
+  async function clearErrorLogs() {
+    if (!confirm('Möchten Sie alle Fehler-Logs löschen?')) return;
+    
+    try {
+      const response = await fetch('/api/performance/errors/clear', { method: 'POST' });
+      if (response.ok) {
+        loadErrorLogs();
+        alert('Fehler-Logs gelöscht!');
+      }
+    } catch (err) {
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  function refreshAllData() {
+    loadSystemHealth();
+    loadPerformanceMetrics();
+    loadResponseTimeChart();
+    loadErrorLogs();
+    loadUserActivities();
+  }
+
+  // User-Aktivität beim Seitenaufruf tracken
+  async function trackPageView() {
+    try {
+      // Hole aktuellen Benutzer
+      let currentUser = 'System';
+      try {
+        const userResponse = await fetch('/api/current-user');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          currentUser = userData.displayName || userData.username || 'System';
+        }
+      } catch (e) {
+        // Ignoriere Fehler beim Laden des Benutzers
+      }
+      
+      await fetch('/api/performance/track-activity', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({
+          action: 'View Performance Page',
+          module: 'Performance',
+          details: {
+            page: 'performance',
+            timestamp: new Date().toISOString()
+          }
+        })
+      });
+    } catch (e) {
+      // Ignoriere Fehler beim Tracking
+      console.warn('Tracking-Fehler:', e);
+    }
+  }
+
+  function showRestartModal() {
+    const modal = document.getElementById('restartModal');
+    if (modal) {
+      document.getElementById('restartPasswordInput').value = '';
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        const input = document.getElementById('restartPasswordInput');
+        if (input) input.focus();
+      }, 100);
+    }
+  }
+
+  function closeRestartModal() {
+    const modal = document.getElementById('restartModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  async function confirmRestart() {
+    const passwordInput = document.getElementById('restartPasswordInput');
+    if (!passwordInput) {
+      alert('❌ Fehler: Passwort-Eingabefeld nicht gefunden!');
+      return;
+    }
+    
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+      alert('Bitte geben Sie das Passwort ein!');
+      return;
+    }
+    
+    if (!confirm('⚠️ WARNUNG: Der Server wird jetzt neu gestartet!\n\nAlle laufenden Anfragen werden abgebrochen.\n\nMöchten Sie fortfahren?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/server/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.ok) {
+        closeRestartModal();
+        alert('✅ Server-Neustart wurde ausgelöst. Die Seite wird in Kürze neu geladen...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        alert('❌ Fehler: ' + (result.error || 'Unbekannter Fehler'));
+      }
+    } catch (err) {
+      console.error('Fehler:', err);
+      alert('❌ Fehler beim Neustart: ' + err.message);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const restartPasswordInput = document.getElementById('restartPasswordInput');
+    if (restartPasswordInput) {
+      restartPasswordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmRestart();
+        }
+      });
+    }
+    
+    // Klick außerhalb des Modals schließt es
+    const restartModal = document.getElementById('restartModal');
+    if (restartModal) {
+      restartModal.addEventListener('click', (e) => {
+        if (e.target === restartModal) {
+          closeRestartModal();
+        }
+      });
+    }
+    
+    trackPageView();
+    refreshAllData();
+    
+    // Auto-Refresh alle 60 Sekunden
+    setInterval(() => {
+      refreshAllData();
+    }, 60000);
+    
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }, 500);
+  });
+</script>
+
+</body>
+</html>
+

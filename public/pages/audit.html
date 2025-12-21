@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Audit-Logs - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+</div>
+
+<div id="customModal" class="custom-modal">
+  <div class="custom-modal-content">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon" id="modalIcon">ℹ️</span>
+      <span class="custom-modal-title" id="modalTitle">Information</span>
+      <span class="custom-modal-close" id="modalClose">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="modalBody">Nachricht hier</div>
+    <div class="custom-modal-footer">
+      <button class="btn btn-primary" id="modalOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="/lagerbestand" class="nav-item"><span class="nav-icon">📦</span><span>Lagerbestand</span></a>
+      <a href="/wareneingang" class="nav-item"><span class="nav-icon">📥</span><span>Wareneingang</span></a>
+      <a href="/umlagerung" class="nav-item"><span class="nav-icon">↔️</span><span>Umlagerung</span></a>
+      <a href="/archive" class="nav-item"><span class="nav-icon">🗂️</span><span>Archiv</span></a>
+      <a href="/ra-import" class="nav-item"><span class="nav-icon">📑</span><span>RA Import</span></a>
+      <a href="/suche" class="nav-item"><span class="nav-icon">🔍</span><span>Globale Suche</span></a>
+      <a href="/reporting" class="nav-item"><span class="nav-icon">📈</span><span>Reporting</span></a>
+      <a href="/audit" class="nav-item active"><span class="nav-icon">📋</span><span>Audit-Logs</span></a>
+      <a href="/performance" class="nav-item"><span class="nav-icon">⚡</span><span>Performance</span></a>
+      <a href="/barcode-generator" class="nav-item"><span class="nav-icon">📊</span><span>Barcode Generator</span></a>
+    </nav>
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item"><span class="nav-icon">⚙️</span><span>Einstellungen</span></a>
+    <a href="/import" class="nav-item"><span class="nav-icon">📥</span><span>Import</span></a>
+    <a href="/export" class="nav-item"><span class="nav-icon">📤</span><span>Export</span></a>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">📋 Erweiterte Audit-Logs</div>
+        <div class="topbar-subtitle">Vollständige Änderungshistorie mit Vergleich und Rollback</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Erklärung (Toggle) -->
+      <div style="margin-bottom: 16px; padding: 8px 12px; background: var(--bg-soft); border-radius: 6px; border-left: 2px solid var(--gxo-orange);">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleAuditExplanation()">
+          <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">ℹ️ Erklärung</span>
+          <span id="explanationToggleIcon" style="font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease;">▼</span>
+        </div>
+        <div id="auditExplanationContent" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); line-height: 1.6; color: var(--text-muted); font-size: 12px;">
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">Was sind Audit-Logs?</strong><br>
+          Protokollieren alle Änderungen: Wer, Was, Wann, Warum.</p>
+          
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">System-Audit-Logs:</strong><br>
+          Zeigen Änderungen an allen Tabellen (Wareneingang, Stellplätze, Carrier, etc.).</p>
+          
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">Wareneingang-Audit-Logs:</strong><br>
+          Detaillierte Änderungshistorie speziell für Wareneingangs-Einträge mit Änderungsgrund.</p>
+          
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">Vergleich Alt/Neu:</strong><br>
+          Zeigt den vollständigen Zustand vor und nach der Änderung.</p>
+          
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">Rollback:</strong><br>
+          Ermöglicht das Rückgängigmachen einzelner Änderungen.</p>
+          
+          <p style="margin: 8px 0;"><strong style="color: var(--text-main);">Export:</strong><br>
+          CSV-Export für Compliance und externe Analysen.</p>
+        </div>
+      </div>
+
+      <!-- Tab-Navigation -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border);">
+        <button class="audit-tab-btn active" data-tab="system" onclick="switchAuditTab('system')" style="padding: 12px 24px; border: none; background: transparent; border-bottom: 3px solid var(--gxo-orange); color: var(--gxo-orange); font-weight: 600; cursor: pointer; font-size: 14px;">
+          🔧 System-Audit-Logs
+        </button>
+        <button class="audit-tab-btn" data-tab="inbound" onclick="switchAuditTab('inbound')" style="padding: 12px 24px; border: none; background: transparent; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; font-size: 14px;">
+          📦 Wareneingang-Audit-Logs
+        </button>
+      </div>
+
+      <!-- System-Audit-Logs Tab -->
+      <div id="tab-system" class="audit-tab-content">
+        <!-- Filter -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔍 Filter</div>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Tabelle</label>
+              <select id="filterTable" onchange="updateRecordIdLabel()">
+                <option value="">Alle</option>
+                <option value="inbound_simple">Wareneingang</option>
+                <option value="location">Stellplätze</option>
+                <option value="carrier">Carrier</option>
+              </select>
+              </div>
+            <div class="form-group">
+              <label id="recordIdLabel">Datensatz-ID</label>
+              <input type="number" id="filterRecordId" placeholder="z.B. Wareneingang-ID: 123" onchange="updateRecordIdLabel()">
+            </div>
+              <div class="form-group">
+                <label>Geändert von</label>
+                <input type="text" id="filterUser" placeholder="Benutzername">
+              </div>
+              <div class="form-group">
+                <label>Von Datum</label>
+                <input type="date" id="filterDateFrom">
+              </div>
+              <div class="form-group">
+                <label>Bis Datum</label>
+                <input type="date" id="filterDateTo">
+              </div>
+              <div class="form-group">
+                <label>Aktion</label>
+                <select id="filterAction">
+                  <option value="">Alle</option>
+                  <option value="INSERT">Erstellt</option>
+                  <option value="UPDATE">Geändert</option>
+                  <option value="DELETE">Gelöscht</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="loadSystemAuditLogs()">🔍 Filter anwenden</button>
+              <button class="btn btn-secondary" onclick="exportSystemAuditLogs()">📤 Exportieren</button>
+              <button class="btn btn-secondary" onclick="clearSystemFilters()">🗑️ Filter löschen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System-Audit-Logs Tabelle -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 System-Audit-Logs</div>
+              <div class="card-subtitle" id="systemAuditCount">0 Einträge</div>
+            </div>
+          </div>
+          <div style="padding: 20px; overflow-x: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tabelle</th>
+                  <th>Datensatz-ID</th>
+                  <th>Aktion</th>
+                  <th>Feld</th>
+                  <th>Alter Wert</th>
+                  <th>Neuer Wert</th>
+                  <th>Geändert von</th>
+                  <th>Zeitpunkt</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="systemAuditTableBody">
+                <tr><td colspan="10" style="text-align: center; padding: 40px;">Lade Audit-Logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wareneingang-Audit-Logs Tab -->
+      <div id="tab-inbound" class="audit-tab-content" style="display: none;">
+        <!-- Filter -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔍 Filter</div>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Eintrag ID</label>
+                <input type="number" id="inboundFilterInboundId" placeholder="Eintrag ID...">
+              </div>
+              <div class="form-group">
+                <label>Geändertes Feld</label>
+                <input type="text" id="inboundFilterField" placeholder="Feldname...">
+              </div>
+              <div class="form-group">
+                <label>Geändert von</label>
+                <input type="text" id="inboundFilterChangedBy" placeholder="Benutzer...">
+              </div>
+              <div class="form-group">
+                <label>Von Datum</label>
+                <input type="datetime-local" id="inboundFilterFromDate">
+              </div>
+              <div class="form-group">
+                <label>Bis Datum</label>
+                <input type="datetime-local" id="inboundFilterToDate">
+              </div>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="loadInboundAuditLogs()">🔍 Filter anwenden</button>
+              <button class="btn btn-secondary" onclick="exportInboundAuditLogs()">📤 Exportieren</button>
+              <button class="btn btn-secondary" onclick="clearInboundFilters()">🗑️ Filter löschen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wareneingang-Audit-Logs Tabelle -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Wareneingang-Audit-Logs</div>
+              <div class="card-subtitle" id="inboundAuditCount">0 Einträge</div>
+            </div>
+          </div>
+          <div style="padding: 20px; overflow-x: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Eintrag ID</th>
+                  <th>Feld</th>
+                  <th>Alter Wert</th>
+                  <th>Neuer Wert</th>
+                  <th>Geändert von</th>
+                  <th>Grund</th>
+                  <th>Zeitpunkt</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="inboundAuditTableBody">
+                <tr><td colspan="9" style="text-align: center; padding: 40px;">Lade Audit-Logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vergleichs-Modal -->
+      <div id="compareModal" class="custom-modal" style="display: none;">
+        <div class="custom-modal-content" style="max-width: 800px;">
+          <div class="custom-modal-header">
+            <span class="custom-modal-title">🔄 Vergleich Alt/Neu</span>
+            <span class="custom-modal-close" onclick="closeCompareModal()">&times;</span>
+          </div>
+          <div class="custom-modal-body" id="compareContent">
+            <!-- Vergleich wird hier eingefügt -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/utils.js"></script>
+<script>
+  // Hilfsfunktion für deutsches Datumsformat: "21.12.2025 18:46 Uhr"
+  function formatGermanDateTime(dateString) {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}.${month}.${year} ${hours}:${minutes} Uhr`;
+    } catch (e) {
+      return '-';
+    }
+  }
+
+  let systemAuditLogs = [];
+  let inboundAuditLogs = [];
+  let currentTab = 'system';
+
+  // Tab-Wechsel
+  function switchAuditTab(tab) {
+    currentTab = tab;
+    
+    // Tab-Buttons aktualisieren
+    document.querySelectorAll('.audit-tab-btn').forEach(btn => {
+      if (btn.dataset.tab === tab) {
+        btn.classList.add('active');
+        btn.style.borderBottomColor = 'var(--gxo-orange)';
+        btn.style.color = 'var(--gxo-orange)';
+        btn.style.fontWeight = '600';
+      } else {
+        btn.classList.remove('active');
+        btn.style.borderBottomColor = 'transparent';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.fontWeight = '500';
+      }
+    });
+    
+    // Tab-Inhalte anzeigen/verstecken
+    document.querySelectorAll('.audit-tab-content').forEach(content => {
+      content.style.display = 'none';
+    });
+    document.getElementById(`tab-${tab}`).style.display = 'block';
+    
+    // Daten laden
+    if (tab === 'system') {
+      loadSystemAuditLogs();
+    } else {
+      loadInboundAuditLogs();
+    }
+  }
+
+  // System-Audit-Logs laden
+  async function loadSystemAuditLogs() {
+    const params = new URLSearchParams();
+    
+    const tableName = document.getElementById('filterTable').value;
+    const recordId = document.getElementById('filterRecordId').value;
+    const changedBy = document.getElementById('filterUser').value;
+    const fromDate = document.getElementById('filterDateFrom').value;
+    const toDate = document.getElementById('filterDateTo').value;
+    const action = document.getElementById('filterAction').value;
+    
+    if (tableName) params.append('table_name', tableName);
+    if (recordId) params.append('record_id', recordId);
+    if (changedBy) params.append('changed_by', changedBy);
+    if (fromDate) params.append('from_date', fromDate);
+    if (toDate) params.append('to_date', toDate);
+    if (action) params.append('action', action);
+
+    try {
+      const tbody = document.getElementById('systemAuditTableBody');
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px;">🔄 Lade Audit-Logs...</td></tr>';
+      
+      const response = await fetch(`/api/audit/system?${params}`);
+      const logs = await response.json();
+      systemAuditLogs = logs;
+      renderSystemAuditLogs(logs);
+      document.getElementById('systemAuditCount').textContent = `${logs.length} Einträge`;
+    } catch (err) {
+      console.error('Fehler beim Laden der System-Audit-Logs:', err);
+      showCustomModal('Fehler: ' + err.message, 'error');
+      const tbody = document.getElementById('systemAuditTableBody');
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--error);">Fehler beim Laden der Daten</td></tr>';
+    }
+  }
+
+  function renderSystemAuditLogs(logs) {
+    const tbody = document.getElementById('systemAuditTableBody');
+    
+    if (logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px;">Keine Einträge gefunden</td></tr>';
+      return;
+    }
+
+    // Helper: Zeige beschreibende ID basierend auf Tabelle
+    function getRecordIdDisplay(log) {
+      const tableName = log.table_name || '';
+      const recordId = log.record_id || '-';
+      
+      if (recordId === '-') return '-';
+      
+      // Erstelle klickbaren Link mit beschreibendem Text
+      let displayText = recordId;
+      let linkUrl = '#';
+      
+      if (tableName === 'inbound_simple') {
+        displayText = `Wareneingang #${recordId}`;
+        linkUrl = `javascript:showInboundEntryDetails(${recordId})`;
+      } else if (tableName === 'location') {
+        displayText = `Stellplatz #${recordId}`;
+      } else if (tableName === 'carrier') {
+        displayText = `Carrier #${recordId}`;
+      } else {
+        displayText = `${tableName} #${recordId}`;
+      }
+      
+      if (tableName === 'inbound_simple') {
+        return `<a href="${linkUrl}" style="color: var(--gxo-orange); text-decoration: none; cursor: pointer; font-weight: 600;">${displayText}</a>`;
+      }
+      
+      return displayText;
+    }
+
+    let html = '';
+    logs.forEach(log => {
+      html += '<tr>';
+      html += `<td>${log.id}</td>`;
+      html += `<td><span style="padding: 2px 6px; background: var(--bg-soft); border-radius: 4px; font-size: 11px;">${log.table_name || '-'}</span></td>`;
+      html += `<td>${getRecordIdDisplay(log)}</td>`;
+      html += `<td><span style="padding: 4px 8px; border-radius: 4px; background: ${getActionColor(log.action)}; color: white; font-size: 11px;">${log.action}</span></td>`;
+      html += `<td><strong>${log.field_name || '-'}</strong></td>`;
+      html += `<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${log.old_value || ''}">${log.old_value || '-'}</td>`;
+      html += `<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${log.new_value || ''}">${log.new_value || '-'}</td>`;
+      html += `<td>${log.changed_by || '-'}</td>`;
+      html += `<td>${formatGermanDateTime(log.changed_at)}</td>`;
+      html += `<td>
+        <button class="btn btn-sm btn-primary" onclick="showSystemCompare(${log.id})">🔄 Vergleich</button>
+        ${log.action === 'UPDATE' ? `<button class="btn btn-sm btn-warning" onclick="rollbackSystem(${log.id})">↩️ Rollback</button>` : ''}
+      </td>`;
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // Label für Record ID basierend auf ausgewählter Tabelle aktualisieren
+  function updateRecordIdLabel() {
+    const tableSelect = document.getElementById('filterTable');
+    const recordIdLabel = document.getElementById('recordIdLabel');
+    const recordIdInput = document.getElementById('filterRecordId');
+    
+    if (!tableSelect || !recordIdLabel) return;
+    
+    const selectedTable = tableSelect.value;
+    let labelText = 'Datensatz-ID';
+    let placeholderText = 'z.B. 123';
+    
+    switch(selectedTable) {
+      case 'inbound_simple':
+        labelText = 'Wareneingang-ID';
+        placeholderText = 'z.B. Wareneingang-ID: 123';
+        break;
+      case 'location':
+        labelText = 'Stellplatz-ID';
+        placeholderText = 'z.B. Stellplatz-ID: 123';
+        break;
+      case 'carrier':
+        labelText = 'Carrier-ID';
+        placeholderText = 'z.B. Carrier-ID: 123';
+        break;
+      default:
+        labelText = 'Datensatz-ID';
+        placeholderText = 'z.B. 123';
+    }
+    
+    recordIdLabel.textContent = labelText;
+    recordIdInput.placeholder = placeholderText;
+  }
+
+  // Wareneingang-Audit-Logs laden
+  async function loadInboundAuditLogs() {
+    const params = new URLSearchParams();
+    
+    const inboundId = document.getElementById('inboundFilterInboundId').value;
+    const fieldName = document.getElementById('inboundFilterField').value;
+    const changedBy = document.getElementById('inboundFilterChangedBy').value;
+    const fromDate = document.getElementById('inboundFilterFromDate').value;
+    const toDate = document.getElementById('inboundFilterToDate').value;
+    
+    if (inboundId) params.append('inbound_id', inboundId);
+    if (fieldName) params.append('field_name', fieldName);
+    if (changedBy) params.append('changed_by', changedBy);
+    if (fromDate) params.append('from_date', fromDate);
+    if (toDate) params.append('to_date', toDate);
+
+    try {
+      const tbody = document.getElementById('inboundAuditTableBody');
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">🔄 Lade Audit-Logs...</td></tr>';
+      
+      const response = await fetch(`/api/audit-logs?${params}`);
+      const logs = await response.json();
+      inboundAuditLogs = logs;
+      renderInboundAuditLogs(logs);
+      document.getElementById('inboundAuditCount').textContent = `${logs.length} Einträge`;
+    } catch (err) {
+      console.error('Fehler beim Laden der Wareneingang-Audit-Logs:', err);
+      showCustomModal('Fehler: ' + err.message, 'error');
+      const tbody = document.getElementById('inboundAuditTableBody');
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--error);">Fehler beim Laden der Daten</td></tr>';
+    }
+  }
+
+  function renderInboundAuditLogs(logs) {
+    const tbody = document.getElementById('inboundAuditTableBody');
+    
+    if (logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">Keine Einträge gefunden</td></tr>';
+      return;
+    }
+
+    let html = '';
+    logs.forEach(log => {
+      const oldValue = log.old_value !== null && log.old_value !== undefined ? String(log.old_value).substring(0, 50) : '-';
+      const newValue = log.new_value !== null && log.new_value !== undefined ? String(log.new_value).substring(0, 50) : '-';
+      const changeReason = log.change_reason || '-';
+      
+      html += '<tr>';
+      html += `<td>${log.id}</td>`;
+      html += `<td>
+        <a href="#" onclick="showInboundEntryDetails(${log.inbound_id}); return false;" style="color: var(--gxo-orange); text-decoration: none; cursor: pointer; font-weight: 600;">
+          #${log.inbound_id}
+        </a>
+      </td>`;
+      html += `<td><strong>${log.field_name}</strong></td>`;
+      html += `<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.old_value || ''}">${oldValue}</td>`;
+      html += `<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.new_value || ''}">${newValue}</td>`;
+      html += `<td>${log.changed_by || '-'}</td>`;
+      html += `<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${changeReason}">${changeReason}</td>`;
+      html += `<td>${formatGermanDateTime(log.changed_at)}</td>`;
+      html += `<td>
+        <button class="btn btn-sm btn-primary" onclick="showInboundCompare(${log.id})">🔄 Vergleich</button>
+      </td>`;
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // Eintrag-Details anzeigen
+  async function showInboundEntryDetails(inboundId) {
+    try {
+      const response = await fetch(`/api/inbound-simple/${inboundId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          showCustomModal("❌ Eintrag nicht gefunden", "error");
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return;
+      }
+      
+      const entry = await response.json();
+      
+      // Stellplatz-Informationen abrufen, falls vorhanden
+      let locationInfo = "";
+      if (entry.location_id) {
+        try {
+          const locationResponse = await fetch(`/api/warehouse/locations`);
+          if (locationResponse.ok) {
+            const locations = await locationResponse.json();
+            const location = locations.find(l => l.id === entry.location_id);
+            if (location) {
+              locationInfo = `<p><strong>Stellplatz:</strong> ${location.code} (${location.description || ''})</p>`;
+            }
+          }
+        } catch (e) {
+          // Ignoriere Fehler beim Laden der Stellplatz-Info
+        }
+      }
+      
+      let html = `
+        <div style="max-width: 600px;">
+          <h3 style="margin-bottom: 16px; color: var(--gxo-orange);">Eintrag #${entry.id}</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div><strong>OLPN:</strong> ${entry.olpn || '-'}</div>
+            <div><strong>Tracking-Nr.:</strong> ${entry.carrier_tracking_nr || '-'}</div>
+            <div><strong>Carrier:</strong> ${entry.carrier_name || '-'}</div>
+            <div><strong>Land:</strong> ${entry.land || '-'}</div>
+            <div><strong>Kunde:</strong> ${entry.customer_name || '-'}</div>
+            <div><strong>ASN/RA-Nr.:</strong> ${entry.asn_ra_no || '-'}</div>
+            <div><strong>Kartons:</strong> ${entry.actual_carton || 0}</div>
+            <div><strong>Erstellt:</strong> ${formatGermanDateTime(entry.created_at)}</div>
+          </div>
+          ${locationInfo}
+          <p><strong>Kommentar:</strong> ${entry.kommentar || '-'}</p>
+        </div>
+      `;
+      
+      document.getElementById('compareContent').innerHTML = html;
+      document.getElementById('compareModal').style.display = 'flex';
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  function getActionColor(action) {
+    const colors = {
+      'INSERT': '#4CAF50',
+      'UPDATE': '#FF9800',
+      'DELETE': '#F44336'
+    };
+    return colors[action] || '#757575';
+  }
+
+  // System-Audit-Logs Vergleich
+  async function showSystemCompare(logId) {
+    const log = systemAuditLogs.find(l => l.id === logId);
+    if (!log) return;
+
+    try {
+      const response = await fetch(`/api/audit/compare/${log.table_name}/${log.record_id}`);
+      if (!response.ok) throw new Error('Vergleich fehlgeschlagen');
+      
+      const comparison = await response.json();
+      
+      // Wenn nur ein einzelnes Feld geändert wurde, zeige Feld-spezifischen Vergleich
+      if (log.field_name && log.action === 'UPDATE') {
+        let html = `
+          <div style="max-width: 800px;">
+            <h3 style="margin-bottom: 16px; color: var(--gxo-orange);">Vergleich für ${log.table_name} #${log.record_id}</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <h4 style="color: var(--error); margin-bottom: 8px;">Alter Wert</h4>
+                <div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--error);">
+                  <strong>${log.field_name}:</strong><br>
+                  <pre style="margin: 8px 0; white-space: pre-wrap; word-break: break-word; font-size: 13px;">${log.old_value || '(leer)'}</pre>
+                </div>
+              </div>
+              <div>
+                <h4 style="color: var(--success); margin-bottom: 8px;">Neuer Wert</h4>
+                <div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--success);">
+                  <strong>${log.field_name}:</strong><br>
+                  <pre style="margin: 8px 0; white-space: pre-wrap; word-break: break-word; font-size: 13px;">${log.new_value || '(leer)'}</pre>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+              <strong>Aktion:</strong> ${log.action}<br>
+              <strong>Geändert von:</strong> ${log.changed_by || '-'}<br>
+              <strong>Zeitpunkt:</strong> ${formatGermanDateTime(log.changed_at)}
+            </div>
+          </div>
+        `;
+        document.getElementById('compareContent').innerHTML = html;
+      } else {
+        // Vollständiger Zustandsvergleich
+        let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">';
+        
+        // Alter Zustand
+        html += '<div>';
+        html += '<h3 style="color: var(--error); margin-bottom: 12px;">Alter Zustand</h3>';
+        if (comparison.old === null) {
+          html += '<div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; color: var(--text-muted);">(Datensatz existierte noch nicht)</div>';
+        } else if (Object.keys(comparison.old || {}).length === 0) {
+          html += '<div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; color: var(--text-muted);">(Keine Daten verfügbar)</div>';
+        } else {
+          html += '<pre style="background: var(--bg-soft); padding: 12px; border-radius: 8px; overflow: auto; max-height: 400px; font-size: 12px; line-height: 1.5;">' + JSON.stringify(comparison.old, null, 2) + '</pre>';
+        }
+        html += '</div>';
+        
+        // Neuer Zustand
+        html += '<div>';
+        html += '<h3 style="color: var(--success); margin-bottom: 12px;">Neuer Zustand</h3>';
+        if (comparison.new === null) {
+          html += '<div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; color: var(--text-muted);">(Datensatz wurde gelöscht)</div>';
+        } else if (Object.keys(comparison.new || {}).length === 0) {
+          html += '<div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; color: var(--text-muted);">(Keine Daten verfügbar)</div>';
+        } else {
+          html += '<pre style="background: var(--bg-soft); padding: 12px; border-radius: 8px; overflow: auto; max-height: 400px; font-size: 12px; line-height: 1.5;">' + JSON.stringify(comparison.new, null, 2) + '</pre>';
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        document.getElementById('compareContent').innerHTML = html;
+      }
+      
+      document.getElementById('compareModal').style.display = 'flex';
+    } catch (err) {
+      console.error('Vergleichsfehler:', err);
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  // Wareneingang-Audit-Logs Vergleich
+  async function showInboundCompare(logId) {
+    const log = inboundAuditLogs.find(l => l.id === logId);
+    if (!log) return;
+
+    try {
+      const response = await fetch(`/api/inbound-simple/${log.inbound_id}`);
+      if (!response.ok) throw new Error('Eintrag nicht gefunden');
+      
+      const entry = await response.json();
+      
+      let html = `
+        <div style="max-width: 800px;">
+          <h3 style="margin-bottom: 16px; color: var(--gxo-orange);">Vergleich für Eintrag #${log.inbound_id}</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h4 style="color: var(--error); margin-bottom: 8px;">Alter Wert</h4>
+              <div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--error);">
+                <strong>${log.field_name}:</strong><br>
+                <pre style="margin: 8px 0; white-space: pre-wrap; word-break: break-word;">${log.old_value || '(leer)'}</pre>
+              </div>
+            </div>
+            <div>
+              <h4 style="color: var(--success); margin-bottom: 8px;">Neuer Wert</h4>
+              <div style="background: var(--bg-soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--success);">
+                <strong>${log.field_name}:</strong><br>
+                <pre style="margin: 8px 0; white-space: pre-wrap; word-break: break-word;">${log.new_value || '(leer)'}</pre>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+            <strong>Änderungsgrund:</strong> ${log.change_reason || '-'}<br>
+            <strong>Geändert von:</strong> ${log.changed_by || '-'}<br>
+            <strong>Zeitpunkt:</strong> ${formatGermanDateTime(log.changed_at)}
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('compareContent').innerHTML = html;
+      document.getElementById('compareModal').style.display = 'flex';
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  function closeCompareModal() {
+    document.getElementById('compareModal').style.display = 'none';
+  }
+
+  async function rollbackSystem(logId) {
+    if (!confirm('Möchten Sie diese Änderung wirklich rückgängig machen?')) return;
+
+    const log = systemAuditLogs.find(l => l.id === logId);
+    if (!log) return;
+
+    try {
+      const response = await fetch('/api/audit/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId, tableName: log.table_name, recordId: log.record_id, fieldName: log.field_name, oldValue: log.old_value })
+      });
+
+      if (response.ok) {
+        showCustomModal('Rollback erfolgreich!', 'success');
+        loadSystemAuditLogs();
+      } else {
+        throw new Error('Rollback fehlgeschlagen');
+      }
+    } catch (err) {
+      showCustomModal('Fehler: ' + err.message, 'error');
+    }
+  }
+
+  function clearSystemFilters() {
+    document.getElementById('filterTable').value = '';
+    document.getElementById('filterRecordId').value = '';
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterAction').value = '';
+    loadSystemAuditLogs();
+  }
+
+  function clearInboundFilters() {
+    document.getElementById('inboundFilterInboundId').value = '';
+    document.getElementById('inboundFilterField').value = '';
+    document.getElementById('inboundFilterChangedBy').value = '';
+    document.getElementById('inboundFilterFromDate').value = '';
+    document.getElementById('inboundFilterToDate').value = '';
+    loadInboundAuditLogs();
+  }
+
+  // Helper-Funktion: Formatiert CSV-Werte als Text (mit Anführungszeichen)
+  function csvEscape(value) {
+    if (value === null || value === undefined) {
+      return '""';
+    }
+    // Konvertiere zu String
+    const str = String(value);
+    // Escape Anführungszeichen (doppelte Anführungszeichen)
+    const escaped = str.replace(/"/g, '""');
+    // Alle Werte in Anführungszeichen setzen (damit Excel sie als Text behandelt)
+    return `"${escaped}"`;
+  }
+
+  function exportSystemAuditLogs() {
+    if (systemAuditLogs.length === 0) {
+      showCustomModal('Keine Daten zum Exportieren', 'warning');
+      return;
+    }
+
+    let csv = '\uFEFF';
+    csv += 'ID,Tabelle,Record ID,Aktion,Feld,Alter Wert,Neuer Wert,Geändert von,Zeitpunkt\n';
+    systemAuditLogs.forEach(log => {
+      csv += `${csvEscape(log.id)},${csvEscape(log.table_name)},${csvEscape(log.record_id)},${csvEscape(log.action)},${csvEscape(log.field_name)},${csvEscape(log.old_value)},${csvEscape(log.new_value)},${csvEscape(log.changed_by)},${csvEscape(log.changed_at)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system_audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  function exportInboundAuditLogs() {
+    if (inboundAuditLogs.length === 0) {
+      showCustomModal('Keine Daten zum Exportieren', 'warning');
+      return;
+    }
+
+    let csv = '\uFEFF';
+    csv += 'ID,Eintrag ID,Feld,Alter Wert,Neuer Wert,Geändert von,Grund,Zeitpunkt\n';
+    inboundAuditLogs.forEach(log => {
+      csv += `${csvEscape(log.id)},${csvEscape(log.inbound_id)},${csvEscape(log.field_name)},${csvEscape(log.old_value)},${csvEscape(log.new_value)},${csvEscape(log.changed_by)},${csvEscape(log.change_reason)},${csvEscape(log.changed_at)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inbound_audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  function toggleAuditExplanation() {
+    const content = document.getElementById('auditExplanationContent');
+    const icon = document.getElementById('explanationToggleIcon');
+    
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+      icon.textContent = '▲';
+    } else {
+      content.style.display = 'none';
+      icon.textContent = '▼';
+    }
+  }
+
+  function showCustomModal(message, type = 'info') {
+    const modal = document.getElementById('customModal');
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    document.getElementById('modalIcon').textContent = icons[type] || 'ℹ️';
+    document.getElementById('modalBody').textContent = message;
+    modal.classList.add('active');
+    document.getElementById('modalOkBtn').onclick = () => modal.classList.remove('active');
+    document.getElementById('modalClose').onclick = () => modal.classList.remove('active');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Standardmäßig System-Audit-Logs laden
+    updateRecordIdLabel(); // Initial Label setzen
+    loadSystemAuditLogs();
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }, 500);
+  });
+</script>
+
+</body>
+</html>
+

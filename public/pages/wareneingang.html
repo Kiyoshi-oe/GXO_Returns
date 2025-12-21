@@ -17,6 +17,7 @@
   
   <!-- Chart.js für Diagramme -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
 
@@ -94,6 +95,26 @@
       <a href="/ra-import" class="nav-item ">
         <span class="nav-icon">📑</span>
         <span>RA Import</span>
+      </a>
+      <a href="/suche" class="nav-item ">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+      <a href="/reporting" class="nav-item ">
+        <span class="nav-icon">📈</span>
+        <span>Reporting</span>
+      </a>
+      <a href="/audit" class="nav-item ">
+        <span class="nav-icon">📋</span>
+        <span>Audit-Logs</span>
+      </a>
+      <a href="/performance" class="nav-item ">
+        <span class="nav-icon">⚡</span>
+        <span>Performance</span>
+      </a>
+      <a href="/barcode-generator" class="nav-item ">
+        <span class="nav-icon">📊</span>
+        <span>Barcode Generator</span>
       </a>
     </nav>
 
@@ -326,7 +347,12 @@
             <div class="form-group">
               <label>📍 Stellplatz <span class="required-field">*</span></label>
               <div class="searchable-dropdown" id="locationDropdown">
-                <input type="text" id="locationInput" placeholder="Stellplatz suchen..." autocomplete="off" required>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="locationInput" placeholder="Stellplatz suchen..." autocomplete="off" required style="flex: 1;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="startBarcodeScanner('locationInput')" title="Barcode scannen">
+                  📷 Scanner
+                </button>
+              </div>
                 <div class="searchable-dropdown-list" id="locationDropdownList"></div>
             </div>
             </div>
@@ -355,7 +381,12 @@
             </div>
             <div class="form-group">
               <label>OLPN</label>
-              <input type="text" id="olpnInput" placeholder="00050197980027746580">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="olpnInput" placeholder="00050197980027746580" style="flex: 1;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="startBarcodeScanner('olpnInput')" title="Barcode scannen">
+                  📷 Scanner
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label>DN</label>
@@ -367,7 +398,12 @@
             </div>
             <div class="form-group">
               <label>Carrier Tracking Number</label>
-              <input type="text" id="carrierTrackingInput" placeholder="z.B. 882826466627">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="carrierTrackingInput" placeholder="z.B. 882826466627" style="flex: 1;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="startBarcodeScanner('carrierTrackingInput')" title="Barcode scannen">
+                  📷 Scanner
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label>Customer ID</label>
@@ -2660,170 +2696,219 @@
         return;
       }
       
-      // Modal HTML erstellen - ALLE Felder
+      // Lade Dropdown-Optionen für Bearbeitungsmodal
+      let areaOptionsEdit = [];
+      let landOptionsEdit = [];
+      let carriersDataEdit = [];
+      
+      try {
+        const [areaRes, landRes, carriersRes] = await Promise.all([
+          fetch("/api/dropdown-options/area"),
+          fetch("/api/dropdown-options/land"),
+          fetch("/api/carriers")
+        ]);
+        
+        if (areaRes.ok) areaOptionsEdit = await areaRes.json();
+        if (landRes.ok) landOptionsEdit = await landRes.json();
+        if (carriersRes.ok) carriersDataEdit = await carriersRes.json();
+      } catch (e) {
+        console.warn("Fehler beim Laden der Dropdown-Optionen:", e);
+      }
+      
+      // Finde aktuellen Wert für Dropdowns
+      const currentAreaOption = areaOptionsEdit.find(opt => opt.option_value === entry.area);
+      const currentLandOption = landOptionsEdit.find(opt => opt.option_value === entry.land);
+      const currentCarrier = carriersDataEdit.find(c => c.display_name === entry.carrier_name || c.name === entry.carrier_name);
+      
+      // Modal HTML erstellen - KOMPAKT mit 3 Spalten und Dropdowns
       const modalHtml = `
-        <div style="max-width: 1000px; width: 100%;">
-          <h3 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-main);">📦 Eintrag #${entry.id} bearbeiten</h3>
+        <div style="max-width: 700px; width: 100%;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-main);">📦 Eintrag #${entry.id} bearbeiten</h3>
           
-          <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px; font-size: 12px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="margin-bottom: 10px; padding: 8px; background: var(--bg-soft); border-radius: 6px; font-size: 11px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
               <div><strong>Gebucht am:</strong> ${formatDateTime(entry.created_at)}</div>
               <div><strong>Von:</strong> ${entry.added_by || '-'}</div>
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">CW</label>
-              <input type="text" id="editCw" value="${entry.cw || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">CW</label>
+              <input type="text" id="editCw" value="${entry.cw || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Aufgenommen am</label>
-              <input type="date" id="editAufgenommenAm" value="${entry.aufgenommen_am ? entry.aufgenommen_am.split('T')[0] : ''}" lang="de-DE" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Carrier Name</label>
-              <input type="text" id="editCarrierName" value="${entry.carrier_name || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Aufgenommen am</label>
+              <input type="date" id="editAufgenommenAm" value="${entry.aufgenommen_am ? entry.aufgenommen_am.split('T')[0] : ''}" lang="de-DE" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Area</label>
-              <input type="text" id="editArea" value="${entry.area || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Carrier Name</label>
+              <select id="editCarrierName" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                <option value="">-- Bitte wählen --</option>
+                ${carriersDataEdit.map(c => `<option value="${c.display_name || c.name}" ${(currentCarrier && (c.id === currentCarrier.id || c.display_name === entry.carrier_name)) ? 'selected' : ''}>${c.display_name || c.name}</option>`).join('')}
+              </select>
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Land</label>
-              <input type="text" id="editLand" value="${entry.land || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Area</label>
+              <div class="searchable-dropdown" id="editAreaDropdown">
+                <input type="text" id="editAreaInput" value="${currentAreaOption ? currentAreaOption.option_label : (entry.area || '')}" placeholder="Area wählen..." autocomplete="off" data-value="${entry.area || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                <div class="searchable-dropdown-list" id="editAreaDropdownList"></div>
+              </div>
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Ship Status</label>
-              <input type="text" id="editShipStatus" value="${entry.ship_status || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Stage</label>
-              <input type="text" id="editStage" value="${entry.stage || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Land</label>
+              <div class="searchable-dropdown" id="editLandDropdown">
+                <input type="text" id="editLandInput" value="${currentLandOption ? currentLandOption.option_label : (entry.land || '')}" placeholder="Land wählen..." autocomplete="off" data-value="${entry.land || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                <div class="searchable-dropdown-list" id="editLandDropdownList"></div>
+              </div>
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Last Stage</label>
-              <input type="text" id="editLastStage" value="${entry.last_stage || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Ship Status</label>
+              <input type="text" id="editShipStatus" value="${entry.ship_status || ''}" list="editShipStatusList" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+              <datalist id="editShipStatusList">
+                <option value="pending">Pending</option>
+                <option value="in_transit">In Transit</option>
+                <option value="delivered">Delivered</option>
+                <option value="returned">Returned</option>
+              </datalist>
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Planned Carton</label>
-              <input type="number" id="editPlannedCarton" value="${entry.planned_carton || ''}" min="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Stage</label>
+              <input type="text" id="editStage" value="${entry.stage || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Actual Carton <span style="color: var(--gxo-orange);">*</span></label>
-              <input type="number" id="editActualCarton" value="${entry.actual_carton || ''}" min="0" required style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">OLPN</label>
-              <input type="text" id="editOlpn" value="${entry.olpn || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Last Stage</label>
+              <input type="text" id="editLastStage" value="${entry.last_stage || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Carrier Tracking Number</label>
-              <input type="text" id="editTrackingNr" value="${entry.carrier_tracking_nr || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Planned Carton</label>
+              <input type="number" id="editPlannedCarton" value="${entry.planned_carton || ''}" min="0" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">DN</label>
-              <input type="text" id="editDn" value="${entry.dn || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Actual Carton <span style="color: var(--gxo-orange);">*</span></label>
+              <input type="number" id="editActualCarton" value="${entry.actual_carton || ''}" min="0" required style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">SHI</label>
-              <input type="text" id="editShi" value="${entry.shi || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Customer ID</label>
-              <input type="text" id="editCustomerId" value="${entry.customer_id || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">OLPN</label>
+              <input type="text" id="editOlpn" value="${entry.olpn || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-family: monospace; font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Customer Name</label>
-              <input type="text" id="editCustomerName" value="${entry.customer_name || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Tracking Nr.</label>
+              <input type="text" id="editTrackingNr" value="${entry.carrier_tracking_nr || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-family: monospace; font-size: 12px;">
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">ASN/RA Nummer</label>
-              <input type="text" id="editAsnRaNo" value="${entry.asn_ra_no || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">DN</label>
+              <input type="text" id="editDn" value="${entry.dn || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">MH Status</label>
-              <input type="text" id="editMhStatus" value="${entry.mh_status || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Neue RA</label>
-              <input type="text" id="editNeueRa" value="${entry.neue_ra || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">SHI</label>
+              <input type="text" id="editShi" value="${entry.shi || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
             </div>
             
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">New Reopen RA</label>
-              <input type="text" id="editNewReopenRa" value="${entry.new_reopen_ra || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Customer ID</label>
+              <input type="text" id="editCustomerId" value="${entry.customer_id || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-family: monospace; font-size: 12px;">
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Kommentar</label>
-              <textarea id="editKommentar" rows="3" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;">${entry.kommentar || ''}</textarea>
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Customer Name</label>
+              <input type="text" id="editCustomerName" value="${entry.customer_name || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+            </div>
+            
+            <div class="form-group">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">ASN/RA Nummer</label>
+              <input type="text" id="editAsnRaNo" value="${entry.asn_ra_no || ''}" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-family: monospace; font-size: 12px;">
+            </div>
+            
+            <div class="form-group">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">MH Status</label>
+              <input type="text" id="editMhStatus" value="${entry.mh_status || ''}" list="editMhStatusList" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+              <datalist id="editMhStatusList">
+                <option value="offen">Offen</option>
+                <option value="in Bearbeitung">In Bearbeitung</option>
+                <option value="geschlossen">Geschlossen</option>
+                <option value="abgeschlossen">Abgeschlossen</option>
+              </datalist>
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group">
-              <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Ignore Flag</label>
-              <select id="editIgnoreFlag" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Neue RA</label>
+              <textarea id="editNeueRa" rows="2" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); resize: vertical; font-size: 12px;">${entry.neue_ra || ''}</textarea>
+            </div>
+            
+            <div class="form-group">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">New Reopen RA</label>
+              <textarea id="editNewReopenRa" rows="2" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); resize: vertical; font-size: 12px;">${entry.new_reopen_ra || ''}</textarea>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div class="form-group">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Kommentar</label>
+              <textarea id="editKommentar" rows="2" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); resize: vertical; font-size: 12px;">${entry.kommentar || ''}</textarea>
+            </div>
+            
+            <div class="form-group">
+              <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Ignore Flag</label>
+              <select id="editIgnoreFlag" style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
                 <option value="0" ${entry.ignore_flag == 0 ? 'selected' : ''}>Nein</option>
                 <option value="1" ${entry.ignore_flag == 1 ? 'selected' : ''}>Ja</option>
               </select>
             </div>
           </div>
           
-          <div class="form-group" style="margin-bottom: 16px;">
-            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Grund für Änderung <span style="color: var(--gxo-orange);">*</span></label>
-            <textarea id="editChangeReason" rows="2" placeholder="Bitte geben Sie einen Grund für die Änderung an..." required style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;"></textarea>
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Grund für Änderung <span style="color: var(--gxo-orange);">*</span></label>
+            <textarea id="editChangeReason" rows="2" placeholder="Bitte geben Sie einen Grund für die Änderung an..." required style="width: 100%; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; background: var(--bg-card); color: var(--text-main); resize: vertical; font-size: 12px;"></textarea>
           </div>
         </div>
       `;
       
       // Modal anzeigen mit Custom-Buttons
       showEditModal(modalHtml, async () => {
+        // Dropdowns initialisieren NACH dem Öffnen des Modals
+        setTimeout(() => {
+          if (areaOptionsEdit.length > 0) {
+            initSearchableDropdownEdit('editArea', areaOptionsEdit);
+          }
+          if (landOptionsEdit.length > 0) {
+            initSearchableDropdownEdit('editLand', landOptionsEdit);
+          }
+        }, 100);
+        
         // ALLE Felder auslesen
         const cw = document.getElementById("editCw").value;
         const aufgenommenAm = document.getElementById("editAufgenommenAm").value;
         const carrierName = document.getElementById("editCarrierName").value;
-        const area = document.getElementById("editArea").value;
-        const land = document.getElementById("editLand").value;
+        const areaInput = document.getElementById("editAreaInput");
+        const area = areaInput ? (areaInput.getAttribute('data-value') || areaInput.value) : '';
+        const landInput = document.getElementById("editLandInput");
+        const land = landInput ? (landInput.getAttribute('data-value') || landInput.value) : '';
         const shipStatus = document.getElementById("editShipStatus").value;
         const stage = document.getElementById("editStage").value;
         const lastStage = document.getElementById("editLastStage").value;
@@ -3636,6 +3721,97 @@
       setTimeout(() => {
         list.classList.remove('active');
         // Wenn kein gültiger Wert, zurücksetzen
+        if (!selectedValue && input.value) {
+          input.value = '';
+        } else if (selectedValue) {
+          input.value = selectedLabel;
+        }
+      }, 200);
+    });
+    
+    // Initial rendern
+    renderOptions();
+    
+    // Schließen bei Klick außerhalb
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !list.contains(e.target)) {
+        list.classList.remove('active');
+      }
+    });
+  }
+
+  // Spezielle Funktion für Edit-Modal Dropdowns
+  function initSearchableDropdownEdit(fieldName, options) {
+    const input = document.getElementById(`${fieldName}Input`);
+    const list = document.getElementById(`${fieldName}DropdownList`);
+    
+    if (!input || !list) return;
+    
+    // Setze initialen Wert aus data-value Attribut
+    const initialValue = input.getAttribute('data-value');
+    if (initialValue) {
+      const initialOption = options.find(opt => opt.option_value === initialValue);
+      if (initialOption) {
+        input.value = initialOption.option_label;
+        input.setAttribute('data-value', initialOption.option_value);
+      }
+    }
+    
+    let selectedValue = initialValue || '';
+    let selectedLabel = input.value || '';
+    
+    // Liste mit Optionen füllen
+    const renderOptions = (filter = '') => {
+      list.innerHTML = '';
+      
+      const filtered = options.filter(opt => 
+        opt.option_label.toLowerCase().includes(filter.toLowerCase())
+      );
+      
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'searchable-dropdown-empty';
+        empty.textContent = 'Keine Ergebnisse gefunden';
+        list.appendChild(empty);
+        return;
+      }
+      
+      filtered.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'searchable-dropdown-item';
+        item.textContent = opt.option_label;
+        item.setAttribute('data-value', opt.option_value);
+        
+        if (opt.option_value === selectedValue) {
+          item.classList.add('selected');
+        }
+        
+        item.addEventListener('click', () => {
+          selectedValue = opt.option_value;
+          selectedLabel = opt.option_label;
+          input.value = opt.option_label;
+          input.setAttribute('data-value', opt.option_value);
+          list.classList.remove('active');
+        });
+        
+        list.appendChild(item);
+      });
+    };
+    
+    // Input Events
+    input.addEventListener('focus', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('input', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('blur', (e) => {
+      setTimeout(() => {
+        list.classList.remove('active');
         if (!selectedValue && input.value) {
           input.value = '';
         } else if (selectedValue) {
@@ -9413,6 +9589,91 @@
     }
   }, 100);
 
+  // Barcode-Scanner-Funktionalität
+  let scannerActive = false;
+  let codeReader = null;
+  let currentTargetInput = null;
+
+  async function startBarcodeScanner(targetInputId) {
+    if (scannerActive) {
+      stopBarcodeScanner();
+      return;
+    }
+
+    currentTargetInput = targetInputId;
+    scannerActive = true;
+
+    try {
+      const { BrowserMultiFormatReader } = ZXing;
+      codeReader = new BrowserMultiFormatReader();
+
+      // Scanner-Modal erstellen
+      const modal = document.createElement('div');
+      modal.id = 'barcodeScannerModal';
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center;';
+      
+      modal.innerHTML = `
+        <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; max-width: 600px; width: 90%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: var(--text-main);">📷 Barcode-Scanner</h3>
+            <button onclick="stopBarcodeScanner()" style="background: var(--error); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">✕ Schließen</button>
+          </div>
+          <div id="scannerContainer" style="width: 100%; background: black; border-radius: 8px; overflow: hidden; position: relative;">
+            <video id="scannerVideo" style="width: 100%; height: auto; display: block;"></video>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid var(--gxo-orange); width: 80%; height: 200px; pointer-events: none;"></div>
+          </div>
+          <p style="text-align: center; margin-top: 16px; color: var(--text-muted); font-size: 14px;">
+            Richten Sie die Kamera auf den Barcode. Die Erkennung erfolgt automatisch.
+          </p>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+
+      // Kamera starten
+      const video = document.getElementById('scannerVideo');
+      codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result) {
+          const text = result.getText();
+          document.getElementById(targetInputId).value = text;
+          stopBarcodeScanner();
+          if (typeof showCustomModal === 'function') {
+            showCustomModal('✅ Barcode erfolgreich gescannt: ' + text, 'success');
+          } else {
+            alert('✅ Barcode gescannt: ' + text);
+          }
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error('Scanner-Fehler:', err);
+        }
+      });
+
+    } catch (err) {
+      console.error('Fehler beim Starten des Scanners:', err);
+      alert('Fehler beim Starten des Scanners: ' + err.message);
+      stopBarcodeScanner();
+    }
+  }
+
+  function stopBarcodeScanner() {
+    if (codeReader) {
+      codeReader.reset();
+      codeReader = null;
+    }
+    
+    const modal = document.getElementById('barcodeScannerModal');
+    if (modal) {
+      modal.remove();
+    }
+    
+    scannerActive = false;
+    currentTargetInput = null;
+  }
+
+  // Globale Funktionen verfügbar machen
+  window.startBarcodeScanner = startBarcodeScanner;
+  window.stopBarcodeScanner = stopBarcodeScanner;
+
 </script>
 
 <script src="/js/navigation/routing.js"></script>
@@ -9449,6 +9710,92 @@
       }
     })
     .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+
+  // Barcode-Scanner-Funktionalität
+  let scannerActive = false;
+  let codeReader = null;
+
+  async function startBarcodeScanner(targetInputId) {
+    if (scannerActive) {
+      stopBarcodeScanner();
+      return;
+    }
+
+    scannerActive = true;
+
+    try {
+      const { BrowserMultiFormatReader } = ZXing;
+      codeReader = new BrowserMultiFormatReader();
+
+      // Scanner-Modal erstellen
+      const modal = document.createElement('div');
+      modal.id = 'barcodeScannerModal';
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center;';
+      
+      modal.innerHTML = `
+        <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; max-width: 600px; width: 90%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: var(--text-main);">📷 Barcode-Scanner</h3>
+            <button onclick="stopBarcodeScanner()" style="background: var(--error); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">✕ Schließen</button>
+          </div>
+          <div id="scannerContainer" style="width: 100%; background: black; border-radius: 8px; overflow: hidden; position: relative;">
+            <video id="scannerVideo" style="width: 100%; height: auto; display: block;"></video>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid var(--gxo-orange); width: 80%; height: 200px; pointer-events: none;"></div>
+          </div>
+          <p style="text-align: center; margin-top: 16px; color: var(--text-muted); font-size: 14px;">
+            Richten Sie die Kamera auf den Barcode. Die Erkennung erfolgt automatisch.
+          </p>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+
+      // Kamera starten
+      const video = document.getElementById('scannerVideo');
+      codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result) {
+          const text = result.getText();
+          const input = document.getElementById(targetInputId);
+          if (input) {
+            input.value = text;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          stopBarcodeScanner();
+          if (typeof showCustomModal === 'function') {
+            showCustomModal('✅ Barcode erfolgreich gescannt: ' + text, 'success');
+          } else {
+            alert('✅ Barcode gescannt: ' + text);
+          }
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error('Scanner-Fehler:', err);
+        }
+      });
+
+    } catch (err) {
+      console.error('Fehler beim Starten des Scanners:', err);
+      alert('Fehler beim Starten des Scanners: ' + err.message);
+      stopBarcodeScanner();
+    }
+  }
+
+  function stopBarcodeScanner() {
+    if (codeReader) {
+      codeReader.reset();
+      codeReader = null;
+    }
+    
+    const modal = document.getElementById('barcodeScannerModal');
+    if (modal) {
+      modal.remove();
+    }
+    
+    scannerActive = false;
+  }
+
+  // Globale Funktionen verfügbar machen
+  window.startBarcodeScanner = startBarcodeScanner;
+  window.stopBarcodeScanner = stopBarcodeScanner;
 </script>
 
 </body>

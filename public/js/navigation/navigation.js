@@ -1,11 +1,34 @@
 // LVS Returns - Navigation und View-Switching
 
-function initNavigation() {
+// Mache Funktion global verfügbar
+window.initNavigation = function() {
   const navItems = document.querySelectorAll(".nav-item");
 
   navItems.forEach(item => {
-    item.addEventListener("click", () => {
+    // Verhindere Standard-Link-Verhalten
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      
       const viewName = item.getAttribute("data-view");
+      
+      if (!viewName) {
+        console.warn('⚠️ Kein data-view Attribut gefunden für:', item);
+        // Fallback: Versuche aus href zu extrahieren
+        const href = item.getAttribute("href");
+        if (href) {
+          // Verwende routing.js um View-Name zu finden
+          const path = href;
+          if (typeof getViewForRoute === 'function') {
+            const extractedView = getViewForRoute(path);
+            if (extractedView) {
+              if (typeof navigateToView === 'function') {
+                navigateToView(extractedView);
+              }
+            }
+          }
+        }
+        return;
+      }
       
       // Routing-System verwenden statt direkter View-Wechsel
       if (typeof navigateToView === 'function') {

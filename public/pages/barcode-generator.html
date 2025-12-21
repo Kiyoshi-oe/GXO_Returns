@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode Generator - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+      <a href="/lagerbestand" class="nav-item"><span class="nav-icon">📦</span><span>Lagerbestand</span></a>
+      <a href="/wareneingang" class="nav-item"><span class="nav-icon">📥</span><span>Wareneingang</span></a>
+      <a href="/umlagerung" class="nav-item"><span class="nav-icon">↔️</span><span>Umlagerung</span></a>
+      <a href="/archive" class="nav-item"><span class="nav-icon">🗂️</span><span>Archiv</span></a>
+      <a href="/ra-import" class="nav-item"><span class="nav-icon">📑</span><span>RA Import</span></a>
+      <a href="/suche" class="nav-item"><span class="nav-icon">🔍</span><span>Globale Suche</span></a>
+      <a href="/reporting" class="nav-item"><span class="nav-icon">📈</span><span>Reporting</span></a>
+      <a href="/audit" class="nav-item"><span class="nav-icon">📋</span><span>Audit-Logs</span></a>
+      <a href="/performance" class="nav-item"><span class="nav-icon">⚡</span><span>Performance</span></a>
+      <a href="/barcode-generator" class="nav-item active"><span class="nav-icon">📊</span><span>Barcode Generator</span></a>
+    </nav>
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item"><span class="nav-icon">⚙️</span><span>Einstellungen</span></a>
+    <a href="/import" class="nav-item"><span class="nav-icon">📥</span><span>Import</span></a>
+    <a href="/export" class="nav-item"><span class="nav-icon">📤</span><span>Export</span></a>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">📊 Barcode Generator (CODE 128)</div>
+        <div class="topbar-subtitle">Erstellen Sie CODE 128 Barcodes als PDF</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <!-- Barcode-Eingabe -->
+        <div class="card">
+          <div style="padding: 16px;">
+            <!-- Einzelner Barcode Bereich -->
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); border-bottom: 2px solid var(--border); padding-bottom: 6px;">📊 Einzelner Barcode</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Linke Spalte -->
+                <div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Barcode-Text (CODE 128)</label>
+                    <input type="text" id="barcodeText" placeholder="z.B. 00050197980027746580" style="width: 100%; font-family: monospace; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Breite (mm)</label>
+                      <input type="number" id="barcodeWidth" value="50" min="10" max="200" style="width: 100%; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Höhe (mm)</label>
+                      <input type="number" id="barcodeHeight" value="20" min="5" max="100" style="width: 100%; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                      <input type="checkbox" id="halfPage" checked style="margin: 0;">
+                      <span>Halbe A4-Seite</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                      <input type="checkbox" id="showText" checked style="margin: 0;">
+                      <span>Text im Barcode</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                      <input type="checkbox" id="textBelow" checked style="margin: 0;">
+                      <span>Text unter Barcode</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <!-- Rechte Spalte -->
+                <div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Text über Barcode</label>
+                    <input type="text" id="textAbove" placeholder="Optional (leer = Barcode-Text)" style="width: 100%; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Textgröße über</label>
+                      <input type="number" id="textAboveSize" value="14" min="8" max="72" style="width: 100%; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                    </div>
+                    <div class="form-group">
+                      <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500;">Textgröße unter</label>
+                      <input type="number" id="textBelowSize" value="12" min="8" max="72" style="width: 100%; font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Batch-Generierung Bereich -->
+            <div style="border-top: 2px solid var(--border); padding-top: 20px; margin-top: 20px;">
+              <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); border-bottom: 2px solid var(--border); padding-bottom: 6px;">📋 Batch-Generierung</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group" style="display: flex; flex-direction: column;">
+                  <label style="display: block; margin-bottom: 8px; font-size: 11px; font-weight: 600; color: var(--text-main);">Barcode-Texte (ein Text pro Zeile)</label>
+                  <textarea id="batchText" placeholder="Geben Sie mehrere Barcode-Texte ein, einen pro Zeile...&#10;Beispiel:&#10;00050197980027746580&#10;885733208991&#10;70378154" style="width: 100%; height: 150px; padding: 12px; font-family: 'Courier New', monospace; font-size: 13px; border: 2px solid var(--border-soft); border-radius: 8px; resize: none; line-height: 1.6; background: var(--bg-card); color: var(--text-main); transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></textarea>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column;">
+                  <label style="display: block; margin-bottom: 8px; font-size: 11px; font-weight: 600; color: var(--text-main);">Texte über Barcodes (optional, ein Text pro Zeile)</label>
+                  <textarea id="batchTextAbove" placeholder="Optional: Texte über den Barcodes, ein Text pro Zeile...&#10;Lassen Sie leer, um den Barcode-Text zu verwenden" style="width: 100%; height: 150px; padding: 12px; font-family: 'Courier New', monospace; font-size: 13px; border: 2px solid var(--border-soft); border-radius: 8px; resize: none; line-height: 1.6; background: var(--bg-card); color: var(--text-main); transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></textarea>
+                </div>
+              </div>
+              <style>
+                #batchText:focus, #batchTextAbove:focus {
+                  outline: none;
+                  border-color: var(--gxo-orange, #FF3A00);
+                  box-shadow: 0 0 0 3px rgba(255, 58, 0, 0.15), 0 2px 8px rgba(0,0,0,0.2);
+                  transform: translateY(-1px);
+                  background: var(--bg-soft);
+                }
+                #batchText:hover, #batchTextAbove:hover {
+                  border-color: var(--gxo-orange, #FF3A00);
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                  background: var(--bg-soft);
+                }
+                #batchText::placeholder, #batchTextAbove::placeholder {
+                  color: var(--text-muted);
+                }
+              </style>
+            </div>
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="generateBarcode()">📊 Barcode generieren</button>
+              <button class="btn btn-secondary" onclick="generatePDF(event)">📄 Als PDF speichern</button>
+              <button class="btn btn-secondary" onclick="generateBatchPDF(event)">📋 Batch-PDF erstellen</button>
+              <button class="btn btn-secondary" onclick="clearBarcode()">🗑️ Löschen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barcode-Vorschau -->
+        <div class="card" id="previewCard">
+          <div class="card-header">
+            <div class="card-title">👁️ Vorschau (1:1 PDF-Ansicht)</div>
+          </div>
+          <div style="padding: 12px; text-align: center; background: #f5f5f5; overflow: auto; min-height: 450px;">
+            <div id="previewContainer" style="display: inline-block; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div id="previewContent" style="position: relative; width: 595px; height: 421px; margin: 0 auto; background: white; display: flex; flex-direction: column; justify-content: space-between; padding: 20px;">
+                <!-- Text über Barcode -->
+                <div id="previewTextAbove" style="text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #000; flex-shrink: 0;"></div>
+                <!-- Barcode -->
+                <div id="previewBarcode" style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0;">
+                  <svg id="barcodePreview" style="max-width: 100%; max-height: 100%; width: auto; height: auto;"></svg>
+                </div>
+                <!-- Text unter Barcode -->
+                <div id="previewTextBelow" style="text-align: center; padding: 10px 0; font-size: 12px; color: #000; flex-shrink: 0;"></div>
+              </div>
+            </div>
+            <div id="previewPlaceholder" style="padding: 40px; color: var(--text-muted); font-size: 14px;">
+              Bitte klicken Sie auf "Barcode generieren", um eine Vorschau zu sehen
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  function generateBarcode() {
+    const text = document.getElementById('barcodeText').value.trim();
+    if (!text) {
+      alert('Bitte geben Sie einen Text ein!');
+      return;
+    }
+
+    const width = parseInt(document.getElementById('barcodeWidth').value);
+    const height = parseInt(document.getElementById('barcodeHeight').value);
+    const showText = document.getElementById('showText').checked;
+    const textBelow = document.getElementById('textBelow').checked;
+    const textAbove = document.getElementById('textAbove').value.trim();
+    const textAboveSize = parseInt(document.getElementById('textAboveSize').value) || 14;
+    const textBelowSize = parseInt(document.getElementById('textBelowSize').value) || 12;
+    const halfPage = document.getElementById('halfPage').checked;
+
+    try {
+      // Text über Barcode anzeigen
+      const textAboveContent = textAbove || text;
+      const previewTextAbove = document.getElementById('previewTextAbove');
+      if (textAboveContent) {
+        previewTextAbove.textContent = textAboveContent;
+        previewTextAbove.style.fontSize = textAboveSize + 'px';
+        previewTextAbove.style.display = 'block';
+        previewTextAbove.style.visibility = 'visible';
+        previewTextAbove.style.opacity = '1';
+      } else {
+        previewTextAbove.style.display = 'none';
+      }
+
+      // Barcode generieren - größer für bessere Sichtbarkeit
+      const barcodeWidth = halfPage ? width / 6 : width / 10; // Größerer Barcode bei halber Seite
+      const barcodeHeight = halfPage ? height * 2 : height; // Höherer Barcode bei halber Seite
+      
+      JsBarcode("#barcodePreview", text, {
+        format: "CODE128",
+        width: barcodeWidth,
+        height: barcodeHeight,
+        displayValue: showText,
+        textPosition: "bottom", // Text immer unten im Barcode
+        textAlign: "center",
+        textMargin: 5,
+        fontSize: 14,
+        background: "#ffffff",
+        lineColor: "#000000"
+      });
+      
+      // Text unter Barcode anzeigen
+      const previewTextBelow = document.getElementById('previewTextBelow');
+      if (textBelow) {
+        previewTextBelow.textContent = text;
+        previewTextBelow.style.fontSize = textBelowSize + 'px';
+        previewTextBelow.style.display = 'block';
+      } else {
+        previewTextBelow.style.display = 'none';
+      }
+
+      // Layout für halbe Seite anpassen
+      const previewContent = document.getElementById('previewContent');
+      if (halfPage) {
+        previewContent.style.height = '421px'; // Halbe A4-Höhe (842/2)
+        // Flexbox-Layout: Text oben, Barcode in der Mitte (nimmt den meisten Platz), Text unten
+        previewContent.style.display = 'flex';
+        previewContent.style.flexDirection = 'column';
+        previewContent.style.justifyContent = 'space-between';
+        previewContent.style.padding = '20px';
+      } else {
+        previewContent.style.height = '842px'; // Volle A4-Höhe
+        previewContent.style.display = 'flex';
+        previewContent.style.flexDirection = 'column';
+        previewContent.style.justifyContent = 'space-between';
+        previewContent.style.padding = '20px';
+      }
+      
+      // Vorschau anzeigen
+      document.getElementById('previewPlaceholder').style.display = 'none';
+      document.getElementById('previewContainer').style.display = 'inline-block';
+    } catch (err) {
+      alert('Fehler beim Generieren: ' + err.message);
+    }
+  }
+
+  async function generatePDF() {
+    const text = document.getElementById('barcodeText').value.trim();
+    
+    if (!text) {
+      alert('Bitte geben Sie einen Text ein!');
+      return;
+    }
+
+    try {
+      // Lade-Indikator anzeigen
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🔄 Generiere PDF...';
+
+      const response = await fetch('/api/barcode/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          count: 1,
+          width: parseInt(document.getElementById('barcodeWidth').value) || 50,
+          height: parseInt(document.getElementById('barcodeHeight').value) || 20,
+          halfPage: document.getElementById('halfPage').checked,
+          showText: document.getElementById('showText').checked,
+          textAbove: document.getElementById('textAbove').value.trim() || text, // Verwende eingegebenen Text oder Barcode-Text
+          textAboveSize: parseInt(document.getElementById('textAboveSize').value) || 14,
+          textBelow: document.getElementById('textBelow').checked,
+          textBelowSize: parseInt(document.getElementById('textBelowSize').value) || 12
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+        throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+      }
+
+      const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error('PDF ist leer');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `barcode_${text.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getTime()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      alert('✅ PDF erfolgreich erstellt!');
+    } catch (err) {
+      console.error('PDF-Generierungsfehler:', err);
+      alert('Fehler beim Erstellen des PDFs: ' + err.message);
+    } finally {
+      const btn = event.target;
+      btn.disabled = false;
+      btn.textContent = '📄 Als PDF speichern';
+    }
+  }
+
+  async function generateBatchPDF(event) {
+    const batchText = document.getElementById('batchText').value.trim();
+    if (!batchText) {
+      alert('Bitte geben Sie Barcode-Texte ein!');
+      return;
+    }
+
+    const texts = batchText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+    
+    if (texts.length === 0) {
+      alert('Bitte geben Sie mindestens einen Barcode-Text ein!');
+      return;
+    }
+    
+    // Texte über Barcodes (optional)
+    const batchTextAbove = document.getElementById('batchTextAbove').value.trim();
+    let textsAbove = [];
+    if (batchTextAbove) {
+      textsAbove = batchTextAbove.split('\n').map(t => t.trim());
+      if (textsAbove.length !== texts.length) {
+        alert('Die Anzahl der Texte über Barcodes muss mit der Anzahl der Barcode-Texte übereinstimmen!');
+        return;
+      }
+    }
+    
+    try {
+      // Lade-Indikator anzeigen
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🔄 Generiere Batch-PDF...';
+
+      const response = await fetch('/api/barcode/generate-batch-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texts,
+          textsAbove: textsAbove.length > 0 ? textsAbove : null,
+          width: parseInt(document.getElementById('barcodeWidth').value) || 50,
+          height: parseInt(document.getElementById('barcodeHeight').value) || 20,
+          halfPage: document.getElementById('halfPage').checked,
+          showText: document.getElementById('showText').checked,
+          textAboveSize: parseInt(document.getElementById('textAboveSize').value) || 14,
+          textBelow: document.getElementById('textBelow').checked,
+          textBelowSize: parseInt(document.getElementById('textBelowSize').value) || 12
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+        throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+      }
+
+      const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error('PDF ist leer');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `barcodes_batch_${new Date().getTime()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      alert(`✅ Batch-PDF mit ${texts.length} Barcodes erfolgreich erstellt!`);
+    } catch (err) {
+      console.error('Batch-PDF-Generierungsfehler:', err);
+      alert('Fehler beim Erstellen des Batch-PDFs: ' + err.message);
+    } finally {
+      const btn = event.target;
+      btn.disabled = false;
+      btn.textContent = '📄 Batch-PDF erstellen';
+    }
+  }
+
+  function clearBarcode() {
+    document.getElementById('barcodeText').value = '';
+    document.getElementById('textAbove').value = '';
+    document.getElementById('barcodePreview').innerHTML = '';
+    document.getElementById('previewTextAbove').textContent = '';
+    document.getElementById('previewTextBelow').textContent = '';
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('previewPlaceholder').style.display = 'block';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }, 500);
+  });
+</script>
+
+</body>
+</html>
+
