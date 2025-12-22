@@ -4,11 +4,22 @@
   <meta charset="UTF-8">
   <title>Globale Suche - LVS Returns</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+<<<<<<< Updated upstream
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+=======
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+>>>>>>> Stashed changes
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
+<<<<<<< Updated upstream
 <!-- Loading Screen -->
 <div id="loadingScreen">
   <div class="loading-logo-container">
@@ -81,6 +92,10 @@
 </div>
 
 <div class="app">
+=======
+<div class="app">
+  <!-- Sidebar -->
+>>>>>>> Stashed changes
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">
@@ -88,6 +103,7 @@
         <span class="sidebar-logo-text-main">Returns</span>
       </div>
     </div>
+<<<<<<< Updated upstream
     <nav class="nav">
       <div class="nav-section-title">Ansichten</div>
       <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
@@ -116,10 +132,84 @@
       </div>
       <div class="topbar-right">
         <button class="btn-icon" id="themeToggle">☾</button>
+=======
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item" data-view="inventory">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/wareneingang" class="nav-item" data-view="inbound">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/umlagerung" class="nav-item" data-view="move">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item" data-view="archive">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/ra-import" class="nav-item" data-view="ra">
+        <span class="nav-icon">📑</span>
+        <span>RA Import</span>
+      </a>
+      <a href="/globale-suche" class="nav-item active" data-view="suche">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item" data-view="settings">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item" data-view="import">
+      <span class="nav-icon">📥</span>
+      <span>Import</span>
+    </a>
+    <a href="/export" class="nav-item" data-view="export">
+      <span class="nav-icon">📤</span>
+      <span>Export</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="topbarTitle">Globale Suche</div>
+        <div class="topbar-subtitle" id="topbarSubtitle">Durchsuchen Sie alle Einträge mit erweiterten Filtern</div>
+      </div>
+      <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
+        <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="userAvatar">👤</div>
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="userName">Nicht angemeldet</span>
+            <span style="font-size: 11px; color: var(--text-soft); display: none;" id="userEmail">Windows-Benutzer</span>
+          </div>
+        </div>
+>>>>>>> Stashed changes
       </div>
     </header>
 
     <main class="main">
+<<<<<<< Updated upstream
       <div class="card">
         <div class="card-header">
           <div>
@@ -204,11 +294,162 @@
                   <label>
                     <input type="checkbox" id="searchExactMatch"> Exakte Übereinstimmung
                   </label>
+=======
+      <section class="view" id="view-search">
+        <!-- Suchformular -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔍 Suchkriterien</div>
+              <div class="card-subtitle">Geben Sie Suchbegriffe ein oder verwenden Sie die Filter</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()">
+                🗑️ Filter zurücksetzen
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="performSearch()">
+                🔍 Suchen
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Globale Textsuche -->
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label style="font-weight: 600; margin-bottom: 8px; display: block;">Globale Textsuche</label>
+              <input 
+                type="text" 
+                id="globalSearchInput" 
+                placeholder="Suche in allen Feldern (CW, Carrier, OLPN, DN, Tracking, Kunde, RA, Kommentar, Stellplatz...)"
+                class="form-input"
+                onkeypress="if(event.key === 'Enter') performSearch()"
+                style="width: 100%; padding: 12px; font-size: 14px;"
+              >
+            </div>
+
+            <!-- Erweiterte Filter (ausklappbar) -->
+            <div style="margin-bottom: 16px;">
+              <button 
+                class="btn btn-ghost btn-sm" 
+                onclick="toggleAdvancedFilters()"
+                id="toggleFiltersBtn"
+                style="width: 100%; margin-bottom: 12px;"
+              >
+                <span id="toggleFiltersIcon">▼</span> Erweiterte Filter anzeigen
+              </button>
+            </div>
+
+            <div id="advancedFilters" style="display: none;">
+              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <!-- Carrier -->
+                <div class="form-group">
+                  <label>Carrier Name</label>
+                  <input type="text" id="filterCarrier" placeholder="z.B. DHL, DPD..." class="form-input">
+                </div>
+
+                <!-- Area -->
+                <div class="form-group">
+                  <label>Area</label>
+                  <input type="text" id="filterArea" placeholder="z.B. A1, B2..." class="form-input">
+                </div>
+
+                <!-- Land -->
+                <div class="form-group">
+                  <label>Land</label>
+                  <select id="filterLand" class="form-input">
+                    <option value="">Alle Länder</option>
+                  </select>
+                </div>
+
+                <!-- Stellplatz -->
+                <div class="form-group">
+                  <label>Stellplatz Code</label>
+                  <input type="text" id="filterLocation" placeholder="z.B. D-01-01..." class="form-input">
+                </div>
+
+                <!-- OLPN -->
+                <div class="form-group">
+                  <label>OLPN</label>
+                  <input type="text" id="filterOLPN" placeholder="OLPN-Nummer" class="form-input">
+                </div>
+
+                <!-- DN -->
+                <div class="form-group">
+                  <label>DN</label>
+                  <input type="text" id="filterDN" placeholder="DN-Nummer" class="form-input">
+                </div>
+
+                <!-- SHI -->
+                <div class="form-group">
+                  <label>SHI</label>
+                  <input type="text" id="filterSHI" placeholder="SHI-Nummer" class="form-input">
+                </div>
+
+                <!-- Carrier Tracking -->
+                <div class="form-group">
+                  <label>Carrier Tracking Nr.</label>
+                  <input type="text" id="filterTracking" placeholder="Tracking-Nummer" class="form-input">
+                </div>
+
+                <!-- Customer ID -->
+                <div class="form-group">
+                  <label>Customer ID</label>
+                  <input type="text" id="filterCustomerId" placeholder="Customer ID" class="form-input">
+                </div>
+
+                <!-- Customer Name -->
+                <div class="form-group">
+                  <label>Customer Name</label>
+                  <input type="text" id="filterCustomerName" placeholder="Kundenname" class="form-input">
+                </div>
+
+                <!-- ASN/RA Nr. -->
+                <div class="form-group">
+                  <label>ASN/RA Nr.</label>
+                  <input type="text" id="filterAsnRa" placeholder="ASN/RA-Nummer" class="form-input">
+                </div>
+
+                <!-- Neue RA -->
+                <div class="form-group">
+                  <label>Neue RA</label>
+                  <input type="text" id="filterNeueRa" placeholder="Neue RA-Nummer" class="form-input">
+                </div>
+
+                <!-- New Reopen RA -->
+                <div class="form-group">
+                  <label>New Reopen RA</label>
+                  <input type="text" id="filterNewReopenRa" placeholder="New Reopen RA" class="form-input">
+                </div>
+
+                <!-- MH Status -->
+                <div class="form-group">
+                  <label>MH Status</label>
+                  <input type="text" id="filterMhStatus" placeholder="z.B. geschlossen..." class="form-input">
+                </div>
+
+                <!-- Ship Status -->
+                <div class="form-group">
+                  <label>Ship Status</label>
+                  <input type="text" id="filterShipStatus" placeholder="Ship Status" class="form-input">
+                </div>
+
+                <!-- Datum von -->
+                <div class="form-group">
+                  <label>Datum von</label>
+                  <input type="date" id="filterDateFrom" class="form-input">
+                </div>
+
+                <!-- Datum bis -->
+                <div class="form-group">
+                  <label>Datum bis</label>
+                  <input type="date" id="filterDateTo" class="form-input">
+>>>>>>> Stashed changes
                 </div>
               </div>
             </div>
           </div>
         </div>
+<<<<<<< Updated upstream
       </div>
 
       <!-- Suchergebnisse -->
@@ -226,10 +467,83 @@
           </div>
         </div>
       </div>
+=======
+
+        <!-- Suchergebnisse -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Suchergebnisse</div>
+              <div class="card-subtitle" id="resultsSubtitle">Keine Suche durchgeführt</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="exportResults()" id="exportBtn" style="display: none;">
+                📤 Ergebnisse exportieren
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Loading -->
+            <div id="searchLoading" style="display: none; text-align: center; padding: 40px;">
+              <div style="font-size: 18px; color: var(--text-soft);">🔍 Suche läuft...</div>
+            </div>
+
+            <!-- Ergebnisse Tabelle -->
+            <div id="searchResults" style="display: none;">
+              <div style="overflow-x: auto;">
+                <table class="data-table" id="resultsTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>CW</th>
+                      <th>Carrier</th>
+                      <th>Land</th>
+                      <th>Area</th>
+                      <th>Stellplatz</th>
+                      <th>OLPN</th>
+                      <th>DN</th>
+                      <th>Tracking</th>
+                      <th>Customer ID</th>
+                      <th>Customer Name</th>
+                      <th>ASN/RA</th>
+                      <th>Kartons</th>
+                      <th>Erstellt am</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resultsTableBody">
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div id="pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-soft);">
+                <div style="color: var(--text-soft); font-size: 14px;">
+                  <span id="resultsInfo">Zeige 0 von 0 Ergebnissen</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-ghost btn-sm" onclick="previousPage()" id="prevBtn" disabled>← Zurück</button>
+                  <button class="btn btn-ghost btn-sm" onclick="nextPage()" id="nextBtn" disabled>Weiter →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Keine Ergebnisse -->
+            <div id="noResults" style="display: none; text-align: center; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+              <div style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Keine Ergebnisse gefunden</div>
+              <div style="font-size: 14px; color: var(--text-soft);">Versuchen Sie andere Suchbegriffe oder Filter</div>
+            </div>
+          </div>
+        </div>
+      </section>
+>>>>>>> Stashed changes
     </main>
   </div>
 </div>
 
+<<<<<<< Updated upstream
 <script src="/js/core/utils.js"></script>
 <script>
   // Globale Suche Funktionalität
@@ -701,6 +1015,291 @@
       showCustomModal('❌ Fehler beim Löschen: ' + err.message, 'error');
     }
   }
+=======
+<!-- Scripts -->
+<script src="/js/core/theme.js"></script>
+<script src="/js/navigation/navigation.js"></script>
+<script src="/js/navigation/nav-init.js"></script>
+
+<script>
+// Globale Variablen
+let currentPage = 0;
+const pageSize = 100;
+let searchResults = [];
+let totalResults = 0;
+
+// Initialisierung
+document.addEventListener('DOMContentLoaded', function() {
+  loadDropdownOptions();
+  initTheme();
+  
+  // Enter-Taste für globale Suche
+  document.getElementById('globalSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      performSearch();
+    }
+  });
+});
+
+// Dropdown-Optionen laden
+async function loadDropdownOptions() {
+  try {
+    const response = await fetch('/api/dropdown-options/land');
+    const lands = await response.json();
+    const select = document.getElementById('filterLand');
+    
+    lands.forEach(land => {
+      const option = document.createElement('option');
+      option.value = land.option_value;
+      option.textContent = land.option_label;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Fehler beim Laden der Länder:', err);
+  }
+}
+
+// Erweiterte Filter ein/ausblenden
+function toggleAdvancedFilters() {
+  const filters = document.getElementById('advancedFilters');
+  const btn = document.getElementById('toggleFiltersBtn');
+  const icon = document.getElementById('toggleFiltersIcon');
+  
+  if (filters.style.display === 'none') {
+    filters.style.display = 'block';
+    icon.textContent = '▲';
+    btn.querySelector('span').textContent = ' Erweiterte Filter ausblenden';
+  } else {
+    filters.style.display = 'none';
+    icon.textContent = '▼';
+    btn.querySelector('span').textContent = ' Erweiterte Filter anzeigen';
+  }
+}
+
+// Alle Filter zurücksetzen
+function clearAllFilters() {
+  document.getElementById('globalSearchInput').value = '';
+  document.getElementById('filterCarrier').value = '';
+  document.getElementById('filterArea').value = '';
+  document.getElementById('filterLand').value = '';
+  document.getElementById('filterLocation').value = '';
+  document.getElementById('filterOLPN').value = '';
+  document.getElementById('filterDN').value = '';
+  document.getElementById('filterSHI').value = '';
+  document.getElementById('filterTracking').value = '';
+  document.getElementById('filterCustomerId').value = '';
+  document.getElementById('filterCustomerName').value = '';
+  document.getElementById('filterAsnRa').value = '';
+  document.getElementById('filterNeueRa').value = '';
+  document.getElementById('filterNewReopenRa').value = '';
+  document.getElementById('filterMhStatus').value = '';
+  document.getElementById('filterShipStatus').value = '';
+  document.getElementById('filterDateFrom').value = '';
+  document.getElementById('filterDateTo').value = '';
+  
+  // Ergebnisse zurücksetzen
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('noResults').style.display = 'none';
+  document.getElementById('resultsSubtitle').textContent = 'Keine Suche durchgeführt';
+  document.getElementById('exportBtn').style.display = 'none';
+}
+
+// Suche durchführen
+async function performSearch() {
+  const loading = document.getElementById('searchLoading');
+  const results = document.getElementById('searchResults');
+  const noResults = document.getElementById('noResults');
+  const exportBtn = document.getElementById('exportBtn');
+  
+  // Ladeanzeige anzeigen
+  loading.style.display = 'block';
+  results.style.display = 'none';
+  noResults.style.display = 'none';
+  exportBtn.style.display = 'none';
+  
+  // Suchparameter sammeln
+  const params = new URLSearchParams();
+  
+  const globalQuery = document.getElementById('globalSearchInput').value.trim();
+  if (globalQuery) params.append('query', globalQuery);
+  
+  const carrier = document.getElementById('filterCarrier').value.trim();
+  if (carrier) params.append('carrier_name', carrier);
+  
+  const area = document.getElementById('filterArea').value.trim();
+  if (area) params.append('area', area);
+  
+  const land = document.getElementById('filterLand').value;
+  if (land) params.append('land', land);
+  
+  const location = document.getElementById('filterLocation').value.trim();
+  if (location) params.append('location_code', location);
+  
+  const olpn = document.getElementById('filterOLPN').value.trim();
+  if (olpn) params.append('olpn', olpn);
+  
+  const dn = document.getElementById('filterDN').value.trim();
+  if (dn) params.append('dn', dn);
+  
+  const shi = document.getElementById('filterSHI').value.trim();
+  if (shi) params.append('shi', shi);
+  
+  const tracking = document.getElementById('filterTracking').value.trim();
+  if (tracking) params.append('carrier_tracking_nr', tracking);
+  
+  const customerId = document.getElementById('filterCustomerId').value.trim();
+  if (customerId) params.append('customer_id', customerId);
+  
+  const customerName = document.getElementById('filterCustomerName').value.trim();
+  if (customerName) params.append('customer_name', customerName);
+  
+  const asnRa = document.getElementById('filterAsnRa').value.trim();
+  if (asnRa) params.append('asn_ra_no', asnRa);
+  
+  const neueRa = document.getElementById('filterNeueRa').value.trim();
+  if (neueRa) params.append('neue_ra', neueRa);
+  
+  const newReopenRa = document.getElementById('filterNewReopenRa').value.trim();
+  if (newReopenRa) params.append('new_reopen_ra', newReopenRa);
+  
+  const mhStatus = document.getElementById('filterMhStatus').value.trim();
+  if (mhStatus) params.append('mh_status', mhStatus);
+  
+  const shipStatus = document.getElementById('filterShipStatus').value.trim();
+  if (shipStatus) params.append('ship_status', shipStatus);
+  
+  const dateFrom = document.getElementById('filterDateFrom').value;
+  if (dateFrom) params.append('date_from', dateFrom);
+  
+  const dateTo = document.getElementById('filterDateTo').value;
+  if (dateTo) params.append('date_to', dateTo);
+  
+  // Pagination
+  params.append('limit', pageSize);
+  params.append('offset', currentPage * pageSize);
+  
+  try {
+    const response = await fetch(`/api/search?${params.toString()}`);
+    const data = await response.json();
+    
+    if (data.ok) {
+      searchResults = data.data || [];
+      totalResults = data.total || 0;
+      
+      loading.style.display = 'none';
+      
+      if (searchResults.length > 0) {
+        displayResults();
+        results.style.display = 'block';
+        exportBtn.style.display = 'block';
+      } else {
+        noResults.style.display = 'block';
+      }
+      
+      updatePagination();
+      updateResultsInfo();
+    } else {
+      throw new Error(data.error || 'Fehler bei der Suche');
+    }
+  } catch (err) {
+    console.error('Fehler bei der Suche:', err);
+    loading.style.display = 'none';
+    alert('Fehler bei der Suche: ' + err.message);
+  }
+}
+
+// Ergebnisse anzeigen
+function displayResults() {
+  const tbody = document.getElementById('resultsTableBody');
+  tbody.innerHTML = '';
+  
+  searchResults.forEach(item => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${item.id || ''}</td>
+      <td>${item.cw || ''}</td>
+      <td>${item.carrier_name || ''}</td>
+      <td>${item.land || ''}</td>
+      <td>${item.area || ''}</td>
+      <td>${item.location_code || ''}</td>
+      <td>${item.olpn || ''}</td>
+      <td>${item.dn || ''}</td>
+      <td>${item.carrier_tracking_nr || ''}</td>
+      <td>${item.customer_id || ''}</td>
+      <td>${item.customer_name || ''}</td>
+      <td>${item.asn_ra_no || ''}</td>
+      <td>${item.actual_carton || 0}</td>
+      <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('de-DE') : ''}</td>
+      <td>
+        <button class="btn btn-ghost btn-xs" onclick="viewDetails(${item.id})" title="Details anzeigen">
+          👁️
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+// Pagination aktualisieren
+function updatePagination() {
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  
+  prevBtn.disabled = currentPage === 0;
+  nextBtn.disabled = (currentPage + 1) * pageSize >= totalResults;
+}
+
+// Ergebnisse-Info aktualisieren
+function updateResultsInfo() {
+  const start = currentPage * pageSize + 1;
+  const end = Math.min((currentPage + 1) * pageSize, totalResults);
+  const info = document.getElementById('resultsInfo');
+  const subtitle = document.getElementById('resultsSubtitle');
+  
+  info.textContent = `Zeige ${start}-${end} von ${totalResults} Ergebnissen`;
+  subtitle.textContent = `${totalResults} Ergebnis${totalResults !== 1 ? 'se' : ''} gefunden`;
+}
+
+// Vorherige Seite
+function previousPage() {
+  if (currentPage > 0) {
+    currentPage--;
+    performSearch();
+  }
+}
+
+// Nächste Seite
+function nextPage() {
+  if ((currentPage + 1) * pageSize < totalResults) {
+    currentPage++;
+    performSearch();
+  }
+}
+
+// Details anzeigen
+function viewDetails(id) {
+  // Öffne Details in einem Modal oder navigiere zur Detailseite
+  alert(`Details für Eintrag ${id} - Funktion noch nicht implementiert`);
+}
+
+// Ergebnisse exportieren
+function exportResults() {
+  // Export-Funktionalität
+  alert('Export-Funktion noch nicht implementiert');
+}
+
+// Theme-Initialisierung
+function initTheme() {
+  if (window.initTheme) {
+    window.initTheme();
+  }
+}
+
+// User-Menu Toggle
+function toggleUserMenu() {
+  // User-Menu Funktionalität
+}
+>>>>>>> Stashed changes
 </script>
 
 </body>

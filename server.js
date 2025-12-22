@@ -2935,6 +2935,552 @@ app.get("/api/export", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
+=======
+/* Import Template herunterladen */
+app.get("/api/import/template", async (req, res) => {
+  try {
+    console.log("📥 Template-Download angefordert");
+    
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'GXO Returns System';
+    workbook.created = new Date();
+    
+    const worksheet = workbook.addWorksheet('Import');
+    
+    // Header-Zeile
+    const headers = [
+      'CW',
+      'Aufgenommen am (YYYY-MM-DD)',
+      'Carrier Name',
+      'Land',
+      'Area',
+      'Stage',
+      'Last Stage',
+      'Ship Status',
+      'Planned Carton',
+      'Actual Carton',
+      'OLPN',
+      'DN',
+      'SHI',
+      'Carrier Tracking Nr.',
+      'Customer ID',
+      'Customer Name',
+      'ASN/RA Nr.',
+      'Kommentar',
+      'Stellplatz Code'
+    ];
+    
+    worksheet.addRow(headers);
+    
+    // Header-Formatierung
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+    
+    // Spaltenbreiten anpassen
+    worksheet.columns.forEach((column, index) => {
+      if (headers[index]) {
+        column.width = Math.max(headers[index].length + 5, 15);
+      }
+    });
+    
+    // Beispiel-Zeile hinzufügen
+    const exampleRow = [
+      'CW12345',
+      new Date().toISOString().split('T')[0],
+      'DHL',
+      'DE',
+      'A1',
+      'Stage1',
+      'Stage1',
+      'Shipped',
+      '2',
+      '2',
+      '00050197980027746580',
+      'DN123',
+      'SHI123',
+      '882826466627',
+      '20062673',
+      'Zalando',
+      '70378154',
+      'Beispiel-Eintrag',
+      'A1-01'
+    ];
+    worksheet.addRow(exampleRow);
+    
+    // Beispiel-Zeile als Kommentar markieren
+    worksheet.getRow(2).font = { italic: true, color: { argb: 'FF808080' } };
+    
+    // Buffer erstellen
+    const buffer = await workbook.xlsx.writeBuffer();
+    
+    if (!buffer || buffer.length === 0) {
+      throw new Error('Der erstellte Buffer ist leer');
+    }
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Import_Template.xlsx"');
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+    
+    console.log(`✅ Template erfolgreich erstellt und gesendet (${buffer.length} Bytes)`);
+  } catch (err) {
+    console.error("Fehler beim Erstellen des Templates:", err);
+    console.error("Stack:", err.stack);
+    res.status(500).json({ ok: false, error: err.message || 'Unbekannter Fehler beim Erstellen des Templates' });
+  }
+});
+
+/* Import Upload und Verarbeitung */
+app.post("/api/import/upload", upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: "Keine Datei hochgeladen" });
+    }
+    
+    console.log("📥 Import-Upload erhalten:", req.file.originalname);
+    
+    // Excel-Datei lesen
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Daten in JSON konvertieren
+    const data = XLSX.utils.sheet_to_json(worksheet, { 
+      header: 1,
+      defval: null,
+      raw: false
+    });
+    
+    if (data.length < 2) {
+      return res.status(400).json({ ok: false, error: "Die Datei enthält keine Daten" });
+    }
+    
+    // Header-Zeile (erste Zeile) überspringen
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    // Spalten-Mapping
+    const columnMap = {
+      'CW': 'cw',
+      'Aufgenommen am (YYYY-MM-DD)': 'aufgenommenAm',
+      'Carrier Name': 'carrierName',
+      'Land': 'land',
+      'Area': 'area',
+      'Stage': 'stage',
+      'Last Stage': 'lastStage',
+      'Ship Status': 'shipStatus',
+      'Planned Carton': 'plannedCarton',
+      'Actual Carton': 'actualCarton',
+      'OLPN': 'olpn',
+      'DN': 'dn',
+      'SHI': 'shi',
+      'Carrier Tracking Nr.': 'carrierTrackingNr',
+      'Customer ID': 'customerId',
+      'Customer Name': 'customerName',
+      'ASN/RA Nr.': 'asnRaNo',
+      'Kommentar': 'kommentar',
+      'Stellplatz Code': 'locationCode'
+    };
+    
+    // Spalten-Indizes finden
+    const columnIndices = {};
+    headers.forEach((header, index) => {
+      if (header && columnMap[header]) {
+        columnIndices[columnMap[header]] = index;
+      }
+    });
+    
+    // Validierung: Mindestens Carrier Name muss vorhanden sein
+    if (!columnIndices.carrierName) {
+      return res.status(400).json({ ok: false, error: "Die Spalte 'Carrier Name' ist erforderlich" });
+    }
+    
+    const stmt = db.prepare(`
+      insert into inbound_simple (
+        cw,
+        aufgenommen_am,
+        ignore_flag,
+        area,
+        stage,
+        last_stage,
+        carrier_name,
+        land,
+        ship_status,
+        planned_carton,
+        actual_carton,
+        olpn,
+        dn,
+        shi,
+        carrier_tracking_nr,
+        customer_id,
+        customer_name,
+        asn_ra_no,
+        kommentar,
+        added_by,
+        created_at,
+        location_id
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const now = new Date().toISOString();
+    let successCount = 0;
+    let errorCount = 0;
+    const errorDetails = [];
+    
+    // Transaktion starten
+    const transaction = db.transaction(() => {
+      rows.forEach((row, rowIndex) => {
+        try {
+          // Leere Zeilen überspringen
+          if (!row || row.every(cell => !cell || cell.toString().trim() === '')) {
+            return;
+          }
+          
+          // Daten extrahieren
+          const getValue = (key) => {
+            const index = columnIndices[key];
+            if (index !== undefined && row[index] !== undefined && row[index] !== null) {
+              const value = row[index].toString().trim();
+              return value === '' ? null : value;
+            }
+            return null;
+          };
+          
+          const carrierName = getValue('carrierName');
+          if (!carrierName) {
+            errorCount++;
+            errorDetails.push({ row: rowIndex + 2, message: 'Carrier Name ist erforderlich' });
+            return;
+          }
+          
+          // Stellplatz-Code zu ID konvertieren
+          let locationId = null;
+          const locationCode = getValue('locationCode');
+          if (locationCode) {
+            // Stellplatz suchen (case-insensitive und trimmed)
+            const location = db.prepare("select id from location where trim(upper(code)) = trim(upper(?))").get(locationCode);
+            if (location) {
+              locationId = location.id;
+            } else {
+              // Stellplatz automatisch erstellen, wenn er nicht existiert
+              console.log(`Stellplatz '${locationCode}' nicht gefunden, erstelle neuen Stellplatz...`);
+              try {
+                const area = getValue('area') || '';
+                const now = new Date().toISOString();
+                const insertLocation = db.prepare(`
+                  insert into location (code, description, area, is_active, created_at, created_by)
+                  values (?, ?, ?, 1, ?, ?)
+                `);
+                const locationInfo = insertLocation.run(
+                  locationCode.trim(),
+                  `Automatisch erstellt beim Import`,
+                  area,
+                  now,
+                  'Import'
+                );
+                locationId = locationInfo.lastInsertRowid;
+                console.log(`✅ Stellplatz '${locationCode}' erfolgreich erstellt mit ID: ${locationId}`);
+              } catch (err) {
+                console.error(`Fehler beim Erstellen des Stellplatzes '${locationCode}':`, err);
+                // Falls Fehler (z.B. Duplikat), nochmal versuchen zu finden
+                const locationRetry = db.prepare("select id from location where trim(upper(code)) = trim(upper(?))").get(locationCode);
+                if (locationRetry) {
+                  locationId = locationRetry.id;
+                } else {
+                  console.warn(`Stellplatz '${locationCode}' konnte nicht erstellt werden, wird als null gespeichert`);
+                }
+              }
+            }
+          }
+          
+          // Zahlen konvertieren
+          let plannedCarton = null;
+          let actualCarton = null;
+          const plannedCartonStr = getValue('plannedCarton');
+          const actualCartonStr = getValue('actualCarton');
+          
+          if (plannedCartonStr) {
+            plannedCarton = parseInt(plannedCartonStr, 10);
+            if (isNaN(plannedCarton)) plannedCarton = null;
+          }
+          
+          if (actualCartonStr) {
+            actualCarton = parseInt(actualCartonStr, 10);
+            if (isNaN(actualCarton)) actualCarton = null;
+          }
+          
+          // Datum parsen
+          let aufgenommenAm = getValue('aufgenommenAm');
+          if (aufgenommenAm) {
+            // Versuche verschiedene Datumsformate zu parsen
+            const date = new Date(aufgenommenAm);
+            if (isNaN(date.getTime())) {
+              aufgenommenAm = null;
+            } else {
+              aufgenommenAm = date.toISOString();
+            }
+          }
+          
+          // Eintrag speichern
+          stmt.run(
+            getValue('cw'),
+            aufgenommenAm,
+            0, // ignore_flag
+            getValue('area'),
+            getValue('stage'),
+            getValue('lastStage'),
+            carrierName,
+            getValue('land'),
+            getValue('shipStatus'),
+            plannedCarton,
+            actualCarton,
+            getValue('olpn'),
+            getValue('dn'),
+            getValue('shi'),
+            getValue('carrierTrackingNr'),
+            getValue('customerId'),
+            getValue('customerName'),
+            getValue('asnRaNo'),
+            getValue('kommentar'),
+            'Import', // added_by
+            now,
+            locationId
+          );
+          
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          errorDetails.push({ row: rowIndex + 2, message: err.message || 'Unbekannter Fehler' });
+          console.error(`Fehler in Zeile ${rowIndex + 2}:`, err);
+        }
+      });
+    });
+    
+    // Transaktion ausführen
+    transaction();
+    
+    console.log(`✅ Import abgeschlossen: ${successCount} erfolgreich, ${errorCount} Fehler`);
+    
+    res.json({
+      ok: true,
+      total: rows.length,
+      success: successCount,
+      errors: errorCount,
+      errorDetails: errorDetails.slice(0, 50) // Maximal 50 Fehlerdetails zurückgeben
+    });
+    
+  } catch (err) {
+    console.error("Fehler beim Import:", err);
+    res.status(500).json({ ok: false, error: err.message || "Fehler beim Verarbeiten der Datei" });
+  }
+});
+
+/* Globale Suche API */
+app.get("/api/search", (req, res) => {
+  try {
+    const {
+      query = '',
+      carrier_name = '',
+      area = '',
+      land = '',
+      location_code = '',
+      olpn = '',
+      dn = '',
+      shi = '',
+      carrier_tracking_nr = '',
+      customer_id = '',
+      customer_name = '',
+      asn_ra_no = '',
+      neue_ra = '',
+      new_reopen_ra = '',
+      mh_status = '',
+      ship_status = '',
+      date_from = '',
+      date_to = '',
+      limit = 1000,
+      offset = 0
+    } = req.query;
+
+    // Basis-SQL-Query mit JOIN zu location
+    let sql = `
+      SELECT 
+        i.id,
+        i.cw,
+        i.aufgenommen_am,
+        i.area,
+        i.stage,
+        i.last_stage,
+        i.carrier_name,
+        i.land,
+        i.ship_status,
+        i.planned_carton,
+        i.actual_carton,
+        i.olpn,
+        i.dn,
+        i.shi,
+        i.carrier_tracking_nr,
+        i.customer_id,
+        i.customer_name,
+        i.asn_ra_no,
+        i.neue_ra,
+        i.new_reopen_ra,
+        i.mh_status,
+        i.kommentar,
+        i.added_by,
+        i.created_at,
+        l.code as location_code,
+        l.description as location_description,
+        l.area as location_area
+      FROM inbound_simple i
+      LEFT JOIN location l ON i.location_id = l.id
+      WHERE i.ignore_flag = 0
+    `;
+
+    const params = [];
+
+    // Globale Textsuche über mehrere Felder
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim()}%`;
+      sql += ` AND (
+        i.cw LIKE ? OR
+        i.carrier_name LIKE ? OR
+        i.olpn LIKE ? OR
+        i.dn LIKE ? OR
+        i.shi LIKE ? OR
+        i.carrier_tracking_nr LIKE ? OR
+        i.customer_id LIKE ? OR
+        i.customer_name LIKE ? OR
+        i.asn_ra_no LIKE ? OR
+        i.neue_ra LIKE ? OR
+        i.new_reopen_ra LIKE ? OR
+        i.kommentar LIKE ? OR
+        l.code LIKE ?
+      )`;
+      for (let i = 0; i < 13; i++) {
+        params.push(searchTerm);
+      }
+    }
+
+    // Spezifische Filter
+    if (carrier_name && carrier_name.trim()) {
+      sql += ` AND i.carrier_name LIKE ?`;
+      params.push(`%${carrier_name.trim()}%`);
+    }
+
+    if (area && area.trim()) {
+      sql += ` AND i.area LIKE ?`;
+      params.push(`%${area.trim()}%`);
+    }
+
+    if (land && land.trim()) {
+      sql += ` AND i.land = ?`;
+      params.push(land.trim());
+    }
+
+    if (location_code && location_code.trim()) {
+      sql += ` AND l.code LIKE ?`;
+      params.push(`%${location_code.trim()}%`);
+    }
+
+    if (olpn && olpn.trim()) {
+      sql += ` AND i.olpn LIKE ?`;
+      params.push(`%${olpn.trim()}%`);
+    }
+
+    if (dn && dn.trim()) {
+      sql += ` AND i.dn LIKE ?`;
+      params.push(`%${dn.trim()}%`);
+    }
+
+    if (shi && shi.trim()) {
+      sql += ` AND i.shi LIKE ?`;
+      params.push(`%${shi.trim()}%`);
+    }
+
+    if (carrier_tracking_nr && carrier_tracking_nr.trim()) {
+      sql += ` AND i.carrier_tracking_nr LIKE ?`;
+      params.push(`%${carrier_tracking_nr.trim()}%`);
+    }
+
+    if (customer_id && customer_id.trim()) {
+      sql += ` AND i.customer_id LIKE ?`;
+      params.push(`%${customer_id.trim()}%`);
+    }
+
+    if (customer_name && customer_name.trim()) {
+      sql += ` AND i.customer_name LIKE ?`;
+      params.push(`%${customer_name.trim()}%`);
+    }
+
+    if (asn_ra_no && asn_ra_no.trim()) {
+      sql += ` AND i.asn_ra_no LIKE ?`;
+      params.push(`%${asn_ra_no.trim()}%`);
+    }
+
+    if (neue_ra && neue_ra.trim()) {
+      sql += ` AND i.neue_ra LIKE ?`;
+      params.push(`%${neue_ra.trim()}%`);
+    }
+
+    if (new_reopen_ra && new_reopen_ra.trim()) {
+      sql += ` AND i.new_reopen_ra LIKE ?`;
+      params.push(`%${new_reopen_ra.trim()}%`);
+    }
+
+    if (mh_status && mh_status.trim()) {
+      sql += ` AND i.mh_status LIKE ?`;
+      params.push(`%${mh_status.trim()}%`);
+    }
+
+    if (ship_status && ship_status.trim()) {
+      sql += ` AND i.ship_status LIKE ?`;
+      params.push(`%${ship_status.trim()}%`);
+    }
+
+    // Datumsfilter
+    if (date_from) {
+      sql += ` AND DATE(i.created_at) >= ?`;
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      sql += ` AND DATE(i.created_at) <= ?`;
+      params.push(date_to);
+    }
+
+    // Sortierung und Limit
+    sql += ` ORDER BY i.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    // Gesamtanzahl für Pagination
+    let countSql = sql.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
+    countSql = countSql.replace(/ORDER BY[\s\S]*$/, '');
+    const countParams = params.slice(0, -2); // Entferne LIMIT und OFFSET Parameter
+    const totalResult = db.prepare(countSql).get(...countParams);
+    const total = totalResult?.total || 0;
+
+    // Daten abrufen
+    const rows = db.prepare(sql).all(...params);
+
+    res.json({
+      ok: true,
+      data: rows,
+      total: total,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (err) {
+    console.error("Fehler bei der globalen Suche:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+>>>>>>> Stashed changes
 // 404 Handler für API-Routes - gibt immer JSON zurück (NACH allen API-Routen)
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
@@ -2947,8 +3493,60 @@ app.use((req, res, next) => {
   next();
 });
 
+<<<<<<< Updated upstream
 // Statischer Ordner für index.html und Bilder (NACH allen API-Routen)
 app.use(express.static(path.join(__dirname)));
+=======
+// Statischer Ordner für statische Dateien (Bilder, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false // Verhindert automatisches Servieren von index.html
+}));
+
+// Route-Mapping für separate Seiten
+const pageRoutes = {
+  '/': 'dashboard.html',
+  '/dashboard': 'dashboard.html',
+  '/lagerbestand': 'lagerbestand.html',
+  '/wareneingang': 'wareneingang.html',
+  '/umlagerung': 'umlagerung.html',
+  '/archive': 'archive.html',
+  '/ra-import': 'ra-import.html',
+  '/suche': 'suche.html',
+  '/globale-suche': 'suche.html',
+  '/einstellungen': 'einstellungen.html',
+  '/import': 'import.html',
+  '/export': 'export.html'
+};
+
+// Separate Seiten servieren
+app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/suche', '/globale-suche', '/einstellungen', '/import', '/export'], (req, res) => {
+  // API-Routen nicht abfangen
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  
+  const pageFile = pageRoutes[req.path] || pageRoutes['/'];
+  const pagePath = path.join(__dirname, 'public', 'pages', pageFile);
+  
+  // Prüfe ob Datei existiert
+  if (fs.existsSync(pagePath)) {
+    res.sendFile(pagePath);
+  } else {
+    // Fallback auf index.html wenn Seite nicht existiert
+    res.sendFile(path.join(__dirname, 'index.html'));
+  }
+});
+
+// Catch-All-Route: Alle anderen Routen auf Dashboard umleiten
+app.use((req, res, next) => {
+  // API-Routen nicht abfangen
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  // Alle anderen Routen auf Dashboard umleiten
+  res.redirect('/dashboard');
+});
+>>>>>>> Stashed changes
 
 // Globaler Error-Handler - muss nach allen Routes kommen
 app.use((err, req, res, next) => {
