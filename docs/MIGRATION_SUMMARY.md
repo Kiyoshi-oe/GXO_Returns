@@ -136,3 +136,7 @@ Für zukünftige Verbesserungen:
 5. **Erweiterbarkeit** - Struktur unterstützt Wachstum
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes

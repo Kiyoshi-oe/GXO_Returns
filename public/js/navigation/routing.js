@@ -11,7 +11,8 @@ const routeMap = {
   '/ra-import': 'ra',
   '/einstellungen': 'settings',
   '/import': 'import',
-  '/export': 'export'
+  '/export': 'export',
+  '/globale-suche': 'search'
 };
 
 // View-Name -> URL-Pfad Mapping (für Navigation)
@@ -29,7 +30,8 @@ const viewToRoute = {
   'barcodeGenerator': '/barcode-generator',
   'settings': '/einstellungen',
   'import': '/import',
-  'export': '/export'
+  'export': '/export',
+  'search': '/globale-suche'
 };
 
 // Aktuelle Route
@@ -153,8 +155,11 @@ function activateView(viewName) {
   // View-spezifische Logik ausführen
   if (typeof handleViewSwitch === 'function') {
     handleViewSwitch(viewName);
+<<<<<<< Updated upstream
   } else {
     console.warn('handleViewSwitch ist nicht definiert. Bitte navigation.js vor routing.js laden.');
+=======
+>>>>>>> Stashed changes
   }
 }
 

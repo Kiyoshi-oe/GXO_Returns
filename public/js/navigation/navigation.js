@@ -5,6 +5,7 @@ window.initNavigation = function() {
   const navItems = document.querySelectorAll(".nav-item");
 
   navItems.forEach(item => {
+<<<<<<< Updated upstream
     // Verhindere Standard-Link-Verhalten
     item.addEventListener("click", (e) => {
       e.preventDefault();
@@ -30,6 +31,26 @@ window.initNavigation = function() {
         return;
       }
       
+=======
+    item.addEventListener("click", (e) => {
+      // Verhindere Standard-Link-Verhalten wenn data-view vorhanden ist
+      if (item.hasAttribute("data-view")) {
+        e.preventDefault();
+      }
+      
+      const viewName = item.getAttribute("data-view");
+      
+      // Wenn kein data-view, aber href vorhanden, verwende href
+      if (!viewName && item.tagName === 'A' && item.getAttribute("href")) {
+        // Standard-Link-Verhalten zulassen
+        return;
+      }
+      
+      if (!viewName) {
+        return; // Kein data-view, nichts zu tun
+      }
+      
+>>>>>>> Stashed changes
       // Routing-System verwenden statt direkter View-Wechsel
       if (typeof navigateToView === 'function') {
         navigateToView(viewName);
@@ -123,6 +144,10 @@ function handleViewSwitch(viewName) {
   } else if (viewName === "export") {
     if (typeof initExport === 'function') {
       initExport();
+    }
+  } else if (viewName === "search") {
+    if (typeof initGlobalSearch === 'function') {
+      initGlobalSearch();
     }
   }
 }

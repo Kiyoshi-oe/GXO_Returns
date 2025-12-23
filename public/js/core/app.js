@@ -46,6 +46,10 @@ const viewMeta = {
   export: {
     title: "Export",
     subtitle: "Lagerbestand als Excel-Datei exportieren"
+  },
+  search: {
+    title: "Globale Suche",
+    subtitle: "Durchsuchen Sie alle Daten im System mit erweiterten Filteroptionen"
   }
 };
 

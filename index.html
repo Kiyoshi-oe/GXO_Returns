@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
   
   <!-- Externes CSS -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/css/style.css">
   
   <!-- Chart.js für Diagramme -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -160,6 +160,10 @@
         <span class="nav-icon">📑</span>
         <span>RA Import</span>
       </div>
+      <a href="/globale-suche" class="nav-item" data-view="search">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
     </nav>
 
     <div class="nav-section-title">Administration</div>
@@ -204,6 +208,126 @@
     </header>
 
     <main class="main">
+      <!-- Globale Suche -->
+      <section class="view" id="view-search">
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔍 Globale Suche</div>
+              <div class="card-subtitle">Durchsuchen Sie alle Daten im System mit erweiterten Filteroptionen</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="clearGlobalSearch()">
+                🗑️ Filter zurücksetzen
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="performGlobalSearch()">
+                🔍 Suchen
+              </button>
+            </div>
+          </div>
+
+          <!-- Suchfeld -->
+          <div class="form-grid" style="margin-bottom: 16px;">
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label>Suchbegriff</label>
+              <input type="text" id="globalSearchInput" placeholder="Geben Sie einen Suchbegriff ein (OLPN, Tracking-Nummer, RA-Nummer, Stellplatz, etc.)..." 
+                     onkeypress="if(event.key === 'Enter') performGlobalSearch()">
+            </div>
+          </div>
+
+          <!-- Filter -->
+          <div class="card" style="margin-bottom: 16px; background: var(--bg-soft);">
+            <div class="card-header" style="margin-bottom: 12px;">
+              <div>
+                <div class="card-title" style="font-size: 14px;">🔧 Filter</div>
+                <div class="card-subtitle" style="font-size: 11px;">Verfeinern Sie Ihre Suche mit zusätzlichen Filtern</div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Datenquelle</label>
+                <select id="searchDataSource" multiple style="min-height: 100px;">
+                  <option value="inbound">Wareneingang</option>
+                  <option value="location">Stellplätze</option>
+                  <option value="warehouse_stock">Lagerbestand</option>
+                  <option value="movement">Umlagerungen</option>
+                  <option value="archive">Archiv</option>
+                </select>
+                <span class="muted" style="font-size: 11px;">Mehrfachauswahl möglich</span>
+              </div>
+              <div class="form-group">
+                <label>Bereich (Area)</label>
+                <select id="searchAreaFilter">
+                  <option value="">Alle Bereiche</option>
+                  <!-- Wird dynamisch geladen -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Carrier</label>
+                <select id="searchCarrierFilter">
+                  <option value="">Alle Carrier</option>
+                  <!-- Wird dynamisch geladen -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="searchStatusFilter">
+                  <option value="">Alle Status</option>
+                  <option value="aktiv">Aktiv</option>
+                  <option value="archiviert">Archiviert</option>
+                  <option value="offen">Offen</option>
+                  <option value="geschlossen">Geschlossen</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Land</label>
+                <select id="searchLandFilter">
+                  <option value="">Alle Länder</option>
+                  <!-- Wird dynamisch geladen -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Zeitraum (von)</label>
+                <input type="date" id="searchDateFrom">
+              </div>
+              <div class="form-group">
+                <label>Zeitraum (bis)</label>
+                <input type="date" id="searchDateTo">
+              </div>
+            </div>
+          </div>
+
+          <!-- Suchergebnisse -->
+          <div class="card">
+            <div class="card-header" style="margin-bottom: 12px;">
+              <div>
+                <div class="card-title" style="font-size: 14px;">📋 Suchergebnisse</div>
+                <div class="card-subtitle" style="font-size: 11px;" id="searchResultsCount">Keine Suche durchgeführt</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" onclick="exportSearchResults()" id="exportSearchBtn" style="display: none;">
+                  📤 Exportieren
+                </button>
+              </div>
+            </div>
+
+            <!-- Tabs für verschiedene Ergebnis-Typen -->
+            <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-soft);" id="searchResultTabs" style="display: none;">
+              <!-- Wird dynamisch generiert -->
+            </div>
+
+            <!-- Ergebnis-Tabellen -->
+            <div id="searchResultsContent" style="min-height: 200px;">
+              <div style="text-align: center; padding: 40px; color: var(--text-soft);">
+                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Keine Suche durchgeführt</div>
+                <div style="font-size: 12px;">Geben Sie einen Suchbegriff ein und klicken Sie auf "Suchen"</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Export -->
       <section class="view" id="view-export">
         <div class="card">
@@ -11148,9 +11272,11 @@
 
 </script>
 
-<script src="js/routing.js"></script>
-<script src="js/import.js"></script>
-<script src="js/export.js"></script>
+<script src="js/navigation/navigation.js"></script>
+<script src="js/navigation/routing.js"></script>
+<script src="js/features/import.js"></script>
+<script src="js/features/export.js"></script>
+<script src="js/features/global-search.js"></script>
 
 </body>
 </html>

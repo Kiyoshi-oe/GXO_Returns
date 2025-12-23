@@ -65,3 +65,7 @@ module.exports = {
 };
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes

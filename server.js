@@ -3280,6 +3280,7 @@ app.post("/api/import/upload", upload.single('file'), async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 /* Globale Suche API */
 app.get("/api/search", (req, res) => {
   try {
@@ -3476,10 +3477,633 @@ app.get("/api/search", (req, res) => {
     });
   } catch (err) {
     console.error("Fehler bei der globalen Suche:", err);
+=======
+/* Globale Suche */
+app.post("/api/search/global", (req, res) => {
+  try {
+    const { query, dataSources, filters } = req.body || {};
+    const searchTerm = query ? `%${query}%` : '%';
+    
+    const results = {
+      inbound: [],
+      locations: [],
+      warehouse_stock: [],
+      movements: [],
+      archive: []
+    };
+    
+    // Suchbedingung für LIKE-Queries
+    const buildLikeCondition = (field) => {
+      return query ? `${field} LIKE ?` : '1=1';
+    };
+    
+    const buildSearchParams = () => {
+      return query ? [searchTerm] : [];
+    };
+    
+    // Filter-Bedingungen
+    const filterConditions = [];
+    const filterParams = [];
+    
+    if (filters) {
+      if (filters.area) {
+        filterConditions.push('area = ?');
+        filterParams.push(filters.area);
+      }
+      if (filters.carrier) {
+        filterConditions.push('carrier_name = ?');
+        filterParams.push(filters.carrier);
+      }
+      if (filters.status) {
+        filterConditions.push('mh_status = ?');
+        filterParams.push(filters.status);
+      }
+      if (filters.land) {
+        filterConditions.push('land = ?');
+        filterParams.push(filters.land);
+      }
+      if (filters.dateFrom) {
+        filterConditions.push('created_at >= ?');
+        filterParams.push(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        filterConditions.push('created_at <= ?');
+        filterParams.push(filters.dateTo + ' 23:59:59');
+      }
+    }
+    
+    const filterClause = filterConditions.length > 0 
+      ? ' AND ' + filterConditions.join(' AND ')
+      : '';
+    
+    // Wareneingang durchsuchen
+    if (!dataSources || dataSources.includes('inbound')) {
+      // Spezifische Filter-Bedingungen für inbound
+      const inboundFilterConditions = [];
+      const inboundFilterParams = [];
+      
+      if (filters) {
+        if (filters.area) {
+          inboundFilterConditions.push('i.area = ?');
+          inboundFilterParams.push(filters.area);
+        }
+        if (filters.carrier) {
+          inboundFilterConditions.push('i.carrier_name = ?');
+          inboundFilterParams.push(filters.carrier);
+        }
+        if (filters.status) {
+          inboundFilterConditions.push('i.mh_status = ?');
+          inboundFilterParams.push(filters.status);
+        }
+        if (filters.land) {
+          inboundFilterConditions.push('i.land = ?');
+          inboundFilterParams.push(filters.land);
+        }
+        if (filters.dateFrom) {
+          inboundFilterConditions.push('i.created_at >= ?');
+          inboundFilterParams.push(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+          inboundFilterConditions.push('i.created_at <= ?');
+          inboundFilterParams.push(filters.dateTo + ' 23:59:59');
+        }
+      }
+      
+      const inboundFilterClause = inboundFilterConditions.length > 0 
+        ? ' AND ' + inboundFilterConditions.join(' AND ')
+        : '';
+      
+      // WHERE-Klausel: Wenn Query vorhanden, LIKE-Bedingungen, sonst nur Filter
+      const whereConditions = query 
+        ? `(${buildLikeCondition('i.cw')} OR ${buildLikeCondition('i.olpn')} OR ${buildLikeCondition('i.carrier_tracking_nr')} OR ${buildLikeCondition('i.asn_ra_no')} OR ${buildLikeCondition('i.neue_ra')} OR ${buildLikeCondition('i.customer_id')} OR ${buildLikeCondition('i.customer_name')} OR ${buildLikeCondition('l.code')})`
+        : '1=1';
+      
+      const inboundQuery = `
+        SELECT 
+          i.*,
+          l.code as location_code
+        FROM inbound_simple i
+        LEFT JOIN location l ON i.location_id = l.id
+        WHERE ${whereConditions}
+        ${inboundFilterClause}
+        ORDER BY i.created_at DESC
+        LIMIT 100
+      `;
+      
+      const inboundParams = query 
+        ? [
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...inboundFilterParams
+          ]
+        : [...inboundFilterParams];
+      
+      results.inbound = db.prepare(inboundQuery).all(...inboundParams);
+    }
+    
+    // Stellplätze durchsuchen
+    if (!dataSources || dataSources.includes('location')) {
+      const whereConditions = query 
+        ? `(${buildLikeCondition('l.code')} OR ${buildLikeCondition('l.description')} OR ${buildLikeCondition('l.area')})`
+        : '1=1';
+      
+      const locationQuery = `
+        SELECT 
+          l.*,
+          COUNT(DISTINCT ws.id) as pallet_count,
+          SUM(ws.carton_count) as carton_count
+        FROM location l
+        LEFT JOIN warehouse_stock ws ON l.id = ws.location_id AND ws.status = 'active'
+        WHERE ${whereConditions}
+        ${filters && filters.area ? ' AND l.area = ?' : ''}
+        GROUP BY l.id
+        ORDER BY l.code
+        LIMIT 100
+      `;
+      
+      const locationParams = query 
+        ? [
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...(filters && filters.area ? [filters.area] : [])
+          ]
+        : [...(filters && filters.area ? [filters.area] : [])];
+      
+      results.locations = db.prepare(locationQuery).all(...locationParams);
+    }
+    
+    // Lagerbestand durchsuchen
+    if (!dataSources || dataSources.includes('warehouse_stock')) {
+      // Spezifische Filter-Bedingungen für warehouse_stock
+      const warehouseFilterConditions = [];
+      const warehouseFilterParams = [];
+      
+      if (filters) {
+        if (filters.area) {
+          warehouseFilterConditions.push('l.area = ?');
+          warehouseFilterParams.push(filters.area);
+        }
+        if (filters.carrier) {
+          warehouseFilterConditions.push('i.carrier_name = ?');
+          warehouseFilterParams.push(filters.carrier);
+        }
+        if (filters.status) {
+          warehouseFilterConditions.push('ws.status = ?');
+          warehouseFilterParams.push(filters.status);
+        }
+        if (filters.land) {
+          warehouseFilterConditions.push('i.land = ?');
+          warehouseFilterParams.push(filters.land);
+        }
+        if (filters.dateFrom) {
+          warehouseFilterConditions.push('ws.booked_at >= ?');
+          warehouseFilterParams.push(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+          warehouseFilterConditions.push('ws.booked_at <= ?');
+          warehouseFilterParams.push(filters.dateTo + ' 23:59:59');
+        }
+      }
+      
+      const warehouseFilterClause = warehouseFilterConditions.length > 0 
+        ? ' AND ' + warehouseFilterConditions.join(' AND ')
+        : '';
+      
+      const whereConditions = query 
+        ? `(${buildLikeCondition('l.code')} OR ${buildLikeCondition('i.olpn')} OR ${buildLikeCondition('i.carrier_tracking_nr')})`
+        : '1=1';
+      
+      const warehouseQuery = `
+        SELECT 
+          ws.*,
+          l.code as location_code,
+          i.olpn,
+          i.carrier_tracking_nr
+        FROM warehouse_stock ws
+        LEFT JOIN location l ON ws.location_id = l.id
+        LEFT JOIN inbound_simple i ON ws.inbound_id = i.id
+        WHERE ${whereConditions}
+        ${warehouseFilterClause}
+        ORDER BY ws.booked_at DESC
+        LIMIT 100
+      `;
+      
+      const warehouseParams = query 
+        ? [
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...warehouseFilterParams
+          ]
+        : [...warehouseFilterParams];
+      
+      results.warehouse_stock = db.prepare(warehouseQuery).all(...warehouseParams);
+    }
+    
+    // Umlagerungen durchsuchen
+    if (!dataSources || dataSources.includes('movement')) {
+      const whereConditions = query 
+        ? `(${buildLikeCondition('l1.code')} OR ${buildLikeCondition('l2.code')} OR ${buildLikeCondition('m.reason')} OR ${buildLikeCondition('m.moved_by')})`
+        : '1=1';
+      
+      const movementQuery = `
+        SELECT 
+          m.*,
+          l1.code as from_location,
+          l2.code as to_location,
+          CASE 
+            WHEN m.carton_id IS NOT NULL THEN 'Karton'
+            WHEN m.pallet_id IS NOT NULL THEN 'Palette'
+            ELSE 'Unbekannt'
+          END as movement_type
+        FROM movement m
+        LEFT JOIN location l1 ON m.from_location_id = l1.id
+        LEFT JOIN location l2 ON m.to_location_id = l2.id
+        WHERE ${whereConditions}
+        ${filters && filters.dateFrom ? ' AND m.moved_at >= ?' : ''}
+        ${filters && filters.dateTo ? ' AND m.moved_at <= ?' : ''}
+        ORDER BY m.moved_at DESC
+        LIMIT 100
+      `;
+      
+      const movementParams = query 
+        ? [
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...(filters && filters.dateFrom ? [filters.dateFrom] : []),
+            ...(filters && filters.dateTo ? [filters.dateTo + ' 23:59:59'] : [])
+          ]
+        : [
+            ...(filters && filters.dateFrom ? [filters.dateFrom] : []),
+            ...(filters && filters.dateTo ? [filters.dateTo + ' 23:59:59'] : [])
+          ];
+      
+      results.movements = db.prepare(movementQuery).all(...movementParams);
+    }
+    
+    // Archiv durchsuchen
+    if (!dataSources || dataSources.includes('archive')) {
+      const whereConditions = query 
+        ? `(${buildLikeCondition('l.code')} OR ${buildLikeCondition('a.reason')} OR ${buildLikeCondition('a.archived_by')} OR ${buildLikeCondition('i.olpn')} OR ${buildLikeCondition('i.carrier_tracking_nr')} OR ${buildLikeCondition('i.cw')})`
+        : '1=1';
+      
+      const archiveQuery = `
+        SELECT 
+          a.*,
+          l.code as location_code,
+          i.olpn,
+          i.carrier_tracking_nr,
+          i.carrier_name,
+          i.actual_carton as carton_count,
+          i.cw,
+          i.customer_name,
+          i.asn_ra_no
+        FROM archive a
+        LEFT JOIN inbound_simple i ON a.inbound_id = i.id
+        LEFT JOIN location l ON a.location_id = l.id
+        WHERE ${whereConditions}
+        ${filters && filters.dateFrom ? ' AND a.archived_at >= ?' : ''}
+        ${filters && filters.dateTo ? ' AND a.archived_at <= ?' : ''}
+        ORDER BY a.archived_at DESC
+        LIMIT 100
+      `;
+      
+      const archiveParams = query 
+        ? [
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...buildSearchParams(),
+            ...(filters && filters.dateFrom ? [filters.dateFrom] : []),
+            ...(filters && filters.dateTo ? [filters.dateTo + ' 23:59:59'] : [])
+          ]
+        : [
+            ...(filters && filters.dateFrom ? [filters.dateFrom] : []),
+            ...(filters && filters.dateTo ? [filters.dateTo + ' 23:59:59'] : [])
+          ];
+      
+      results.archive = db.prepare(archiveQuery).all(...archiveParams);
+    }
+    
+    res.json(results);
+    
+  } catch (err) {
+    console.error("Fehler bei der globalen Suche:", err);
+    console.error("Fehler-Stack:", err.stack);
+    res.status(500).json({ ok: false, error: err.message, details: err.stack });
+  }
+});
+
+/* Export der Suchergebnisse */
+app.post("/api/search/export", async (req, res) => {
+  try {
+    const { results, params } = req.body || {};
+    
+    if (!results) {
+      return res.status(400).json({ ok: false, error: "Keine Ergebnisse zum Exportieren" });
+    }
+    
+    const ExcelJS = require("exceljs");
+    const fs = require("fs");
+    const path = require("path");
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'GXO Returns System';
+    workbook.created = new Date();
+    
+    // GXO-Farben
+    const gxoOrange = { argb: 'FFFF3A00' }; // #FF3A00
+    const gxoOrangeLight = { argb: 'FFFFE5E0' }; // Hellorange für Header
+    const gxoGray = { argb: 'FF1C1C1C' }; // Dunkelgrau
+    const gxoGrayLight = { argb: 'FFF5F5F5' }; // Hellgrau
+    
+    // Logo-Pfad
+    const logoPath = path.join(__dirname, 'public', 'images', 'GXO_logo.png');
+    
+    // Hilfsfunktion: Worksheet mit GXO-Design erstellen
+    const createStyledWorksheet = (name, headers, data, logoCol = 0) => {
+      const worksheet = workbook.addWorksheet(name);
+      let headerStartRow = 1;
+      
+      // Logo hinzufügen (falls vorhanden)
+      if (fs.existsSync(logoPath)) {
+        try {
+          const logo = workbook.addImage({
+            filename: logoPath,
+            extension: 'png'
+          });
+          worksheet.addImage(logo, {
+            tl: { col: logoCol, row: 0 },
+            ext: { width: 150, height: 50 }
+          });
+          headerStartRow = 4; // Logo nimmt 3 Zeilen ein
+        } catch (logoError) {
+          console.warn("Logo konnte nicht geladen werden:", logoError.message);
+        }
+      }
+      
+      // Header-Informationen
+      const infoCol = logoCol + 3;
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow}`).value = 'GXO Returns System';
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow}`).font = { bold: true, size: 14, color: gxoOrange };
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 1}`).value = `Export: ${name}`;
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 1}`).font = { size: 12 };
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 2}`).value = `Export-Datum: ${new Date().toLocaleString('de-DE')}`;
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 2}`).font = { size: 11, color: { argb: 'FF666666' } };
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 3}`).value = `Anzahl Datensätze: ${data.length}`;
+      worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${headerStartRow + 3}`).font = { size: 11, color: { argb: 'FF666666' } };
+      
+      // Suchparameter anzeigen (falls vorhanden)
+      if (params && params.filters) {
+        let paramRow = headerStartRow + 4;
+        const filters = params.filters;
+        if (params.query) {
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).value = `Suchbegriff: ${params.query}`;
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).font = { size: 11 };
+          paramRow++;
+        }
+        if (filters.area) {
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).value = `Bereich: ${filters.area}`;
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).font = { size: 11 };
+          paramRow++;
+        }
+        if (filters.carrier) {
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).value = `Carrier: ${filters.carrier}`;
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).font = { size: 11 };
+          paramRow++;
+        }
+        if (filters.status) {
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).value = `Status: ${filters.status}`;
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).font = { size: 11 };
+          paramRow++;
+        }
+        if (filters.dateFrom || filters.dateTo) {
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).value = `Zeitraum: ${filters.dateFrom || ''} - ${filters.dateTo || ''}`;
+          worksheet.getCell(`${String.fromCharCode(65 + infoCol)}${paramRow}`).font = { size: 11 };
+          paramRow++;
+        }
+      }
+      
+      // Tabellen-Header (nach Info-Bereich)
+      const tableStartRow = headerStartRow + (params && params.filters ? 8 : 5);
+      const headerRow = worksheet.addRow(headers);
+      headerRow.height = 25;
+      
+      // Header-Formatierung mit GXO-Farben
+      headerRow.eachCell((cell, colNumber) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: gxoOrange
+        };
+        cell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+        };
+      });
+      
+      // Daten-Mapping für verschiedene Datentypen
+      const getValue = (item, header) => {
+        const headerMap = {
+          'ID': 'id',
+          'CW': 'cw',
+          'OLPN': 'olpn',
+          'Tracking': 'carrier_tracking_nr',
+          'RA-Nummer': 'asn_ra_no',
+          'Carrier': 'carrier_name',
+          'Stellplatz': 'location_code',
+          'Status': 'mh_status',
+          'Datum': 'created_at',
+          'Beschreibung': 'description',
+          'Bereich': 'area',
+          'Paletten': 'pallet_count',
+          'Kartons': 'carton_count',
+          'Von': 'from_location',
+          'Nach': 'to_location',
+          'Typ': 'movement_type',
+          'Grund': 'reason',
+          'Gebucht am': 'booked_at',
+          'Gebucht von': 'booked_by',
+          'Archiviert am': 'archived_at',
+          'Archiviert von': 'archived_by'
+        };
+        
+        // Versuche verschiedene mögliche Schlüssel
+        let key = headerMap[header];
+        if (!key) {
+          // Fallback: Suche nach ähnlichen Schlüsseln
+          const possibleKeys = [
+            header.toLowerCase().replace(/\s+/g, '_'),
+            header.toLowerCase().replace(/\s+/g, ''),
+            header.replace(/\s+/g, '_').toLowerCase()
+          ];
+          key = Object.keys(item).find(k => 
+            possibleKeys.includes(k.toLowerCase()) ||
+            k.toLowerCase() === header.toLowerCase()
+          ) || header.toLowerCase().replace(/\s+/g, '_');
+        }
+        
+        let value = item[key];
+        
+        // Spezielle Behandlung für Status-Felder
+        if (header === 'Status') {
+          // Prüfe verschiedene Status-Felder
+          value = item.mh_status || item.status || item.is_active;
+          if (value === true || value === 1) return 'Aktiv';
+          if (value === false || value === 0) return 'Inaktiv';
+          if (value === 'aktiv' || value === 'active') return 'Aktiv';
+          if (value === 'inaktiv' || value === 'inactive') return 'Inaktiv';
+        }
+        
+        // Datum-Formatierung
+        if (header.includes('Datum') || header.includes('am') || (header.includes('von') && !header.includes('Gebucht von') && !header.includes('Archiviert von'))) {
+          if (value) {
+            try {
+              const date = new Date(value);
+              if (!isNaN(date.getTime())) {
+                return date.toLocaleString('de-DE', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              }
+            } catch (e) {
+              // Fallback zu Original-Wert
+            }
+          }
+        }
+        
+        return value !== undefined && value !== null ? value : '';
+      };
+      
+      // Daten hinzufügen
+      data.forEach((item, index) => {
+        const row = worksheet.addRow(headers.map(header => getValue(item, header)));
+        
+        // Zeilen-Formatierung (abwechselnd)
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+          };
+          if (index % 2 === 0) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: gxoGrayLight
+            };
+          }
+          cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        });
+      });
+      
+      // Spaltenbreiten anpassen
+      headers.forEach((header, index) => {
+        const column = worksheet.getColumn(index + 1);
+        column.width = Math.max(header.length + 5, 15);
+      });
+      
+      // Excel-Tabelle mit Filter-Funktion hinzufügen
+      if (data.length > 0) {
+        try {
+          const lastCol = String.fromCharCode(64 + headers.length);
+          const tableRange = `A${tableStartRow}:${lastCol}${tableStartRow + data.length}`;
+          worksheet.addTable({
+            name: `${name.replace(/\s+/g, '')}Table`,
+            ref: tableRange,
+            headerRow: true,
+            style: {
+              theme: 'TableStyleMedium9',
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false
+            },
+            columns: headers.map(header => ({ name: header }))
+          });
+        } catch (tableError) {
+          console.warn("Tabellenformat konnte nicht erstellt werden:", tableError.message);
+        }
+      }
+      
+      // Spalten einfrieren (Header-Zeile)
+      worksheet.views = [{
+        state: 'frozen',
+        ySplit: tableStartRow
+      }];
+    };
+    
+    // Wareneingang
+    if (results.inbound && results.inbound.length > 0) {
+      createStyledWorksheet("Wareneingang", [
+        "ID", "CW", "OLPN", "Tracking", "RA-Nummer", "Carrier", "Stellplatz", "Status", "Datum"
+      ], results.inbound);
+    }
+    
+    // Stellplätze
+    if (results.locations && results.locations.length > 0) {
+      createStyledWorksheet("Stellplätze", [
+        "Stellplatz", "Beschreibung", "Bereich", "Status", "Paletten", "Kartons"
+      ], results.locations);
+    }
+    
+    // Lagerbestand
+    if (results.warehouse_stock && results.warehouse_stock.length > 0) {
+      createStyledWorksheet("Lagerbestand", [
+        "Stellplatz", "Kartons", "Status", "Gebucht am", "Gebucht von"
+      ], results.warehouse_stock);
+    }
+    
+    // Umlagerungen
+    if (results.movements && results.movements.length > 0) {
+      createStyledWorksheet("Umlagerungen", [
+        "Von", "Nach", "Typ", "Datum", "Von", "Grund"
+      ], results.movements);
+    }
+    
+    // Archiv
+    if (results.archive && results.archive.length > 0) {
+      createStyledWorksheet("Archiv", [
+        "OLPN", "Tracking", "Stellplatz", "Kartons", "Archiviert am", "Archiviert von", "Grund"
+      ], results.archive);
+    }
+    
+    // Excel-Datei generieren
+    const buffer = await workbook.xlsx.writeBuffer();
+    
+    const timestamp = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="GXO_Globale_Suche_${timestamp}.xlsx"`);
+    res.send(buffer);
+    
+  } catch (err) {
+    console.error("Fehler beim Export der Suchergebnisse:", err);
+>>>>>>> Stashed changes
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 // 404 Handler für API-Routes - gibt immer JSON zurück (NACH allen API-Routen)
 app.use((req, res, next) => {
@@ -3514,18 +4138,30 @@ const pageRoutes = {
   '/suche': 'suche.html',
   '/globale-suche': 'suche.html',
   '/einstellungen': 'einstellungen.html',
+  '/globale-suche': 'index.html',
   '/import': 'import.html',
   '/export': 'export.html'
 };
 
 // Separate Seiten servieren
+<<<<<<< Updated upstream
 app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/suche', '/globale-suche', '/einstellungen', '/import', '/export'], (req, res) => {
+=======
+app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/einstellungen', '/import', '/export', '/globale-suche'], (req, res) => {
+>>>>>>> Stashed changes
   // API-Routen nicht abfangen
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
   }
   
   const pageFile = pageRoutes[req.path] || pageRoutes['/'];
+  
+  // Spezialbehandlung für index.html (nicht in public/pages)
+  if (pageFile === 'index.html') {
+    res.sendFile(path.join(__dirname, 'index.html'));
+    return;
+  }
+  
   const pagePath = path.join(__dirname, 'public', 'pages', pageFile);
   
   // Prüfe ob Datei existiert

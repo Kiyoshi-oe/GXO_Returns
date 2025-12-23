@@ -108,3 +108,7 @@ Für neue Features:
 4. Dokumentation in `docs/` aktualisieren
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes

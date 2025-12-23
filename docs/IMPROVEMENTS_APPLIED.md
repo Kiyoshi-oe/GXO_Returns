@@ -140,3 +140,7 @@ Weitere mögliche Optimierungen:
 - ✅ Debouncing funktioniert
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
