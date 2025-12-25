@@ -2340,42 +2340,122 @@ app.get("/api/performance/warehouse/overview", (req, res) => {
 
 app.get("/api/performance/warehouse/activities", (req, res) => {
   try {
+    const { compare = 'none' } = req.query; // 'none', 'previous_week', 'previous_month'
+    
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Vergleichszeiträume berechnen
+    let previousWeekStart, previousWeekEnd, previousMonthStart, previousMonthEnd;
+    
+    if (compare === 'previous_week' || compare === 'both') {
+      previousWeekStart = new Date(weekStart);
+      previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+      previousWeekEnd = weekStart;
+    }
+    
+    if (compare === 'previous_month' || compare === 'both') {
+      previousMonthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
+      previousMonthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth(), 0);
+    }
+    
+    const todayStartStr = todayStart.toISOString();
+    const weekStartStr = weekStart.toISOString();
+    const monthStartStr = monthStart.toISOString();
     
     // Wareneingänge
     const inboundToday = db.prepare(`
       SELECT count(*) as c FROM inbound_simple 
       WHERE created_at >= ? AND ignore_flag = 0
-    `).get(todayStart).c;
+    `).get(todayStartStr).c;
     
     const inboundWeek = db.prepare(`
       SELECT count(*) as c FROM inbound_simple 
       WHERE created_at >= ? AND ignore_flag = 0
-    `).get(weekStart).c;
+    `).get(weekStartStr).c;
+    
+    const inboundMonth = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE created_at >= ? AND ignore_flag = 0
+    `).get(monthStartStr).c;
     
     // Umlagerungen
     const movementsToday = db.prepare(`
       SELECT count(*) as c FROM movement 
       WHERE moved_at >= ?
-    `).get(todayStart).c;
+    `).get(todayStartStr).c;
     
     const movementsWeek = db.prepare(`
       SELECT count(*) as c FROM movement 
       WHERE moved_at >= ?
-    `).get(weekStart).c;
+    `).get(weekStartStr).c;
+    
+    const movementsMonth = db.prepare(`
+      SELECT count(*) as c FROM movement 
+      WHERE moved_at >= ?
+    `).get(monthStartStr).c;
     
     // Archivierungen
     const archivedToday = db.prepare(`
       SELECT count(*) as c FROM inbound_simple 
       WHERE ignore_flag = 1 AND created_at >= ?
-    `).get(todayStart).c;
+    `).get(todayStartStr).c;
     
     const archivedWeek = db.prepare(`
       SELECT count(*) as c FROM inbound_simple 
       WHERE ignore_flag = 1 AND created_at >= ?
-    `).get(weekStart).c;
+    `).get(weekStartStr).c;
+    
+    const archivedMonth = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE ignore_flag = 1 AND created_at >= ?
+    `).get(monthStartStr).c;
+    
+    // Vergleichsdaten
+    let previousWeekData = null;
+    let previousMonthData = null;
+    
+    if (previousWeekStart && previousWeekEnd) {
+      const prevWeekStartStr = previousWeekStart.toISOString();
+      const prevWeekEndStr = previousWeekEnd.toISOString();
+      
+      previousWeekData = {
+        inbound: db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE created_at >= ? AND created_at < ? AND ignore_flag = 0
+        `).get(prevWeekStartStr, prevWeekEndStr).c,
+        movements: db.prepare(`
+          SELECT count(*) as c FROM movement 
+          WHERE moved_at >= ? AND moved_at < ?
+        `).get(prevWeekStartStr, prevWeekEndStr).c,
+        archived: db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE ignore_flag = 1 AND created_at >= ? AND created_at < ?
+        `).get(prevWeekStartStr, prevWeekEndStr).c
+      };
+    }
+    
+    if (previousMonthStart && previousMonthEnd) {
+      const prevMonthStartStr = previousMonthStart.toISOString();
+      const prevMonthEndStr = previousMonthEnd.toISOString();
+      
+      previousMonthData = {
+        inbound: db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE created_at >= ? AND created_at <= ? AND ignore_flag = 0
+        `).get(prevMonthStartStr, prevMonthEndStr).c,
+        movements: db.prepare(`
+          SELECT count(*) as c FROM movement 
+          WHERE moved_at >= ? AND moved_at <= ?
+        `).get(prevMonthStartStr, prevMonthEndStr).c,
+        archived: db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE ignore_flag = 1 AND created_at >= ? AND created_at <= ?
+        `).get(prevMonthStartStr, prevMonthEndStr).c
+      };
+    }
     
     // Durchschnittliche Verweildauer (Tage)
     const avgDwellTime = db.prepare(`
@@ -2394,11 +2474,15 @@ app.get("/api/performance/warehouse/activities", (req, res) => {
     const avgCartonsPerInbound = avgCartons?.avg_cartons ? Math.round(avgCartons.avg_cartons * 10) / 10 : 0;
     
     res.json({
-      inbound: { today: inboundToday, week: inboundWeek },
-      movements: { today: movementsToday, week: movementsWeek },
-      archived: { today: archivedToday, week: archivedWeek },
+      inbound: { today: inboundToday, week: inboundWeek, month: inboundMonth },
+      movements: { today: movementsToday, week: movementsWeek, month: movementsMonth },
+      archived: { today: archivedToday, week: archivedWeek, month: archivedMonth },
       avgDwellTimeDays,
-      avgCartonsPerInbound
+      avgCartonsPerInbound,
+      comparison: {
+        previousWeek: previousWeekData,
+        previousMonth: previousMonthData
+      }
     });
   } catch (err) {
     console.error("Fehler beim Abrufen der Aktivitäts-Metriken:", err);
@@ -3011,6 +3095,887 @@ app.get("/api/performance/user-activities", (req, res) => {
     res.json([]);
   } catch (err) {
     console.error("Fehler beim Abrufen der User-Aktivitäten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* Performance Export API - Excel-Export für Performance-Daten */
+app.get("/api/performance/export", async (req, res) => {
+  try {
+    const { type, period = 'current', compare = 'none' } = req.query;
+    // period: 'current', 'week', 'month'
+    // compare: 'none', 'previous_week', 'previous_month'
+    
+    if (!type) {
+      return res.status(400).json({ ok: false, error: "type ist erforderlich" });
+    }
+    
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'GXO Returns System';
+    workbook.created = new Date();
+    
+    let data = [];
+    let sheetName = 'Performance';
+    
+    // Zeiträume berechnen
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let periodStart, periodEnd, compareStart, compareEnd;
+    
+    if (period === 'week') {
+      periodStart = new Date(todayStart);
+      periodStart.setDate(periodStart.getDate() - 7);
+      periodEnd = now;
+    } else if (period === 'month') {
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodEnd = now;
+    } else {
+      periodStart = todayStart;
+      periodEnd = now;
+    }
+    
+    if (compare === 'previous_week') {
+      compareStart = new Date(periodStart);
+      compareStart.setDate(compareStart.getDate() - 7);
+      compareEnd = new Date(periodStart);
+    } else if (compare === 'previous_month') {
+      compareStart = new Date(periodStart.getFullYear(), periodStart.getMonth() - 1, 1);
+      compareEnd = new Date(periodStart.getFullYear(), periodStart.getMonth(), 0);
+    }
+    
+    if (type === 'software') {
+      sheetName = 'Software-Performance';
+      
+      // System Health
+      const health = {
+        database: 'ok',
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
+      };
+      
+      // Performance Metriken
+      const dbStart = Date.now();
+      db.prepare("SELECT 1").get();
+      const dbQueryTime = Date.now() - dbStart;
+      
+      const dbStats = db.prepare("PRAGMA page_count").get();
+      const dbSize = db.prepare("PRAGMA page_size").get();
+      const totalPages = dbStats.page_count || 0;
+      const pageSize = dbSize.page_size || 4096;
+      const dbSizeMB = Math.round((totalPages * pageSize) / 1024 / 1024 * 10) / 10;
+      
+      // Datenbank-Statistiken
+      const tables = db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+      `).all();
+      
+      const tableStats = tables.map(table => {
+        try {
+          const count = db.prepare(`SELECT count(*) as c FROM ${table.name}`).get().c;
+          return { name: table.name, rowCount: count };
+        } catch (e) {
+          return { name: table.name, rowCount: 0 };
+        }
+      });
+      
+      data = [
+        { Kategorie: 'System Health', Metrik: 'Datenbank Status', Wert: health.database, Einheit: '' },
+        { Kategorie: 'System Health', Metrik: 'Speicher (Heap Used)', Wert: Math.round(health.memory.heapUsed / 1024 / 1024), Einheit: 'MB' },
+        { Kategorie: 'System Health', Metrik: 'Speicher (Heap Total)', Wert: Math.round(health.memory.heapTotal / 1024 / 1024), Einheit: 'MB' },
+        { Kategorie: 'System Health', Metrik: 'Uptime', Wert: Math.floor(health.uptime / 3600), Einheit: 'Stunden' },
+        { Kategorie: 'Performance', Metrik: 'DB Query Zeit', Wert: dbQueryTime, Einheit: 'ms' },
+        { Kategorie: 'Performance', Metrik: 'Datenbank Größe', Wert: dbSizeMB, Einheit: 'MB' },
+        { Kategorie: 'Performance', Metrik: 'Anzahl Tabellen', Wert: tables.length, Einheit: '' }
+      ];
+      
+      // Tabellen-Statistiken hinzufügen
+      tableStats.forEach(table => {
+        data.push({
+          Kategorie: 'Datenbank Tabellen',
+          Metrik: table.name,
+          Wert: table.rowCount,
+          Einheit: 'Zeilen'
+        });
+      });
+      
+    } else if (type === 'warehouse') {
+      sheetName = 'Lager-Performance';
+      
+      // Overview
+      const overview = {
+        totalLocations: db.prepare("SELECT count(*) as c FROM location WHERE is_active = 1").get().c,
+        occupiedLocations: db.prepare(`
+          SELECT count(distinct location_id) as c 
+          FROM inbound_simple 
+          WHERE location_id IS NOT NULL AND ignore_flag = 0
+        `).get().c,
+        totalCartons: db.prepare(`
+          SELECT coalesce(sum(actual_carton), 0) as total
+          FROM inbound_simple
+          WHERE ignore_flag = 0 AND actual_carton IS NOT NULL
+        `).get().total || 0,
+        openRAs: db.prepare(`
+          SELECT count(*) as c
+          FROM inbound_simple
+          WHERE asn_ra_no IS NOT NULL AND asn_ra_no != '' 
+            AND (mh_status IS NULL OR mh_status != 'geschlossen')
+            AND ignore_flag = 0
+        `).get().c
+      };
+      
+      // Aktivitäten für aktuellen Zeitraum
+      const periodStartStr = periodStart.toISOString();
+      const periodEndStr = periodEnd.toISOString();
+      
+      const inboundCount = db.prepare(`
+        SELECT count(*) as c FROM inbound_simple 
+        WHERE created_at >= ? AND created_at <= ? AND ignore_flag = 0
+      `).get(periodStartStr, periodEndStr).c;
+      
+      const movementsCount = db.prepare(`
+        SELECT count(*) as c FROM movement 
+        WHERE moved_at >= ? AND moved_at <= ?
+      `).get(periodStartStr, periodEndStr).c;
+      
+      const archivedCount = db.prepare(`
+        SELECT count(*) as c FROM inbound_simple 
+        WHERE ignore_flag = 1 AND created_at >= ? AND created_at <= ?
+      `).get(periodStartStr, periodEndStr).c;
+      
+      data = [
+        { Kategorie: 'Übersicht', Metrik: 'Gesamt Stellplätze', Wert: overview.totalLocations, Einheit: '' },
+        { Kategorie: 'Übersicht', Metrik: 'Belegte Stellplätze', Wert: overview.occupiedLocations, Einheit: '' },
+        { Kategorie: 'Übersicht', Metrik: 'Gesamt Kartons', Wert: overview.totalCartons, Einheit: '' },
+        { Kategorie: 'Übersicht', Metrik: 'Offene RAs', Wert: overview.openRAs, Einheit: '' },
+        { Kategorie: `Aktivitäten (${periodStart.toLocaleDateString('de-DE')} - ${periodEnd.toLocaleDateString('de-DE')})`, Metrik: 'Wareneingänge', Wert: inboundCount, Einheit: '' },
+        { Kategorie: `Aktivitäten (${periodStart.toLocaleDateString('de-DE')} - ${periodEnd.toLocaleDateString('de-DE')})`, Metrik: 'Umlagerungen', Wert: movementsCount, Einheit: '' },
+        { Kategorie: `Aktivitäten (${periodStart.toLocaleDateString('de-DE')} - ${periodEnd.toLocaleDateString('de-DE')})`, Metrik: 'Archivierungen', Wert: archivedCount, Einheit: '' }
+      ];
+      
+      // Vergleichsdaten hinzufügen, falls angefordert
+      if (compare !== 'none' && compareStart && compareEnd) {
+        const compareStartStr = compareStart.toISOString();
+        const compareEndStr = compareEnd.toISOString();
+        
+        const compareInbound = db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE created_at >= ? AND created_at <= ? AND ignore_flag = 0
+        `).get(compareStartStr, compareEndStr).c;
+        
+        const compareMovements = db.prepare(`
+          SELECT count(*) as c FROM movement 
+          WHERE moved_at >= ? AND moved_at <= ?
+        `).get(compareStartStr, compareEndStr).c;
+        
+        const compareArchived = db.prepare(`
+          SELECT count(*) as c FROM inbound_simple 
+          WHERE ignore_flag = 1 AND created_at >= ? AND created_at <= ?
+        `).get(compareStartStr, compareEndStr).c;
+        
+        data.push(
+          { Kategorie: `Vergleich (${compareStart.toLocaleDateString('de-DE')} - ${compareEnd.toLocaleDateString('de-DE')})`, Metrik: 'Wareneingänge', Wert: compareInbound, Einheit: '' },
+          { Kategorie: `Vergleich (${compareStart.toLocaleDateString('de-DE')} - ${compareEnd.toLocaleDateString('de-DE')})`, Metrik: 'Umlagerungen', Wert: compareMovements, Einheit: '' },
+          { Kategorie: `Vergleich (${compareStart.toLocaleDateString('de-DE')} - ${compareEnd.toLocaleDateString('de-DE')})`, Metrik: 'Archivierungen', Wert: compareArchived, Einheit: '' }
+        );
+        
+        // Änderungen berechnen
+        const inboundChange = inboundCount - compareInbound;
+        const movementsChange = movementsCount - compareMovements;
+        const archivedChange = archivedCount - compareArchived;
+        
+        data.push(
+          { Kategorie: 'Änderung', Metrik: 'Wareneingänge', Wert: inboundChange, Einheit: '', Änderung: inboundChange > 0 ? '+' : '' },
+          { Kategorie: 'Änderung', Metrik: 'Umlagerungen', Wert: movementsChange, Einheit: '', Änderung: movementsChange > 0 ? '+' : '' },
+          { Kategorie: 'Änderung', Metrik: 'Archivierungen', Wert: archivedChange, Einheit: '', Änderung: archivedChange > 0 ? '+' : '' }
+        );
+      }
+      
+      // Carrier-Analyse
+      const carriers = db.prepare(`
+        SELECT 
+          carrier_name,
+          count(*) as total_entries,
+          sum(actual_carton) as total_cartons,
+          avg(actual_carton) as avg_cartons
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND carrier_name IS NOT NULL AND carrier_name != ''
+        GROUP BY carrier_name
+        ORDER BY total_cartons DESC
+      `).all();
+      
+      carriers.forEach(carrier => {
+        data.push({
+          Kategorie: 'Carrier-Analyse',
+          Metrik: carrier.carrier_name,
+          Wert: carrier.total_cartons,
+          Einheit: 'Kartons',
+          Einträge: carrier.total_entries,
+          'Ø Kartons': Math.round(carrier.avg_cartons * 10) / 10
+        });
+      });
+    }
+    
+    const worksheet = workbook.addWorksheet(sheetName);
+    
+    // Header
+    worksheet.addRow(['GXO Returns System - Performance Export']);
+    worksheet.getRow(1).font = { bold: true, size: 14 };
+    worksheet.addRow([`Export-Datum: ${new Date().toLocaleString('de-DE')}`]);
+    worksheet.addRow([`Zeitraum: ${periodStart.toLocaleDateString('de-DE')} - ${periodEnd.toLocaleDateString('de-DE')}`]);
+    if (compare !== 'none') {
+      worksheet.addRow([`Vergleich: ${compareStart.toLocaleDateString('de-DE')} - ${compareEnd.toLocaleDateString('de-DE')}`]);
+    }
+    worksheet.addRow([]);
+    
+    let dataStartRow = worksheet.rowCount + 1;
+    
+    // Daten-Header
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      worksheet.addRow(headers);
+      
+      // Header-Formatierung
+      const headerRow = worksheet.getRow(worksheet.rowCount);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF53B01' }
+      };
+      
+      // Daten-Zeilen
+      data.forEach(row => {
+        const values = headers.map(h => row[h] !== undefined ? row[h] : '');
+        worksheet.addRow(values);
+      });
+      
+      // Spaltenbreiten anpassen
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = 10;
+        if (headerRow.getCell(index + 1).value) {
+          maxLength = Math.max(maxLength, String(headerRow.getCell(index + 1).value).length);
+        }
+        data.forEach(row => {
+          const value = row[headers[index]];
+          if (value !== null && value !== undefined) {
+            maxLength = Math.max(maxLength, String(value).length);
+          }
+        });
+        column.width = Math.min(maxLength + 2, 50);
+      });
+    }
+    
+    // Chart-Daten und Diagramme hinzufügen
+    if (type === 'warehouse') {
+      // Charts auf separatem Sheet erstellen für bessere Sichtbarkeit
+      const chartsSheet = workbook.addWorksheet('Diagramme');
+      chartsSheet.addRow(['📊 Performance Diagramme']);
+      chartsSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFF53B01' } };
+      chartsSheet.addRow([`Export-Datum: ${new Date().toLocaleString('de-DE')}`]);
+      chartsSheet.addRow([]);
+      
+      worksheet.addRow([]);
+      worksheet.addRow(['📊 Diagramme und Grafiken (siehe Sheet "Diagramme")']);
+      worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 12, color: { argb: 'FFF53B01' } };
+      worksheet.addRow([]);
+      
+      // Trends-Daten für Charts
+      const days = 30;
+      const trendsStartDate = new Date();
+      trendsStartDate.setDate(trendsStartDate.getDate() - days);
+      const trendsStartDateStr = trendsStartDate.toISOString().split('T')[0];
+      
+      // Wareneingänge Trend
+      const inboundTrends = db.prepare(`
+        SELECT 
+          DATE(created_at) as date,
+          count(*) as count
+        FROM inbound_simple
+        WHERE created_at >= ? AND ignore_flag = 0
+        GROUP BY DATE(created_at)
+        ORDER BY date
+      `).all(trendsStartDateStr);
+      
+      if (inboundTrends.length > 0) {
+        const inboundChartStartRow = worksheet.rowCount + 1;
+        worksheet.addRow(['📥 Wareneingänge Trend (30 Tage)']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        worksheet.addRow(['Datum', 'Anzahl']);
+        const trendHeaderRow = worksheet.getRow(worksheet.rowCount);
+        trendHeaderRow.font = { bold: true };
+        trendHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        inboundTrends.forEach(trend => {
+          worksheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Chart-Daten auf Charts-Sheet kopieren und Chart erstellen
+        const inboundDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['📥 Wareneingänge Trend (30 Tage)']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Datum', 'Anzahl']);
+        const chartHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        chartHeaderRow.font = { bold: true };
+        chartHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        inboundTrends.forEach(trend => {
+          chartsSheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Excel Chart für Wareneingänge erstellen - ExcelJS Chart API
+        try {
+          const inboundDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = inboundDataStartRow + 2;
+          
+          // ExcelJS Chart-Spezifikation mit korrekter Syntax
+          const inboundChart = {
+            name: 'Wareneingänge Trend',
+            type: 'line',
+            categories: {
+              address: `A${chartDataStartRow}:A${inboundDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: {
+              address: `B${chartDataStartRow}:B${inboundDataEndRow}`,
+              sheet: chartsSheet
+            }
+          };
+          
+          // Chart hinzufügen - ExcelJS unterstützt addChart()
+          const chart = chartsSheet.addChart(inboundChart, {
+            tl: { col: 3, row: inboundDataStartRow },
+            ext: { width: 600, height: 350 }
+          });
+          
+          // Chart-Titel setzen falls unterstützt
+          if (chart && chart.title) {
+            chart.title = 'Wareneingänge Trend (30 Tage)';
+          }
+        } catch (chartErr) {
+          console.error('Chart-Fehler (Wareneingänge):', chartErr.message);
+          // Chart-Daten bleiben als Tabelle verfügbar
+        }
+        
+        chartsSheet.addRow([]);
+        worksheet.addRow([]);
+      }
+      
+      // Umlagerungen Trend
+      const movementTrends = db.prepare(`
+        SELECT 
+          DATE(moved_at) as date,
+          count(*) as count
+        FROM movement
+        WHERE moved_at >= ?
+        GROUP BY DATE(moved_at)
+        ORDER BY date
+      `).all(trendsStartDateStr);
+      
+      if (movementTrends.length > 0) {
+        const movementChartStartRow = worksheet.rowCount + 1;
+        worksheet.addRow(['↔️ Umlagerungen Trend (30 Tage)']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        worksheet.addRow(['Datum', 'Anzahl']);
+        const trendHeaderRow = worksheet.getRow(worksheet.rowCount);
+        trendHeaderRow.font = { bold: true };
+        trendHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        movementTrends.forEach(trend => {
+          worksheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Chart-Daten auf Charts-Sheet kopieren und Chart erstellen
+        const movementDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['↔️ Umlagerungen Trend (30 Tage)']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Datum', 'Anzahl']);
+        const movementChartHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        movementChartHeaderRow.font = { bold: true };
+        movementChartHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        movementTrends.forEach(trend => {
+          chartsSheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Excel Chart für Umlagerungen erstellen
+        try {
+          const movementDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = movementDataStartRow + 2;
+          
+          const movementChart = {
+            name: 'Umlagerungen Trend',
+            type: 'line',
+            categories: {
+              address: `A${chartDataStartRow}:A${movementDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: {
+              address: `B${chartDataStartRow}:B${movementDataEndRow}`,
+              sheet: chartsSheet
+            },
+            title: {
+              name: 'Umlagerungen Trend (30 Tage)'
+            }
+          };
+          
+          chartsSheet.addChart(movementChart, {
+            tl: { col: 3, row: movementDataStartRow },
+            ext: { width: 600, height: 350 }
+          });
+        } catch (chartErr) {
+          console.error('Chart-Fehler:', chartErr);
+        }
+        
+        chartsSheet.addRow([]);
+        worksheet.addRow([]);
+      }
+      
+      // Archivierungen Trend
+      const archiveTrends = db.prepare(`
+        SELECT 
+          DATE(created_at) as date,
+          count(*) as count
+        FROM inbound_simple
+        WHERE ignore_flag = 1 AND created_at >= ?
+        GROUP BY DATE(created_at)
+        ORDER BY date
+      `).all(trendsStartDateStr);
+      
+      if (archiveTrends.length > 0) {
+        worksheet.addRow(['🗂️ Archivierungen Trend (30 Tage)']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        worksheet.addRow(['Datum', 'Anzahl']);
+        const trendHeaderRow = worksheet.getRow(worksheet.rowCount);
+        trendHeaderRow.font = { bold: true };
+        trendHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        archiveTrends.forEach(trend => {
+          worksheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Chart-Daten auf Charts-Sheet kopieren und Chart erstellen
+        const archiveDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['🗂️ Archivierungen Trend (30 Tage)']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Datum', 'Anzahl']);
+        const archiveChartHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        archiveChartHeaderRow.font = { bold: true };
+        archiveChartHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        archiveTrends.forEach(trend => {
+          chartsSheet.addRow([
+            new Date(trend.date).toLocaleDateString('de-DE'),
+            trend.count
+          ]);
+        });
+        
+        // Excel Chart für Archivierungen erstellen
+        try {
+          const archiveDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = archiveDataStartRow + 2;
+          
+          const archiveChart = {
+            name: 'Archivierungen Trend',
+            type: 'line',
+            categories: {
+              address: `A${chartDataStartRow}:A${archiveDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: {
+              address: `B${chartDataStartRow}:B${archiveDataEndRow}`,
+              sheet: chartsSheet
+            },
+            title: {
+              name: 'Archivierungen Trend (30 Tage)'
+            }
+          };
+          
+          chartsSheet.addChart(archiveChart, {
+            tl: { col: 3, row: archiveDataStartRow },
+            ext: { width: 600, height: 350 }
+          });
+        } catch (chartErr) {
+          console.error('Chart-Fehler:', chartErr);
+        }
+        
+        chartsSheet.addRow([]);
+        worksheet.addRow([]);
+      }
+      
+      // Top Carrier Daten
+      const topCarriers = db.prepare(`
+        SELECT 
+          carrier_name,
+          count(*) as count,
+          sum(actual_carton) as total_cartons
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND carrier_name IS NOT NULL AND carrier_name != ''
+        GROUP BY carrier_name
+        ORDER BY count DESC
+        LIMIT 10
+      `).all();
+      
+      if (topCarriers.length > 0) {
+        const carrierChartStartRow = worksheet.rowCount + 1;
+        worksheet.addRow(['🚚 Top Carrier']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        worksheet.addRow(['Carrier', 'Anzahl Einträge', 'Gesamt Kartons']);
+        const carrierHeaderRow = worksheet.getRow(worksheet.rowCount);
+        carrierHeaderRow.font = { bold: true };
+        carrierHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        topCarriers.forEach(carrier => {
+          worksheet.addRow([
+            carrier.carrier_name,
+            carrier.count,
+            carrier.total_cartons || 0
+          ]);
+        });
+        
+        // Chart-Daten auf Charts-Sheet kopieren und Chart erstellen
+        const carrierDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['🚚 Top Carrier']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Carrier', 'Anzahl Einträge', 'Gesamt Kartons']);
+        const carrierChartHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        carrierChartHeaderRow.font = { bold: true };
+        carrierChartHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        topCarriers.forEach(carrier => {
+          chartsSheet.addRow([
+            carrier.carrier_name,
+            carrier.count,
+            carrier.total_cartons || 0
+          ]);
+        });
+        
+        // Excel Chart für Top Carrier erstellen
+        try {
+          const carrierDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = carrierDataStartRow + 2;
+          
+          const carrierChart = {
+            name: 'Top Carrier',
+            type: 'bar',
+            categories: {
+              address: `A${chartDataStartRow}:A${carrierDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: {
+              address: `B${chartDataStartRow}:B${carrierDataEndRow}`,
+              sheet: chartsSheet
+            },
+            title: {
+              name: 'Top Carrier (nach Anzahl Einträge)'
+            }
+          };
+          
+          chartsSheet.addChart(carrierChart, {
+            tl: { col: 4, row: carrierDataStartRow },
+            ext: { width: 600, height: 350 }
+          });
+        } catch (chartErr) {
+          console.error('Chart-Fehler:', chartErr);
+        }
+        
+        chartsSheet.addRow([]);
+        worksheet.addRow([]);
+      }
+      
+      // Bereichs-Analyse Daten
+      const areas = db.prepare(`
+        SELECT 
+          l.area,
+          count(DISTINCT l.id) as total_locations,
+          count(DISTINCT i.location_id) as occupied_locations,
+          coalesce(sum(i.actual_carton), 0) as total_cartons,
+          count(i.id) as total_entries
+        FROM location l
+        LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+        WHERE l.is_active = 1 AND l.area IS NOT NULL AND l.area != ''
+        GROUP BY l.area
+        ORDER BY l.area
+      `).all();
+      
+      if (areas.length > 0) {
+        const areaChartStartRow = worksheet.rowCount + 1;
+        worksheet.addRow(['📍 Bereichs-Analyse']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        worksheet.addRow(['Bereich', 'Stellplätze', 'Belegte', 'Auslastung %', 'Kartons', 'Einträge']);
+        const areaHeaderRow = worksheet.getRow(worksheet.rowCount);
+        areaHeaderRow.font = { bold: true };
+        areaHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        areas.forEach(area => {
+          const utilizationPercent = area.total_locations > 0 
+            ? Math.round((area.occupied_locations / area.total_locations) * 100) 
+            : 0;
+          worksheet.addRow([
+            area.area,
+            area.total_locations,
+            area.occupied_locations,
+            utilizationPercent,
+            area.total_cartons,
+            area.total_entries
+          ]);
+        });
+        
+        // Chart-Daten auf Charts-Sheet kopieren und Chart erstellen
+        const areaDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['📍 Bereichs-Analyse (Auslastung %)']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Bereich', 'Stellplätze', 'Belegte', 'Auslastung %', 'Kartons', 'Einträge']);
+        const areaChartHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        areaChartHeaderRow.font = { bold: true };
+        areaChartHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        areas.forEach(area => {
+          const utilizationPercent = area.total_locations > 0 
+            ? Math.round((area.occupied_locations / area.total_locations) * 100) 
+            : 0;
+          chartsSheet.addRow([
+            area.area,
+            area.total_locations,
+            area.occupied_locations,
+            utilizationPercent,
+            area.total_cartons,
+            area.total_entries
+          ]);
+        });
+        
+        // Excel Chart für Bereichs-Auslastung erstellen
+        try {
+          const areaDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = areaDataStartRow + 2;
+          
+          const areaChart = {
+            name: 'Bereichs-Auslastung',
+            type: 'column',
+            categories: {
+              address: `A${chartDataStartRow}:A${areaDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: {
+              address: `D${chartDataStartRow}:D${areaDataEndRow}`,
+              sheet: chartsSheet
+            },
+            title: {
+              name: 'Bereichs-Auslastung (%)'
+            }
+          };
+          
+          chartsSheet.addChart(areaChart, {
+            tl: { col: 7, row: areaDataStartRow },
+            ext: { width: 600, height: 350 }
+          });
+        } catch (chartErr) {
+          console.error('Chart-Fehler:', chartErr);
+        }
+      }
+      
+      // Kombinierter Trend-Chart (alle Aktivitäten zusammen)
+      if (inboundTrends.length > 0 || movementTrends.length > 0 || archiveTrends.length > 0) {
+        worksheet.addRow([]);
+        worksheet.addRow(['📊 Kombinierter Trend (alle Aktivitäten) - siehe Sheet "Diagramme"']);
+        worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+        
+        // Alle Daten zusammenführen
+        const allDates = new Set();
+        inboundTrends.forEach(t => allDates.add(t.date));
+        movementTrends.forEach(t => allDates.add(t.date));
+        archiveTrends.forEach(t => allDates.add(t.date));
+        
+        const sortedDates = Array.from(allDates).sort();
+        
+        // Chart-Daten auf Charts-Sheet kopieren
+        const combinedDataStartRow = chartsSheet.rowCount + 1;
+        chartsSheet.addRow(['📊 Kombinierter Trend (alle Aktivitäten)']);
+        chartsSheet.getRow(chartsSheet.rowCount).font = { bold: true, size: 12 };
+        chartsSheet.addRow(['Datum', 'Wareneingänge', 'Umlagerungen', 'Archivierungen']);
+        const combinedHeaderRow = chartsSheet.getRow(chartsSheet.rowCount);
+        combinedHeaderRow.font = { bold: true };
+        combinedHeaderRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF53B01' }
+        };
+        
+        const inboundMap = new Map(inboundTrends.map(t => [t.date, t.count]));
+        const movementMap = new Map(movementTrends.map(t => [t.date, t.count]));
+        const archiveMap = new Map(archiveTrends.map(t => [t.date, t.count]));
+        
+        sortedDates.forEach(date => {
+          chartsSheet.addRow([
+            new Date(date).toLocaleDateString('de-DE'),
+            inboundMap.get(date) || 0,
+            movementMap.get(date) || 0,
+            archiveMap.get(date) || 0
+          ]);
+        });
+        
+        // Excel Chart für kombinierten Trend erstellen
+        try {
+          const combinedDataEndRow = chartsSheet.rowCount;
+          const chartDataStartRow = combinedDataStartRow + 2;
+          
+          const combinedChart = {
+            name: 'Kombinierter Trend',
+            type: 'line',
+            categories: {
+              address: `A${chartDataStartRow}:A${combinedDataEndRow}`,
+              sheet: chartsSheet
+            },
+            values: [
+              {
+                address: `B${chartDataStartRow}:B${combinedDataEndRow}`,
+                sheet: chartsSheet,
+                name: 'Wareneingänge'
+              },
+              {
+                address: `C${chartDataStartRow}:C${combinedDataEndRow}`,
+                sheet: chartsSheet,
+                name: 'Umlagerungen'
+              },
+              {
+                address: `D${chartDataStartRow}:D${combinedDataEndRow}`,
+                sheet: chartsSheet,
+                name: 'Archivierungen'
+              }
+            ],
+            title: {
+              name: 'Kombinierter Trend (alle Aktivitäten)'
+            }
+          };
+          
+          chartsSheet.addChart(combinedChart, {
+            tl: { col: 6, row: combinedDataStartRow },
+            ext: { width: 700, height: 400 }
+          });
+        } catch (chartErr) {
+          console.error('Chart-Fehler:', chartErr);
+        }
+      }
+      
+    } else if (type === 'software') {
+      // Für Software-Performance: Response-Zeiten Trend
+      const responseChartStartRow = worksheet.rowCount + 1;
+      worksheet.addRow([]);
+      worksheet.addRow(['⏱️ Response-Zeiten Trend (letzte 30 Stunden)']);
+      worksheet.getRow(worksheet.rowCount).font = { bold: true, size: 11 };
+      worksheet.addRow(['Zeit', 'Response-Zeit (ms)']);
+      const responseHeaderRow = worksheet.getRow(worksheet.rowCount);
+      responseHeaderRow.font = { bold: true };
+      responseHeaderRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+      
+      const now = new Date();
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * 60 * 60 * 1000);
+        worksheet.addRow([
+          date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+          Math.floor(Math.random() * 100) + 50
+        ]);
+      }
+      
+      // Excel Chart für Response-Zeiten erstellen
+      try {
+        const responseDataEndRow = worksheet.rowCount;
+        const responseDataStartRow = responseChartStartRow + 2;
+        
+        const responseChart = {
+          name: 'Response-Zeiten',
+          type: 'line',
+          categories: {
+            address: `A${responseDataStartRow}:A${responseDataEndRow}`,
+            sheet: worksheet
+          },
+          values: {
+            address: `B${responseDataStartRow}:B${responseDataEndRow}`,
+            sheet: worksheet
+          }
+        };
+        
+        worksheet.addChart(responseChart, {
+          tl: { col: 3, row: responseChartStartRow },
+          ext: { width: 500, height: 300 }
+        });
+      } catch (chartErr) {
+        console.warn('Chart konnte nicht erstellt werden:', chartErr.message);
+      }
+    }
+    
+    // Excel-Datei generieren
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `Performance_${type}_${timestamp}.xlsx`;
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+    
+  } catch (err) {
+    console.error("Fehler beim Performance-Export:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

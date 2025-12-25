@@ -78,7 +78,14 @@
         <div class="topbar-title">⚡ Performance-Monitoring</div>
         <div class="topbar-subtitle">System-Health, Performance-Metriken und Lager-Performance</div>
       </div>
-      <div class="topbar-right">
+      <div class="topbar-right" style="display: flex; gap: 8px; align-items: center;">
+        <select id="comparePeriod" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 13px; cursor: pointer;">
+          <option value="none">Kein Vergleich</option>
+          <option value="previous_week">Vergleich: Vorwoche</option>
+          <option value="previous_month">Vergleich: Vormonat</option>
+        </select>
+        <button class="btn" id="exportSoftwareBtn" style="padding: 6px 12px; font-size: 13px;">📥 Software exportieren</button>
+        <button class="btn" id="exportWarehouseBtn" style="padding: 6px 12px; font-size: 13px;">📥 Lager exportieren</button>
         <button class="btn-icon" id="themeToggle">☾</button>
       </div>
     </header>
@@ -98,8 +105,8 @@
 
       <!-- Software-Performance Tab -->
       <div id="tab-software" class="performance-tab-content">
-        <!-- System Health & Performance Metriken -->
-        <div class="grid-3" style="margin-bottom: 16px;">
+        <!-- System Health & Performance Metriken - 2 Spalten Grid -->
+        <div class="grid-2" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">💚 System-Health</div>
@@ -116,17 +123,9 @@
               <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Metriken...</div>
             </div>
           </div>
-          <div class="card">
-            <div class="card-header" style="padding: 12px 16px;">
-              <div class="card-title" style="font-size: 14px;">💾 Datenbank-Statistiken</div>
-            </div>
-            <div style="padding: 16px;" id="databaseStats">
-              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Datenbank-Statistiken...</div>
-            </div>
-          </div>
         </div>
 
-        <!-- Response Time Chart -->
+        <!-- Response Time Chart - 1 Spalte (volle Breite) -->
         <div class="card" style="margin-bottom: 16px;">
           <div class="card-header" style="padding: 12px 16px;">
             <div class="card-title" style="font-size: 14px;">⏱️ Response-Zeiten</div>
@@ -136,8 +135,8 @@
           </div>
         </div>
 
-        <!-- Fehler-Logs & Benutzer-Aktivitäten -->
-        <div class="grid-2" style="margin-bottom: 16px;">
+        <!-- Fehler-Logs, Benutzer-Aktivitäten & Datenbank-Statistiken - 3 Spalten Grid -->
+        <div class="grid-3" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">❌ Fehler-Logs</div>
@@ -158,12 +157,20 @@
               </div>
             </div>
           </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">💾 Datenbank-Statistiken</div>
+            </div>
+            <div style="padding: 16px;" id="databaseStats">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Datenbank-Statistiken...</div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Lager-Performance Tab -->
       <div id="tab-warehouse" class="performance-tab-content" style="display: none;">
-        <!-- KPI-Karten -->
+        <!-- KPI-Karten - 4 Spalten Grid -->
         <div class="grid-4" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
@@ -199,28 +206,28 @@
           </div>
         </div>
 
-        <!-- Aktivitäts-Metriken -->
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">📈 Aktivitäts-Metriken</div>
-          </div>
-          <div style="padding: 16px;" id="activityMetrics">
-            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Aktivitäts-Metriken...</div>
-          </div>
-        </div>
-
-        <!-- Detaillierte Statistiken -->
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">📊 Detaillierte Statistiken</div>
-          </div>
-          <div style="padding: 16px;" id="detailedStats">
-            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade detaillierte Statistiken...</div>
-          </div>
-        </div>
-
-        <!-- Charts -->
+        <!-- Aktivitäts-Metriken & Detaillierte Statistiken - 2 Spalten Grid -->
         <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📈 Aktivitäts-Metriken</div>
+            </div>
+            <div style="padding: 16px;" id="activityMetrics">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Aktivitäts-Metriken...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📊 Detaillierte Statistiken</div>
+            </div>
+            <div style="padding: 16px;" id="detailedStats">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade detaillierte Statistiken...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts - 3 Spalten Grid (erste Reihe) -->
+        <div class="grid-3" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">📥 Wareneingänge (30 Tage)</div>
@@ -237,9 +244,6 @@
               <canvas id="movementChart" style="max-height: 250px;"></canvas>
             </div>
           </div>
-        </div>
-
-        <div class="grid-2" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">🗂️ Archivierungen (30 Tage)</div>
@@ -248,6 +252,10 @@
               <canvas id="archiveChart" style="max-height: 250px;"></canvas>
             </div>
           </div>
+        </div>
+
+        <!-- Charts - 3 Spalten Grid (zweite Reihe) -->
+        <div class="grid-3" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">🚚 Top Carrier</div>
@@ -256,10 +264,6 @@
               <canvas id="carrierChart" style="max-height: 250px;"></canvas>
             </div>
           </div>
-        </div>
-
-        <!-- Timeline Charts -->
-        <div class="grid-2" style="margin-bottom: 16px;">
           <div class="card">
             <div class="card-header" style="padding: 12px 16px;">
               <div class="card-title" style="font-size: 14px;">📈 Timeline (90 Tage)</div>
@@ -278,88 +282,88 @@
           </div>
         </div>
 
-        <!-- Carrier-Analyse -->
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">🚚 Detaillierte Carrier-Analyse</div>
+        <!-- Carrier-Analyse & Durchsatz-Metriken - 2 Spalten Grid -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🚚 Detaillierte Carrier-Analyse</div>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="carrierAnalysisTable" style="font-size: 13px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px;">Carrier</th>
+                    <th style="padding: 8px;">Einträge</th>
+                    <th style="padding: 8px;">Kartons</th>
+                    <th style="padding: 8px;">Ø Kartons</th>
+                    <th style="padding: 8px;">Ø Verweildauer</th>
+                    <th style="padding: 8px;">Aktive Tage</th>
+                    <th style="padding: 8px;">Erste Buchung</th>
+                    <th style="padding: 8px;">Letzte Buchung</th>
+                  </tr>
+                </thead>
+                <tbody id="carrierAnalysisTableBody">
+                  <tr><td colspan="8" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Carrier-Analyse...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div style="padding: 16px; overflow-x: auto;">
-            <table class="data-table" id="carrierAnalysisTable" style="font-size: 13px;">
-              <thead>
-                <tr>
-                  <th style="padding: 8px;">Carrier</th>
-                  <th style="padding: 8px;">Einträge</th>
-                  <th style="padding: 8px;">Kartons</th>
-                  <th style="padding: 8px;">Ø Kartons</th>
-                  <th style="padding: 8px;">Ø Verweildauer</th>
-                  <th style="padding: 8px;">Aktive Tage</th>
-                  <th style="padding: 8px;">Erste Buchung</th>
-                  <th style="padding: 8px;">Letzte Buchung</th>
-                </tr>
-              </thead>
-              <tbody id="carrierAnalysisTableBody">
-                <tr><td colspan="8" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Carrier-Analyse...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Durchsatz-Metriken -->
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">⚡ Durchsatz-Metriken</div>
-          </div>
-          <div style="padding: 16px;" id="throughputMetrics">
-            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Durchsatz-Metriken...</div>
-          </div>
-        </div>
-
-        <!-- Bereichs-Analyse -->
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">📍 Bereichs-Analyse</div>
-          </div>
-          <div style="padding: 16px; overflow-x: auto;">
-            <table class="data-table" id="areasTable" style="font-size: 13px;">
-              <thead>
-                <tr>
-                  <th style="padding: 8px;">Bereich</th>
-                  <th style="padding: 8px;">Stellplätze</th>
-                  <th style="padding: 8px;">Belegte</th>
-                  <th style="padding: 8px;">Auslastung %</th>
-                  <th style="padding: 8px;">Kartons</th>
-                  <th style="padding: 8px;">Ø Kartons/Stellplatz</th>
-                  <th style="padding: 8px;">Einträge</th>
-                </tr>
-              </thead>
-              <tbody id="areasTableBody">
-                <tr><td colspan="7" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Bereichs-Analyse...</td></tr>
-              </tbody>
-            </table>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">⚡ Durchsatz-Metriken</div>
+            </div>
+            <div style="padding: 16px;" id="throughputMetrics">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Durchsatz-Metriken...</div>
+            </div>
           </div>
         </div>
 
-        <!-- Top 10 Stellplätze -->
-        <div class="card">
-          <div class="card-header" style="padding: 12px 16px;">
-            <div class="card-title" style="font-size: 14px;">🏆 Top 10 Stellplätze</div>
+        <!-- Bereichs-Analyse & Top 10 Stellplätze - 2 Spalten Grid -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📍 Bereichs-Analyse</div>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="areasTable" style="font-size: 13px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px;">Bereich</th>
+                    <th style="padding: 8px;">Stellplätze</th>
+                    <th style="padding: 8px;">Belegte</th>
+                    <th style="padding: 8px;">Auslastung %</th>
+                    <th style="padding: 8px;">Kartons</th>
+                    <th style="padding: 8px;">Ø Kartons/Stellplatz</th>
+                    <th style="padding: 8px;">Einträge</th>
+                  </tr>
+                </thead>
+                <tbody id="areasTableBody">
+                  <tr><td colspan="7" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Bereichs-Analyse...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div style="padding: 16px; overflow-x: auto;">
-            <table class="data-table" id="topLocationsTable" style="font-size: 13px;">
-              <thead>
-                <tr>
-                  <th style="padding: 8px;">Rang</th>
-                  <th style="padding: 8px;">Stellplatz</th>
-                  <th style="padding: 8px;">Bereich</th>
-                  <th style="padding: 8px;">Kartons</th>
-                  <th style="padding: 8px;">Einträge</th>
-                  <th style="padding: 8px;">Letzte Buchung</th>
-                </tr>
-              </thead>
-              <tbody id="topLocationsTableBody">
-                <tr><td colspan="6" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Top-Stellplätze...</td></tr>
-              </tbody>
-            </table>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🏆 Top 10 Stellplätze</div>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="topLocationsTable" style="font-size: 13px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px;">Rang</th>
+                    <th style="padding: 8px;">Stellplatz</th>
+                    <th style="padding: 8px;">Bereich</th>
+                    <th style="padding: 8px;">Kartons</th>
+                    <th style="padding: 8px;">Einträge</th>
+                    <th style="padding: 8px;">Letzte Buchung</th>
+                  </tr>
+                </thead>
+                <tbody id="topLocationsTableBody">
+                  <tr><td colspan="6" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Top-Stellplätze...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -694,16 +698,29 @@
   // Activity Metrics
   async function loadActivityMetrics() {
     try {
-      const response = await fetch('/api/performance/warehouse/activities');
+      const comparePeriod = document.getElementById('comparePeriod')?.value || 'none';
+      const response = await fetch(`/api/performance/warehouse/activities?compare=${comparePeriod}`);
       const data = await response.json();
       
       let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">';
+      
+      // Helper-Funktion für Vergleichsanzeige
+      const getComparisonHtml = (current, previous, label) => {
+        if (!previous) return '';
+        const diff = current - previous;
+        const percent = previous > 0 ? Math.round((diff / previous) * 100) : 0;
+        const color = diff >= 0 ? '#4CAF50' : '#F44336';
+        const icon = diff >= 0 ? '↑' : '↓';
+        return `<div style="font-size: 10px; color: ${color}; margin-top: 4px;">${icon} ${diff >= 0 ? '+' : ''}${diff} (${percent >= 0 ? '+' : ''}${percent}%) vs. ${label}</div>`;
+      };
       
       html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📥 Wareneingänge</div>
         <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.inbound.today}</div>
         <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
         <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.inbound.week} diese Woche</div>
+        ${getComparisonHtml(data.inbound.week, data.comparison?.previousWeek?.inbound, 'Vorwoche')}
+        ${getComparisonHtml(data.inbound.month, data.comparison?.previousMonth?.inbound, 'Vormonat')}
       </div>`;
       
       html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
@@ -711,6 +728,8 @@
         <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.movements.today}</div>
         <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
         <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.movements.week} diese Woche</div>
+        ${getComparisonHtml(data.movements.week, data.comparison?.previousWeek?.movements, 'Vorwoche')}
+        ${getComparisonHtml(data.movements.month, data.comparison?.previousMonth?.movements, 'Vormonat')}
       </div>`;
       
       html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
@@ -718,6 +737,8 @@
         <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.archived.today}</div>
         <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
         <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.archived.week} diese Woche</div>
+        ${getComparisonHtml(data.archived.week, data.comparison?.previousWeek?.archived, 'Vorwoche')}
+        ${getComparisonHtml(data.archived.month, data.comparison?.previousMonth?.archived, 'Vormonat')}
       </div>`;
       
       html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
@@ -1140,9 +1161,50 @@
     }
   }
 
+  // Export-Funktionen
+  async function exportPerformance(type) {
+    try {
+      const comparePeriod = document.getElementById('comparePeriod')?.value || 'none';
+      const url = `/api/performance/export?type=${type}&period=current&compare=${comparePeriod}`;
+      
+      // Download starten
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Performance_${type}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Fehler beim Export:', err);
+      alert('Fehler beim Export der Performance-Daten');
+    }
+  }
+
   // Initialisierung
   document.addEventListener('DOMContentLoaded', () => {
     loadSoftwarePerformance();
+    
+    // Export-Buttons
+    const exportSoftwareBtn = document.getElementById('exportSoftwareBtn');
+    const exportWarehouseBtn = document.getElementById('exportWarehouseBtn');
+    const comparePeriod = document.getElementById('comparePeriod');
+    
+    if (exportSoftwareBtn) {
+      exportSoftwareBtn.addEventListener('click', () => exportPerformance('software'));
+    }
+    
+    if (exportWarehouseBtn) {
+      exportWarehouseBtn.addEventListener('click', () => exportPerformance('warehouse'));
+    }
+    
+    // Vergleichszeitraum-Änderung
+    if (comparePeriod) {
+      comparePeriod.addEventListener('change', () => {
+        if (currentTab === 'warehouse') {
+          loadActivityMetrics();
+        }
+      });
+    }
     
     // Auto-Refresh alle 60 Sekunden
     setInterval(() => {
