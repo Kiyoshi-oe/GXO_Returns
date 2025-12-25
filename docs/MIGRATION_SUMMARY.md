@@ -135,3 +135,4 @@ Für zukünftige Verbesserungen:
 4. **Teamarbeit** - Andere Entwickler finden sich schneller zurecht
 5. **Erweiterbarkeit** - Struktur unterstützt Wachstum
 
+

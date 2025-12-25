@@ -9,6 +9,7 @@ const routeMap = {
   '/umlagerung': 'move',
   '/archive': 'archive',
   '/ra-import': 'ra',
+  '/performance': 'performance',
   '/einstellungen': 'settings',
   '/import': 'import',
   '/export': 'export'
@@ -22,6 +23,7 @@ const viewToRoute = {
   'move': '/umlagerung',
   'archive': '/archive',
   'ra': '/ra-import',
+  'performance': '/performance',
   'settings': '/einstellungen',
   'import': '/import',
   'export': '/export'

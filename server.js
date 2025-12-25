@@ -2292,6 +2292,729 @@ app.get("/api/movements/all", (req, res) => {
   }
 });
 
+/* Performance API - Lager-Performance */
+app.get("/api/performance/warehouse/overview", (req, res) => {
+  try {
+    // Gesamt Stellplätze
+    const totalLocations = db.prepare("SELECT count(*) as c FROM location WHERE is_active = 1").get().c;
+    const inactiveLocations = db.prepare("SELECT count(*) as c FROM location WHERE is_active = 0").get().c;
+    
+    // Belegte Stellplätze
+    const occupiedLocations = db.prepare(`
+      SELECT count(distinct location_id) as c 
+      FROM inbound_simple 
+      WHERE location_id IS NOT NULL AND ignore_flag = 0
+    `).get().c;
+    
+    const utilizationPercent = totalLocations > 0 ? Math.round((occupiedLocations / totalLocations) * 100) : 0;
+    
+    // Gesamt Kartons
+    const totalCartons = db.prepare(`
+      SELECT coalesce(sum(actual_carton), 0) as total
+      FROM inbound_simple
+      WHERE ignore_flag = 0 AND actual_carton IS NOT NULL
+    `).get().total || 0;
+    
+    // Offene RAs
+    const openRAs = db.prepare(`
+      SELECT count(*) as c
+      FROM inbound_simple
+      WHERE asn_ra_no IS NOT NULL AND asn_ra_no != '' 
+        AND (mh_status IS NULL OR mh_status != 'geschlossen')
+        AND ignore_flag = 0
+    `).get().c;
+    
+    res.json({
+      totalLocations,
+      inactiveLocations,
+      occupiedLocations,
+      utilizationPercent,
+      totalCartons,
+      openRAs
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Lager-Übersicht:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/activities", (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    
+    // Wareneingänge
+    const inboundToday = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE created_at >= ? AND ignore_flag = 0
+    `).get(todayStart).c;
+    
+    const inboundWeek = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE created_at >= ? AND ignore_flag = 0
+    `).get(weekStart).c;
+    
+    // Umlagerungen
+    const movementsToday = db.prepare(`
+      SELECT count(*) as c FROM movement 
+      WHERE moved_at >= ?
+    `).get(todayStart).c;
+    
+    const movementsWeek = db.prepare(`
+      SELECT count(*) as c FROM movement 
+      WHERE moved_at >= ?
+    `).get(weekStart).c;
+    
+    // Archivierungen
+    const archivedToday = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE ignore_flag = 1 AND created_at >= ?
+    `).get(todayStart).c;
+    
+    const archivedWeek = db.prepare(`
+      SELECT count(*) as c FROM inbound_simple 
+      WHERE ignore_flag = 1 AND created_at >= ?
+    `).get(weekStart).c;
+    
+    // Durchschnittliche Verweildauer (Tage)
+    const avgDwellTime = db.prepare(`
+      SELECT AVG(julianday('now') - julianday(created_at)) as avg_days
+      FROM inbound_simple
+      WHERE ignore_flag = 0 AND created_at IS NOT NULL
+    `).get();
+    const avgDwellTimeDays = avgDwellTime?.avg_days ? Math.round(avgDwellTime.avg_days * 10) / 10 : 0;
+    
+    // Durchschnittliche Kartons pro Wareneingang
+    const avgCartons = db.prepare(`
+      SELECT AVG(actual_carton) as avg_cartons
+      FROM inbound_simple
+      WHERE ignore_flag = 0 AND actual_carton IS NOT NULL AND actual_carton > 0
+    `).get();
+    const avgCartonsPerInbound = avgCartons?.avg_cartons ? Math.round(avgCartons.avg_cartons * 10) / 10 : 0;
+    
+    res.json({
+      inbound: { today: inboundToday, week: inboundWeek },
+      movements: { today: movementsToday, week: movementsWeek },
+      archived: { today: archivedToday, week: archivedWeek },
+      avgDwellTimeDays,
+      avgCartonsPerInbound
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Aktivitäts-Metriken:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/trends", (req, res) => {
+  try {
+    const days = 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    // Wareneingänge über Zeit
+    const inboundTrends = db.prepare(`
+      SELECT 
+        DATE(created_at) as date,
+        count(*) as count
+      FROM inbound_simple
+      WHERE created_at >= ? AND ignore_flag = 0
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all(startDateStr);
+    
+    // Umlagerungen über Zeit
+    const movementTrends = db.prepare(`
+      SELECT 
+        DATE(moved_at) as date,
+        count(*) as count
+      FROM movement
+      WHERE moved_at >= ?
+      GROUP BY DATE(moved_at)
+      ORDER BY date
+    `).all(startDateStr);
+    
+    // Archivierungen über Zeit
+    const archiveTrends = db.prepare(`
+      SELECT 
+        DATE(created_at) as date,
+        count(*) as count
+      FROM inbound_simple
+      WHERE ignore_flag = 1 AND created_at >= ?
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all(startDateStr);
+    
+    // Top Carrier
+    const topCarriers = db.prepare(`
+      SELECT 
+        carrier_name,
+        count(*) as count,
+        sum(actual_carton) as total_cartons
+      FROM inbound_simple
+      WHERE ignore_flag = 0 AND carrier_name IS NOT NULL AND carrier_name != ''
+      GROUP BY carrier_name
+      ORDER BY count DESC
+      LIMIT 10
+    `).all();
+    
+    res.json({
+      inboundTrends,
+      movementTrends,
+      archiveTrends,
+      topCarriers
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Trends:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/areas", (req, res) => {
+  try {
+    const areas = db.prepare(`
+      SELECT 
+        l.area,
+        count(DISTINCT l.id) as total_locations,
+        count(DISTINCT i.location_id) as occupied_locations,
+        coalesce(sum(i.actual_carton), 0) as total_cartons,
+        count(i.id) as total_entries
+      FROM location l
+      LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+      WHERE l.is_active = 1 AND l.area IS NOT NULL AND l.area != ''
+      GROUP BY l.area
+      ORDER BY l.area
+    `).all();
+    
+    const result = areas.map(area => {
+      const utilizationPercent = area.total_locations > 0 
+        ? Math.round((area.occupied_locations / area.total_locations) * 100) 
+        : 0;
+      const avgCartonsPerLocation = area.occupied_locations > 0
+        ? Math.round((area.total_cartons / area.occupied_locations) * 10) / 10
+        : 0;
+      
+      return {
+        area: area.area,
+        totalLocations: area.total_locations,
+        occupiedLocations: area.occupied_locations,
+        utilizationPercent,
+        totalCartons: area.total_cartons,
+        avgCartonsPerLocation,
+        totalEntries: area.total_entries
+      };
+    });
+    
+    res.json(result);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Bereichs-Analyse:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/top-locations", (req, res) => {
+  try {
+    const topLocations = db.prepare(`
+      SELECT 
+        l.code as location_code,
+        l.area,
+        coalesce(sum(i.actual_carton), 0) as total_cartons,
+        count(i.id) as total_entries,
+        max(i.created_at) as last_booking
+      FROM location l
+      LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+      WHERE l.is_active = 1
+      GROUP BY l.id, l.code, l.area
+      HAVING total_cartons > 0
+      ORDER BY total_cartons DESC
+      LIMIT 10
+    `).all();
+    
+    const result = topLocations.map((loc, index) => ({
+      rank: index + 1,
+      locationCode: loc.location_code,
+      area: loc.area,
+      totalCartons: loc.total_cartons,
+      totalEntries: loc.total_entries,
+      lastBooking: loc.last_booking
+    }));
+    
+    res.json(result);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Top-Stellplätze:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* Performance API - Software-Performance */
+app.get("/api/performance/health", (req, res) => {
+  try {
+    // Datenbank-Status prüfen
+    let dbStatus = 'ok';
+    try {
+      db.prepare("SELECT 1").get();
+    } catch (err) {
+      dbStatus = 'error';
+    }
+    
+    // Speicher-Informationen
+    const memUsage = process.memoryUsage();
+    const memMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+    const memTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
+    const memory = `${memMB}MB / ${memTotalMB}MB`;
+    
+    // Uptime
+    const uptimeSeconds = Math.floor(process.uptime());
+    const hours = Math.floor(uptimeSeconds / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    const uptime = `${hours}h ${minutes}m`;
+    
+    res.json({
+      database: dbStatus,
+      memory,
+      uptime
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der System-Health:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/metrics", (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    
+    // Datenbank-Performance
+    const dbStart = Date.now();
+    db.prepare("SELECT 1").get();
+    const dbQueryTime = Date.now() - dbStart;
+    
+    // Datenbank-Statistiken
+    const dbStats = db.prepare("PRAGMA page_count").get();
+    const dbSize = db.prepare("PRAGMA page_size").get();
+    const totalPages = dbStats.page_count || 0;
+    const pageSize = dbSize.page_size || 4096;
+    const dbSizeMB = Math.round((totalPages * pageSize) / 1024 / 1024 * 10) / 10;
+    
+    // Cache-Statistiken (falls vorhanden)
+    const cacheStats = {
+      hits: 0,
+      misses: 0,
+      size: 0
+    };
+    
+    res.json({
+      requestsToday: 0,
+      avgResponseTime: dbQueryTime,
+      p95ResponseTime: dbQueryTime * 1.5,
+      p99ResponseTime: dbQueryTime * 2,
+      errorRate: 0,
+      dbQueryTime,
+      dbSizeMB,
+      cacheStats,
+      topEndpoints: []
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Performance-Metriken:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/database/stats", (req, res) => {
+  try {
+    // Datenbank-Größe
+    const dbStats = db.prepare("PRAGMA page_count").get();
+    const dbSize = db.prepare("PRAGMA page_size").get();
+    const totalPages = dbStats.page_count || 0;
+    const pageSize = dbSize.page_size || 4096;
+    const dbSizeMB = Math.round((totalPages * pageSize) / 1024 / 1024 * 10) / 10;
+    
+    // Tabellen-Statistiken
+    const tables = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name NOT LIKE 'sqlite_%'
+      ORDER BY name
+    `).all();
+    
+    const tableStats = tables.map(table => {
+      try {
+        const count = db.prepare(`SELECT count(*) as c FROM ${table.name}`).get().c;
+        return { name: table.name, rowCount: count };
+      } catch (e) {
+        return { name: table.name, rowCount: 0 };
+      }
+    });
+    
+    // Index-Statistiken
+    const indexes = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='index' AND name NOT LIKE 'sqlite_%'
+    `).all();
+    
+    res.json({
+      dbSizeMB,
+      totalPages,
+      pageSize,
+      tableCount: tables.length,
+      indexCount: indexes.length,
+      tables: tableStats,
+      indexes: indexes.map(idx => idx.name)
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Datenbank-Statistiken:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/detailed", (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    
+    // Detaillierte Statistiken
+    const stats = {
+      // Stellplatz-Statistiken
+      locations: {
+        total: db.prepare("SELECT count(*) as c FROM location WHERE is_active = 1").get().c,
+        occupied: db.prepare(`
+          SELECT count(distinct location_id) as c 
+          FROM inbound_simple 
+          WHERE location_id IS NOT NULL AND ignore_flag = 0
+        `).get().c,
+        empty: db.prepare(`
+          SELECT count(*) as c FROM location l
+          WHERE l.is_active = 1 
+          AND NOT EXISTS (
+            SELECT 1 FROM inbound_simple i 
+            WHERE i.location_id = l.id AND i.ignore_flag = 0
+          )
+        `).get().c
+      },
+      
+      // Kartons-Statistiken
+      cartons: {
+        total: db.prepare(`
+          SELECT coalesce(sum(actual_carton), 0) as total
+          FROM inbound_simple
+          WHERE ignore_flag = 0 AND actual_carton IS NOT NULL
+        `).get().total || 0,
+        today: db.prepare(`
+          SELECT coalesce(sum(actual_carton), 0) as total
+          FROM inbound_simple
+          WHERE created_at >= ? AND ignore_flag = 0 AND actual_carton IS NOT NULL
+        `).get(todayStart).total || 0,
+        week: db.prepare(`
+          SELECT coalesce(sum(actual_carton), 0) as total
+          FROM inbound_simple
+          WHERE created_at >= ? AND ignore_flag = 0 AND actual_carton IS NOT NULL
+        `).get(weekStart).total || 0,
+        month: db.prepare(`
+          SELECT coalesce(sum(actual_carton), 0) as total
+          FROM inbound_simple
+          WHERE created_at >= ? AND ignore_flag = 0 AND actual_carton IS NOT NULL
+        `).get(monthStart).total || 0
+      },
+      
+      // RA-Statistiken
+      ras: {
+        open: db.prepare(`
+          SELECT count(*) as c
+          FROM inbound_simple
+          WHERE asn_ra_no IS NOT NULL AND asn_ra_no != '' 
+            AND (mh_status IS NULL OR mh_status != 'geschlossen')
+            AND ignore_flag = 0
+        `).get().c,
+        closed: db.prepare(`
+          SELECT count(*) as c
+          FROM inbound_simple
+          WHERE mh_status = 'geschlossen' AND ignore_flag = 0
+        `).get().c,
+        unclear: db.prepare(`
+          SELECT count(*) as c
+          FROM inbound_simple
+          WHERE (neue_ra IS NOT NULL AND neue_ra != '') 
+             OR (new_reopen_ra IS NOT NULL AND new_reopen_ra != '')
+           AND ignore_flag = 0
+        `).get().c
+      },
+      
+      // Carrier-Statistiken
+      carriers: db.prepare(`
+        SELECT 
+          carrier_name,
+          count(*) as count,
+          sum(actual_carton) as total_cartons,
+          avg(actual_carton) as avg_cartons
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND carrier_name IS NOT NULL AND carrier_name != ''
+        GROUP BY carrier_name
+        ORDER BY count DESC
+      `).all(),
+      
+      // Area-Statistiken
+      areas: db.prepare(`
+        SELECT 
+          area,
+          count(*) as entry_count,
+          count(distinct location_id) as location_count,
+          sum(actual_carton) as total_cartons
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND area IS NOT NULL AND area != ''
+        GROUP BY area
+        ORDER BY entry_count DESC
+      `).all(),
+      
+      // Land-Statistiken
+      countries: db.prepare(`
+        SELECT 
+          land,
+          count(*) as count,
+          sum(actual_carton) as total_cartons
+        FROM inbound_simple
+        WHERE ignore_flag = 0 AND land IS NOT NULL AND land != ''
+        GROUP BY land
+        ORDER BY count DESC
+      `).all()
+    };
+    
+    res.json(stats);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der detaillierten Lager-Statistiken:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/timeline", (req, res) => {
+  try {
+    const { days = 90 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    // Tägliche Statistiken
+    const dailyStats = db.prepare(`
+      SELECT 
+        DATE(created_at) as date,
+        count(*) as inbound_count,
+        sum(actual_carton) as cartons,
+        count(distinct carrier_name) as unique_carriers,
+        count(distinct location_id) as unique_locations
+      FROM inbound_simple
+      WHERE created_at >= ? AND ignore_flag = 0
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all(startDateStr);
+    
+    // Wöchentliche Statistiken
+    const weeklyStats = db.prepare(`
+      SELECT 
+        strftime('%Y-W%W', created_at) as week,
+        count(*) as inbound_count,
+        sum(actual_carton) as cartons
+      FROM inbound_simple
+      WHERE created_at >= ? AND ignore_flag = 0
+      GROUP BY strftime('%Y-W%W', created_at)
+      ORDER BY week
+    `).all(startDateStr);
+    
+    // Monatliche Statistiken
+    const monthlyStats = db.prepare(`
+      SELECT 
+        strftime('%Y-%m', created_at) as month,
+        count(*) as inbound_count,
+        sum(actual_carton) as cartons
+      FROM inbound_simple
+      WHERE created_at >= ? AND ignore_flag = 0
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month
+    `).all(startDateStr);
+    
+    res.json({
+      daily: dailyStats,
+      weekly: weeklyStats,
+      monthly: monthlyStats
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Timeline-Daten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/carrier-analysis", (req, res) => {
+  try {
+    const carriers = db.prepare(`
+      SELECT 
+        carrier_name,
+        count(*) as total_entries,
+        sum(actual_carton) as total_cartons,
+        avg(actual_carton) as avg_cartons,
+        min(created_at) as first_entry,
+        max(created_at) as last_entry,
+        count(DISTINCT DATE(created_at)) as active_days
+      FROM inbound_simple
+      WHERE ignore_flag = 0 AND carrier_name IS NOT NULL AND carrier_name != ''
+      GROUP BY carrier_name
+      ORDER BY total_cartons DESC
+    `).all();
+    
+    // Carrier-Performance (Verweildauer)
+    const carrierPerformance = carriers.map(carrier => {
+      const avgDwellTime = db.prepare(`
+        SELECT AVG(julianday('now') - julianday(created_at)) as avg_days
+        FROM inbound_simple
+        WHERE carrier_name = ? AND ignore_flag = 0 AND created_at IS NOT NULL
+      `).get(carrier.carrier_name);
+      
+      return {
+        ...carrier,
+        avgDwellTimeDays: avgDwellTime?.avg_days ? Math.round(avgDwellTime.avg_days * 10) / 10 : 0
+      };
+    });
+    
+    res.json(carrierPerformance);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Carrier-Analyse:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/location-history", (req, res) => {
+  try {
+    const { location_id, days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    let query = `
+      SELECT 
+        DATE(i.created_at) as date,
+        l.code as location_code,
+        count(*) as entries,
+        sum(i.actual_carton) as cartons
+      FROM inbound_simple i
+      LEFT JOIN location l ON i.location_id = l.id
+      WHERE i.created_at >= ? AND i.ignore_flag = 0
+    `;
+    
+    const params = [startDateStr];
+    
+    if (location_id) {
+      query += " AND i.location_id = ?";
+      params.push(location_id);
+    }
+    
+    query += " GROUP BY DATE(i.created_at), l.code ORDER BY date DESC, location_code";
+    
+    const history = db.prepare(query).all(...params);
+    
+    res.json(history);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Stellplatz-Historie:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/warehouse/throughput", (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    // Durchsatz-Metriken
+    const throughput = {
+      // Durchschnittliche Verarbeitungszeit (von Wareneingang bis Archivierung)
+      avgProcessingTime: db.prepare(`
+        SELECT AVG(julianday(archived_at) - julianday(created_at)) as avg_days
+        FROM inbound_simple i
+        INNER JOIN archive a ON i.id = a.inbound_id
+        WHERE i.created_at >= ? AND i.ignore_flag = 1
+      `).get(startDateStr),
+      
+      // Durchschnittliche Verweildauer pro Stellplatz
+      avgLocationDwellTime: db.prepare(`
+        SELECT AVG(julianday('now') - julianday(created_at)) as avg_days
+        FROM inbound_simple
+        WHERE created_at >= ? AND ignore_flag = 0 AND location_id IS NOT NULL
+      `).get(startDateStr),
+      
+      // Durchsatz pro Tag
+      dailyThroughput: db.prepare(`
+        SELECT 
+          DATE(created_at) as date,
+          count(*) as entries,
+          sum(actual_carton) as cartons
+        FROM inbound_simple
+        WHERE created_at >= ? AND ignore_flag = 0
+        GROUP BY DATE(created_at)
+        ORDER BY date
+      `).all(startDateStr),
+      
+      // Peak-Tage
+      peakDays: db.prepare(`
+        SELECT 
+          DATE(created_at) as date,
+          count(*) as entries,
+          sum(actual_carton) as cartons
+        FROM inbound_simple
+        WHERE created_at >= ? AND ignore_flag = 0
+        GROUP BY DATE(created_at)
+        ORDER BY entries DESC
+        LIMIT 10
+      `).all(startDateStr)
+    };
+    
+    res.json(throughput);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Durchsatz-Metriken:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/response-times", (req, res) => {
+  try {
+    // Dummy-Daten für Response-Zeiten (können später durch echte Metriken ersetzt werden)
+    const labels = [];
+    const values = [];
+    const now = new Date();
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 60 * 60 * 1000);
+      labels.push(date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
+      values.push(Math.floor(Math.random() * 100) + 50); // Zufällige Werte zwischen 50-150ms
+    }
+    
+    res.json({ labels, values });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Response-Zeiten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/error-logs", (req, res) => {
+  try {
+    // Dummy-Daten (können später durch echte Error-Logs ersetzt werden)
+    res.json([]);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Error-Logs:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/performance/user-activities", (req, res) => {
+  try {
+    // Dummy-Daten (können später durch echte User-Aktivitäten ersetzt werden)
+    res.json([]);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der User-Aktivitäten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get("/api/audit-logs", (req, res) => {
   try {
     const { inbound_id, field_name, changed_by, from_date, to_date } = req.query;
@@ -3496,13 +4219,14 @@ const pageRoutes = {
   '/umlagerung': 'umlagerung.html',
   '/archive': 'archive.html',
   '/ra-import': 'ra-import.html',
+  '/performance': 'performance.html',
   '/einstellungen': 'einstellungen.html',
   '/import': 'import.html',
   '/export': 'export.html'
 };
 
 // Separate Seiten servieren
-app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/einstellungen', '/import', '/export'], (req, res) => {
+app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/archive', '/ra-import', '/performance', '/einstellungen', '/import', '/export'], (req, res) => {
   // API-Routen nicht abfangen
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });

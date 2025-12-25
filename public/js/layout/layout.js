@@ -13,12 +13,13 @@ function createSidebar(activePage) {
     move: { icon: '↔️', label: 'Umlagerung', route: '/umlagerung' },
     archive: { icon: '🗂️', label: 'Archiv', route: '/archive' },
     ra: { icon: '📑', label: 'RA Import', route: '/ra-import' },
+    performance: { icon: '⚡', label: 'Performance', route: '/performance' },
     settings: { icon: '⚙️', label: 'Einstellungen', route: '/einstellungen' },
     import: { icon: '📥', label: 'Import', route: '/import' },
     export: { icon: '📤', label: 'Export', route: '/export' }
   };
 
-  const viewPages = ['dashboard', 'inventory', 'inbound', 'move', 'archive', 'ra'];
+  const viewPages = ['dashboard', 'inventory', 'inbound', 'move', 'archive', 'ra', 'performance'];
   const adminPages = ['settings', 'import', 'export'];
 
   let sidebarHTML = `

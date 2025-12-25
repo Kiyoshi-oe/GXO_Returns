@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Performance - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item ">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item ">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/wareneingang" class="nav-item ">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/umlagerung" class="nav-item ">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item ">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/ra-import" class="nav-item ">
+        <span class="nav-icon">📑</span>
+        <span>RA Import</span>
+      </a>
+      <a href="/performance" class="nav-item active">
+        <span class="nav-icon">⚡</span>
+        <span>Performance</span>
+      </a>
+      <div class="nav-section-title">Administration</div>
+      <a href="/einstellungen" class="nav-item ">
+        <span class="nav-icon">⚙️</span>
+        <span>Einstellungen</span>
+      </a>
+      <a href="/import" class="nav-item ">
+        <span class="nav-icon">📥</span>
+        <span>Import</span>
+      </a>
+      <a href="/export" class="nav-item ">
+        <span class="nav-icon">📤</span>
+        <span>Export</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">⚡ Performance-Monitoring</div>
+        <div class="topbar-subtitle">System-Health, Performance-Metriken und Lager-Performance</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Tab-Navigation -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-soft);">
+          <button class="performance-tab-btn active" data-tab="software" style="flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-main); border-bottom: 3px solid var(--gxo-orange); transition: all 0.3s ease;">
+            💻 Software-Performance
+          </button>
+          <button class="performance-tab-btn" data-tab="warehouse" style="flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            📦 Lager-Performance
+          </button>
+        </div>
+      </div>
+
+      <!-- Software-Performance Tab -->
+      <div id="tab-software" class="performance-tab-content">
+        <!-- System Health & Performance Metriken -->
+        <div class="grid-3" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">💚 System-Health</div>
+            </div>
+            <div style="padding: 16px;" id="systemHealth">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade System-Status...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📊 Performance-Metriken</div>
+            </div>
+            <div style="padding: 16px;" id="performanceMetrics">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Metriken...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">💾 Datenbank-Statistiken</div>
+            </div>
+            <div style="padding: 16px;" id="databaseStats">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Datenbank-Statistiken...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response Time Chart -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">⏱️ Response-Zeiten</div>
+          </div>
+          <div style="padding: 16px;">
+            <canvas id="responseTimeChart" style="max-height: 300px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Fehler-Logs & Benutzer-Aktivitäten -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">❌ Fehler-Logs</div>
+            </div>
+            <div style="padding: 16px;">
+              <div id="errorLogs" style="max-height: 300px; overflow-y: auto;">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Fehler-Logs...</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">👥 Benutzer-Aktivitäten</div>
+            </div>
+            <div style="padding: 16px;">
+              <div id="userActivities" style="max-height: 300px; overflow-y: auto;">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Benutzer-Aktivitäten...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lager-Performance Tab -->
+      <div id="tab-warehouse" class="performance-tab-content" style="display: none;">
+        <!-- KPI-Karten -->
+        <div class="grid-4" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📍 Stellplätze</div>
+            </div>
+            <div style="padding: 16px;" id="kpiLocations">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📦 Kartons</div>
+            </div>
+            <div style="padding: 16px;" id="kpiCartons">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📋 Offene RAs</div>
+            </div>
+            <div style="padding: 16px;" id="kpiRAs">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🚚 Carrier</div>
+            </div>
+            <div style="padding: 16px;" id="kpiCarriers">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aktivitäts-Metriken -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">📈 Aktivitäts-Metriken</div>
+          </div>
+          <div style="padding: 16px;" id="activityMetrics">
+            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Aktivitäts-Metriken...</div>
+          </div>
+        </div>
+
+        <!-- Detaillierte Statistiken -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">📊 Detaillierte Statistiken</div>
+          </div>
+          <div style="padding: 16px;" id="detailedStats">
+            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade detaillierte Statistiken...</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📥 Wareneingänge (30 Tage)</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="inboundChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">↔️ Umlagerungen (30 Tage)</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="movementChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🗂️ Archivierungen (30 Tage)</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="archiveChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🚚 Top Carrier</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="carrierChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Charts -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📈 Timeline (90 Tage)</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="timelineChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📊 Wöchentliche Trends</div>
+            </div>
+            <div style="padding: 16px;">
+              <canvas id="weeklyChart" style="max-height: 250px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carrier-Analyse -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">🚚 Detaillierte Carrier-Analyse</div>
+          </div>
+          <div style="padding: 16px; overflow-x: auto;">
+            <table class="data-table" id="carrierAnalysisTable" style="font-size: 13px;">
+              <thead>
+                <tr>
+                  <th style="padding: 8px;">Carrier</th>
+                  <th style="padding: 8px;">Einträge</th>
+                  <th style="padding: 8px;">Kartons</th>
+                  <th style="padding: 8px;">Ø Kartons</th>
+                  <th style="padding: 8px;">Ø Verweildauer</th>
+                  <th style="padding: 8px;">Aktive Tage</th>
+                  <th style="padding: 8px;">Erste Buchung</th>
+                  <th style="padding: 8px;">Letzte Buchung</th>
+                </tr>
+              </thead>
+              <tbody id="carrierAnalysisTableBody">
+                <tr><td colspan="8" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Carrier-Analyse...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Durchsatz-Metriken -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">⚡ Durchsatz-Metriken</div>
+          </div>
+          <div style="padding: 16px;" id="throughputMetrics">
+            <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Durchsatz-Metriken...</div>
+          </div>
+        </div>
+
+        <!-- Bereichs-Analyse -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">📍 Bereichs-Analyse</div>
+          </div>
+          <div style="padding: 16px; overflow-x: auto;">
+            <table class="data-table" id="areasTable" style="font-size: 13px;">
+              <thead>
+                <tr>
+                  <th style="padding: 8px;">Bereich</th>
+                  <th style="padding: 8px;">Stellplätze</th>
+                  <th style="padding: 8px;">Belegte</th>
+                  <th style="padding: 8px;">Auslastung %</th>
+                  <th style="padding: 8px;">Kartons</th>
+                  <th style="padding: 8px;">Ø Kartons/Stellplatz</th>
+                  <th style="padding: 8px;">Einträge</th>
+                </tr>
+              </thead>
+              <tbody id="areasTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Bereichs-Analyse...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top 10 Stellplätze -->
+        <div class="card">
+          <div class="card-header" style="padding: 12px 16px;">
+            <div class="card-title" style="font-size: 14px;">🏆 Top 10 Stellplätze</div>
+          </div>
+          <div style="padding: 16px; overflow-x: auto;">
+            <table class="data-table" id="topLocationsTable" style="font-size: 13px;">
+              <thead>
+                <tr>
+                  <th style="padding: 8px;">Rang</th>
+                  <th style="padding: 8px;">Stellplatz</th>
+                  <th style="padding: 8px;">Bereich</th>
+                  <th style="padding: 8px;">Kartons</th>
+                  <th style="padding: 8px;">Einträge</th>
+                  <th style="padding: 8px;">Letzte Buchung</th>
+                </tr>
+              </thead>
+              <tbody id="topLocationsTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Top-Stellplätze...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/app.js"></script>
+<script src="/js/core/theme.js"></script>
+<script src="/js/core/utils.js"></script>
+<script src="/js/navigation/routing.js"></script>
+
+<script>
+  // Theme-Initialisierung
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'light' ? '☀' : '☾';
+  
+  themeToggle.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lvsTheme', next);
+    themeToggle.textContent = next === 'light' ? '☀' : '☾';
+  });
+
+  // Tab-Wechsel
+  let currentTab = 'software';
+  const tabButtons = document.querySelectorAll('.performance-tab-btn');
+  const tabContents = document.querySelectorAll('.performance-tab-content');
+  
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      switchTab(tab);
+    });
+  });
+  
+  function switchTab(tab) {
+    currentTab = tab;
+    
+    // Buttons aktualisieren
+    tabButtons.forEach(btn => {
+      if (btn.getAttribute('data-tab') === tab) {
+        btn.classList.add('active');
+        btn.style.color = 'var(--text-main)';
+        btn.style.borderBottom = '3px solid var(--gxo-orange)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderBottom = 'none';
+      }
+    });
+    
+    // Inhalte anzeigen/verstecken
+    tabContents.forEach(content => {
+      if (content.id === `tab-${tab}`) {
+        content.style.display = 'block';
+      } else {
+        content.style.display = 'none';
+      }
+    });
+    
+    // Daten laden
+    if (tab === 'software') {
+      loadSoftwarePerformance();
+    } else if (tab === 'warehouse') {
+      loadWarehousePerformance();
+    }
+  }
+
+  // Software-Performance laden
+  async function loadSoftwarePerformance() {
+    loadSystemHealth();
+    loadPerformanceMetrics();
+    loadDatabaseStats();
+    loadResponseTimeChart();
+    loadErrorLogs();
+    loadUserActivities();
+  }
+
+  // System Health
+  async function loadSystemHealth() {
+    try {
+      const response = await fetch('/api/performance/health');
+      const health = await response.json();
+      
+      let html = '<div style="display: grid; gap: 8px;">';
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Datenbank</div>
+        <div style="font-size: 16px; font-weight: bold; color: ${health.database === 'ok' ? '#4CAF50' : '#F44336'};">${health.database === 'ok' ? '✅ Online' : '❌ Offline'}</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Speicher</div>
+        <div style="font-size: 16px; font-weight: bold;">${health.memory || 'N/A'}</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Uptime</div>
+        <div style="font-size: 16px; font-weight: bold;">${health.uptime || 'N/A'}</div>
+      </div>`;
+      html += '</div>';
+      
+      document.getElementById('systemHealth').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+      document.getElementById('systemHealth').innerHTML = '<div style="color: var(--error);">Fehler beim Laden</div>';
+    }
+  }
+
+  // Performance Metriken
+  async function loadPerformanceMetrics() {
+    try {
+      const response = await fetch('/api/performance/metrics');
+      const metrics = await response.json();
+      
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">';
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Requests heute</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.requestsToday || 0}</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Ø Response-Zeit</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.avgResponseTime || 0}ms</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">P95 Response-Zeit</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.p95ResponseTime || 0}ms</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">P99 Response-Zeit</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.p99ResponseTime || 0}ms</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Fehlerrate</div>
+        <div style="font-size: 18px; font-weight: bold; color: ${(metrics.errorRate || 0) > 5 ? '#F44336' : '#4CAF50'};">${(metrics.errorRate || 0).toFixed(2)}%</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">DB Query-Zeit</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.dbQueryTime || 0}ms</div>
+      </div>`;
+      html += '</div>';
+      
+      document.getElementById('performanceMetrics').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Datenbank-Statistiken
+  async function loadDatabaseStats() {
+    try {
+      const response = await fetch('/api/performance/database/stats');
+      const stats = await response.json();
+      
+      let html = '<div style="display: grid; gap: 8px;">';
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Datenbank-Größe</div>
+        <div style="font-size: 16px; font-weight: bold;">${stats.dbSizeMB || 0} MB</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Tabellen</div>
+        <div style="font-size: 16px; font-weight: bold;">${stats.tableCount || 0}</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Indizes</div>
+        <div style="font-size: 16px; font-weight: bold;">${stats.indexCount || 0}</div>
+      </div>`;
+      html += '</div>';
+      
+      // Tabellen-Übersicht
+      if (stats.tables && stats.tables.length > 0) {
+        html += '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">';
+        html += '<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Tabellen-Übersicht:</div>';
+        html += '<div style="max-height: 150px; overflow-y: auto; font-size: 11px;">';
+        stats.tables.forEach(table => {
+          html += `<div style="display: flex; justify-content: space-between; padding: 4px 0;">
+            <span>${table.name}</span>
+            <span style="color: var(--text-muted);">${table.rowCount.toLocaleString()} Zeilen</span>
+          </div>`;
+        });
+        html += '</div></div>';
+      }
+      
+      document.getElementById('databaseStats').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+      document.getElementById('databaseStats').innerHTML = '<div style="color: var(--error);">Fehler beim Laden</div>';
+    }
+  }
+
+  // Response Time Chart
+  let responseTimeChart = null;
+  async function loadResponseTimeChart() {
+    try {
+      const response = await fetch('/api/performance/response-times');
+      const data = await response.json();
+      
+      const ctx = document.getElementById('responseTimeChart').getContext('2d');
+      if (responseTimeChart) responseTimeChart.destroy();
+      
+      responseTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels || [],
+          datasets: [{
+            label: 'Response-Zeit (ms)',
+            data: data.values || [],
+            borderColor: 'var(--gxo-orange)',
+            backgroundColor: 'rgba(245, 59, 1, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          aspectRatio: 2.5
+        }
+      });
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Error Logs
+  async function loadErrorLogs() {
+    try {
+      const response = await fetch('/api/performance/error-logs');
+      const logs = await response.json();
+      
+      if (logs.length === 0) {
+        document.getElementById('errorLogs').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Fehler-Logs</div>';
+        return;
+      }
+      
+      let html = '<div style="display: grid; gap: 8px;">';
+      logs.slice(0, 15).forEach(log => {
+        html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px; border-left: 3px solid var(--error); margin-bottom: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted);">${new Date(log.timestamp).toLocaleString('de-DE')}</div>
+          <div style="font-size: 12px; margin-top: 4px;">${log.message || 'Unbekannter Fehler'}</div>
+        </div>`;
+      });
+      html += '</div>';
+      
+      document.getElementById('errorLogs').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // User Activities
+  async function loadUserActivities() {
+    try {
+      const response = await fetch('/api/performance/user-activities');
+      const activities = await response.json();
+      
+      if (activities.length === 0) {
+        document.getElementById('userActivities').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Aktivitäten</div>';
+        return;
+      }
+      
+      let html = '<div style="display: grid; gap: 8px;">';
+      activities.slice(0, 15).forEach(activity => {
+        html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px; margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 12px; font-weight: 600;">${activity.user || 'Unbekannt'}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${activity.action || '-'}</div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted);">${new Date(activity.timestamp).toLocaleString('de-DE')}</div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      
+      document.getElementById('userActivities').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Lager-Performance laden
+  async function loadWarehousePerformance() {
+    loadWarehouseOverview();
+    loadActivityMetrics();
+    loadDetailedStats();
+    loadTrends();
+    loadTimeline();
+    loadCarrierAnalysis();
+    loadThroughputMetrics();
+    loadAreas();
+    loadTopLocations();
+  }
+
+  // Warehouse Overview (KPIs)
+  async function loadWarehouseOverview() {
+    try {
+      const response = await fetch('/api/performance/warehouse/overview');
+      const data = await response.json();
+      
+      // Stellplätze
+      document.getElementById('kpiLocations').innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: var(--gxo-orange);">${data.totalLocations}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Aktiv</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">${data.inactiveLocations} inaktiv</div>
+          <div style="font-size: 13px; font-weight: 600; margin-top: 8px; color: var(--text-main);">${data.occupiedLocations} belegt</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${data.utilizationPercent}% Auslastung</div>
+        </div>
+      `;
+      
+      // Kartons
+      document.getElementById('kpiCartons').innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: var(--gxo-orange);">${data.totalCartons.toLocaleString('de-DE')}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Gesamt im Lager</div>
+        </div>
+      `;
+      
+      // Offene RAs
+      document.getElementById('kpiRAs').innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 28px; font-weight: bold; color: var(--gxo-orange);">${data.openRAs}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Offene RAs</div>
+        </div>
+      `;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Activity Metrics
+  async function loadActivityMetrics() {
+    try {
+      const response = await fetch('/api/performance/warehouse/activities');
+      const data = await response.json();
+      
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">';
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📥 Wareneingänge</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.inbound.today}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
+        <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.inbound.week} diese Woche</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">↔️ Umlagerungen</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.movements.today}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
+        <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.movements.week} diese Woche</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">🗂️ Archivierungen</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.archived.today}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute</div>
+        <div style="font-size: 12px; color: var(--text-main); margin-top: 6px;">${data.archived.week} diese Woche</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">⏱️ Ø Verweildauer</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.avgDwellTimeDays}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tage</div>
+      </div>`;
+      
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📦 Ø Kartons/Eingang</div>
+        <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${data.avgCartonsPerInbound}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Kartons</div>
+      </div>`;
+      
+      html += '</div>';
+      
+      document.getElementById('activityMetrics').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Trends (Charts)
+  let inboundChart = null;
+  let movementChart = null;
+  let archiveChart = null;
+  let carrierChart = null;
+  
+  async function loadTrends() {
+    try {
+      const response = await fetch('/api/performance/warehouse/trends');
+      const data = await response.json();
+      
+      // Wareneingänge Chart
+      const inboundCtx = document.getElementById('inboundChart').getContext('2d');
+      if (inboundChart) inboundChart.destroy();
+      inboundChart = new Chart(inboundCtx, {
+        type: 'line',
+        data: {
+          labels: data.inboundTrends.map(t => new Date(t.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })),
+          datasets: [{
+            label: 'Wareneingänge',
+            data: data.inboundTrends.map(t => t.count),
+            borderColor: '#4CAF50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, aspectRatio: 2.5 }
+      });
+      
+      // Umlagerungen Chart
+      const movementCtx = document.getElementById('movementChart').getContext('2d');
+      if (movementChart) movementChart.destroy();
+      movementChart = new Chart(movementCtx, {
+        type: 'line',
+        data: {
+          labels: data.movementTrends.map(t => new Date(t.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })),
+          datasets: [{
+            label: 'Umlagerungen',
+            data: data.movementTrends.map(t => t.count),
+            borderColor: '#2196F3',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, aspectRatio: 2.5 }
+      });
+      
+      // Archivierungen Chart
+      const archiveCtx = document.getElementById('archiveChart').getContext('2d');
+      if (archiveChart) archiveChart.destroy();
+      archiveChart = new Chart(archiveCtx, {
+        type: 'line',
+        data: {
+          labels: data.archiveTrends.map(t => new Date(t.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })),
+          datasets: [{
+            label: 'Archivierungen',
+            data: data.archiveTrends.map(t => t.count),
+            borderColor: '#FF9800',
+            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, aspectRatio: 2.5 }
+      });
+      
+      // Top Carrier Chart
+      const carrierCtx = document.getElementById('carrierChart').getContext('2d');
+      if (carrierChart) carrierChart.destroy();
+      carrierChart = new Chart(carrierCtx, {
+        type: 'bar',
+        data: {
+          labels: data.topCarriers.map(c => c.carrier_name),
+          datasets: [{
+            label: 'Anzahl',
+            data: data.topCarriers.map(c => c.count),
+            backgroundColor: 'var(--gxo-orange)'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, aspectRatio: 2.5 }
+      });
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Areas
+  async function loadAreas() {
+    try {
+      const response = await fetch('/api/performance/warehouse/areas');
+      const areas = await response.json();
+      
+      if (areas.length === 0) {
+        document.getElementById('areasTableBody').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">Keine Daten verfügbar</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      areas.forEach(area => {
+        html += `<tr>
+          <td style="padding: 8px;"><strong>${area.area || '-'}</strong></td>
+          <td style="padding: 8px;">${area.totalLocations}</td>
+          <td style="padding: 8px;">${area.occupiedLocations}</td>
+          <td style="padding: 8px;"><span style="color: ${area.utilizationPercent > 80 ? 'var(--error)' : area.utilizationPercent > 50 ? 'var(--warning)' : 'var(--success)'};">${area.utilizationPercent}%</span></td>
+          <td style="padding: 8px;">${area.totalCartons.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px;">${area.avgCartonsPerLocation.toFixed(1)}</td>
+          <td style="padding: 8px;">${area.totalEntries}</td>
+        </tr>`;
+      });
+      
+      document.getElementById('areasTableBody').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Detaillierte Statistiken
+  async function loadDetailedStats() {
+    try {
+      const response = await fetch('/api/performance/warehouse/detailed');
+      const stats = await response.json();
+      
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">';
+      
+      // Stellplätze
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📍 Stellplätze</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.locations.total}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">${stats.locations.occupied} belegt, ${stats.locations.empty} leer</div>
+      </div>`;
+      
+      // Kartons
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📦 Kartons</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.cartons.total.toLocaleString('de-DE')}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Heute: ${stats.cartons.today}, Woche: ${stats.cartons.week}</div>
+      </div>`;
+      
+      // RAs
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📋 RAs</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.ras.open}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Offen (${stats.ras.closed} geschlossen)</div>
+      </div>`;
+      
+      // Carrier
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">🚚 Carrier</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.carriers.length}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Aktive Carrier</div>
+      </div>`;
+      
+      // Bereiche
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📍 Bereiche</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.areas.length}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Aktive Bereiche</div>
+      </div>`;
+      
+      // Länder
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">🌍 Länder</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${stats.countries.length}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Aktive Länder</div>
+      </div>`;
+      
+      html += '</div>';
+      
+      document.getElementById('detailedStats').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Timeline Charts
+  let timelineChart = null;
+  let weeklyChart = null;
+  
+  async function loadTimeline() {
+    try {
+      const response = await fetch('/api/performance/warehouse/timeline?days=90');
+      const data = await response.json();
+      
+      // Timeline Chart (täglich)
+      const ctx1 = document.getElementById('timelineChart');
+      if (ctx1) {
+        if (timelineChart) timelineChart.destroy();
+        
+        const labels = data.daily.map(d => new Date(d.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+        const inboundData = data.daily.map(d => d.inbound_count || 0);
+        const cartonsData = data.daily.map(d => d.cartons || 0);
+        
+        timelineChart = new Chart(ctx1.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Wareneingänge',
+              data: inboundData,
+              borderColor: 'var(--gxo-orange)',
+              backgroundColor: 'rgba(245, 59, 1, 0.1)',
+              tension: 0.4
+            }, {
+              label: 'Kartons',
+              data: cartonsData,
+              borderColor: '#4CAF50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              tension: 0.4,
+              yAxisID: 'y1'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+      
+      // Weekly Chart
+      const ctx2 = document.getElementById('weeklyChart');
+      if (ctx2) {
+        if (weeklyChart) weeklyChart.destroy();
+        
+        const weekLabels = data.weekly.map(w => w.week);
+        const weekInbound = data.weekly.map(w => w.inbound_count || 0);
+        const weekCartons = data.weekly.map(w => w.cartons || 0);
+        
+        weeklyChart = new Chart(ctx2.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: weekLabels,
+            datasets: [{
+              label: 'Wareneingänge',
+              data: weekInbound,
+              backgroundColor: 'var(--gxo-orange)',
+              yAxisID: 'y'
+            }, {
+              label: 'Kartons',
+              data: weekCartons,
+              backgroundColor: '#4CAF50',
+              yAxisID: 'y1'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Carrier-Analyse
+  async function loadCarrierAnalysis() {
+    try {
+      const response = await fetch('/api/performance/warehouse/carrier-analysis');
+      const carriers = await response.json();
+      
+      // KPI-Karte für Carrier
+      if (carriers.length > 0) {
+        const topCarrier = carriers[0];
+        document.getElementById('kpiCarriers').innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-size: 28px; font-weight: bold; color: var(--gxo-orange);">${carriers.length}</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Aktive Carrier</div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">Top: ${topCarrier.carrier_name}</div>
+          </div>
+        `;
+      }
+      
+      // Detaillierte Tabelle
+      if (carriers.length === 0) {
+        document.getElementById('carrierAnalysisTableBody').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px;">Keine Daten verfügbar</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      carriers.forEach((carrier, index) => {
+        html += `<tr>
+          <td style="padding: 8px;"><strong>${carrier.carrier_name || '-'}</strong></td>
+          <td style="padding: 8px;">${carrier.total_entries.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px;">${(carrier.total_cartons || 0).toLocaleString('de-DE')}</td>
+          <td style="padding: 8px;">${(carrier.avg_cartons || 0).toFixed(1)}</td>
+          <td style="padding: 8px;">${(carrier.avgDwellTimeDays || 0).toFixed(1)} Tage</td>
+          <td style="padding: 8px;">${carrier.active_days || 0}</td>
+          <td style="padding: 8px; font-size: 12px;">${carrier.first_entry ? new Date(carrier.first_entry).toLocaleDateString('de-DE') : '-'}</td>
+          <td style="padding: 8px; font-size: 12px;">${carrier.last_entry ? new Date(carrier.last_entry).toLocaleDateString('de-DE') : '-'}</td>
+        </tr>`;
+      });
+      
+      document.getElementById('carrierAnalysisTableBody').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Durchsatz-Metriken
+  async function loadThroughputMetrics() {
+    try {
+      const response = await fetch('/api/performance/warehouse/throughput?days=30');
+      const throughput = await response.json();
+      
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">';
+      
+      // Durchschnittliche Verarbeitungszeit
+      const avgProcessingDays = throughput.avgProcessingTime?.avg_days ? Math.round(throughput.avgProcessingTime.avg_days * 10) / 10 : 0;
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">⏱️ Ø Verarbeitungszeit</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${avgProcessingDays}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tage (Eingang → Archiv)</div>
+      </div>`;
+      
+      // Durchschnittliche Verweildauer
+      const avgDwellDays = throughput.avgLocationDwellTime?.avg_days ? Math.round(throughput.avgLocationDwellTime.avg_days * 10) / 10 : 0;
+      html += `<div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">📍 Ø Verweildauer</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${avgDwellDays}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Tage pro Stellplatz</div>
+      </div>`;
+      
+      html += '</div>';
+      
+      // Peak-Tage
+      if (throughput.peakDays && throughput.peakDays.length > 0) {
+        html += '<div style="margin-top: 16px;">';
+        html += '<div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">🏆 Top 10 Peak-Tage:</div>';
+        html += '<div style="display: grid; gap: 6px;">';
+        throughput.peakDays.forEach((day, index) => {
+          html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg-soft); border-radius: 4px;">
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">#${index + 1}</span>
+              <span style="margin-left: 8px; font-size: 12px;">${new Date(day.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 13px; font-weight: 600; color: var(--gxo-orange);">${day.entries} Einträge</div>
+              <div style="font-size: 11px; color: var(--text-muted);">${(day.cartons || 0).toLocaleString('de-DE')} Kartons</div>
+            </div>
+          </div>`;
+        });
+        html += '</div></div>';
+      }
+      
+      document.getElementById('throughputMetrics').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Top Locations
+  async function loadTopLocations() {
+    try {
+      const response = await fetch('/api/performance/warehouse/top-locations');
+      const locations = await response.json();
+      
+      if (locations.length === 0) {
+        document.getElementById('topLocationsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Keine Daten verfügbar</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      locations.forEach(loc => {
+        html += `<tr>
+          <td style="padding: 8px;"><strong>#${loc.rank}</strong></td>
+          <td style="padding: 8px;">${loc.locationCode}</td>
+          <td style="padding: 8px;">${loc.area || '-'}</td>
+          <td style="padding: 8px;">${loc.totalCartons.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px;">${loc.totalEntries}</td>
+          <td style="padding: 8px; font-size: 12px;">${loc.lastBooking ? new Date(loc.lastBooking).toLocaleString('de-DE') : '-'}</td>
+        </tr>`;
+      });
+      
+      document.getElementById('topLocationsTableBody').innerHTML = html;
+    } catch (err) {
+      console.error('Fehler:', err);
+    }
+  }
+
+  // Initialisierung
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSoftwarePerformance();
+    
+    // Auto-Refresh alle 60 Sekunden
+    setInterval(() => {
+      if (currentTab === 'software') {
+        loadSoftwarePerformance();
+      } else if (currentTab === 'warehouse') {
+        loadWarehousePerformance();
+      }
+    }, 60000);
+    
+    // Loading Screen ausblenden
+    setTimeout(() => {
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => loadingScreen.style.display = 'none', 600);
+      }
+    }, 1000);
+  });
+</script>
+
+</body>
+</html>
+

@@ -184,3 +184,4 @@ Wenn Code aus der monolithischen Struktur migriert wird:
 4. **Dokumentation** - Code kommentieren, besonders komplexe Logik
 5. **Version Control** - Sinnvolle Commit-Messages
 
+
