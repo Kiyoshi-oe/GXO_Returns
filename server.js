@@ -534,7 +534,7 @@ function initPreparedStatements() {
   stmts = {
     // Carrier
     carriers: db.prepare(`
-      SELECT id, name, display_name, country, default_area, default_stage, 
+      SELECT id, name, display_name, country, is_active, default_area, default_stage, 
              default_last_stage, default_ship_status, label_image, label_help_text,
              visible_fields, field_placeholders, olpn_validation, tracking_validation,
              bulk_fixed_fields, bulk_variable_fields 
@@ -1339,7 +1339,7 @@ app.post("/api/inbound-simple", (req, res) => {
     // Cache invalidieren nach Änderung
     invalidateCache('dashboard-stats');
     
-    res.json({ ok: true, id: info.lastInsertRowid });
+    res.json({ ok: true, id: info.lastInsertRowid, lastInsertRowid: info.lastInsertRowid });
   } catch (err) {
     console.error("Fehler beim Speichern inbound simple:", err);
     res.status(500).json({ ok: false, error: err.message || "Datenbankfehler" });
@@ -1347,6 +1347,32 @@ app.post("/api/inbound-simple", (req, res) => {
 });
 
 /* Kleine Liste für Tests */
+// OLPN-Duplikat-Check Endpunkt
+app.get("/api/inbound-simple/check-olpn", (req, res) => {
+  try {
+    const { olpn } = req.query;
+    if (!olpn || olpn.trim() === '') {
+      return res.json({ ok: true, exists: false, valid: false });
+    }
+    
+    const existing = db.prepare(`
+      SELECT id, olpn, carrier_name, created_at 
+      FROM inbound_simple 
+      WHERE olpn = ? AND ignore_flag = 0
+      LIMIT 1
+    `).get(olpn.trim());
+    
+    res.json({ 
+      ok: true, 
+      exists: !!existing,
+      entry: existing || null
+    });
+  } catch (err) {
+    console.error("Fehler bei OLPN-Check:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get("/api/inbound-simple", (req, res) => {
   const rows = db
     .prepare(

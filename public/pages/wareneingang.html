@@ -135,6 +135,15 @@
         <div class="topbar-subtitle" id="topbarSubtitle">Einfache Erfassung neuer Paletten und Kartons</div>
       </div>
       <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+        <!-- Ansichts-Toggle (Operator/Advanced) -->
+        <div id="viewModeToggle" style="display: flex; gap: 4px; background: var(--bg-soft); padding: 4px; border-radius: 8px; border: 1px solid var(--border-soft);">
+          <button id="viewToggleOperator" class="view-toggle-btn active" onclick="switchToOperatorView()" style="padding: 8px 16px; border: none; background: var(--gxo-orange); color: white; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            👤 Operator
+          </button>
+          <button id="viewToggleAdmin" class="view-toggle-btn" onclick="switchToAdminView()" style="padding: 8px 16px; border: none; background: transparent; color: var(--text-muted); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            ⚙️ Advanced
+          </button>
+        </div>
         <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
         <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
           <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="userAvatar">👤</div>
@@ -164,7 +173,193 @@
           </div>
         </div>
         
-        <!-- Liste der letzten Einträge -->
+        <!-- Operator Wizard View -->
+        <div id="operatorView" style="display: none;">
+          <!-- Fortschrittsanzeige -->
+          <div class="card" style="margin-bottom: 20px;">
+            <div style="padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 16px; font-weight: 600; color: var(--text-main);">
+                  Schritt <span id="operatorCurrentStepDisplay">1</span> von 4
+                </div>
+                <div id="operatorStepIndicator" style="display: flex; gap: 8px;">
+                  <div class="operator-step-dot active" data-step="1" style="width: 12px; height: 12px; border-radius: 50%; background: var(--gxo-orange);"></div>
+                  <div class="operator-step-dot" data-step="2" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-soft);"></div>
+                  <div class="operator-step-dot" data-step="3" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-soft);"></div>
+                  <div class="operator-step-dot" data-step="4" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-soft);"></div>
+                </div>
+              </div>
+              <div style="height: 6px; background: var(--bg-soft); border-radius: 3px; overflow: hidden;">
+                <div id="operatorProgressBar" style="height: 100%; background: var(--gxo-orange); width: 25%; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schritt 1: Carrier Auswahl -->
+          <div id="operatorStep1" class="operator-step active">
+            <div class="card" style="max-width: 1200px; margin: 0 auto;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title" style="font-size: 24px;">Schritt 1: Carrier auswählen</div>
+                  <div class="card-subtitle">Wählen Sie den Versanddienstleister</div>
+                </div>
+              </div>
+              <div id="operatorCarrierGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 20px;">
+                <!-- Große Carrier-Buttons werden hier geladen -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Schritt 2: Basis-Informationen -->
+          <div id="operatorStep2" class="operator-step" style="display: none;">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title" style="font-size: 24px;">Schritt 2: Basis-Informationen</div>
+                  <div class="card-subtitle">Erfassen Sie die grundlegenden Daten</div>
+                </div>
+              </div>
+              <div style="display: grid; gap: 24px; padding: 24px;">
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    📅 Datum <span style="color: var(--text-muted); font-size: 14px;">(automatisch: heute)</span>
+                  </label>
+                  <input type="date" id="operatorDateInput" 
+                         style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                         lang="de-DE">
+                </div>
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    📦 CW (Kalenderwoche) <span style="color: var(--text-muted); font-size: 14px;">(automatisch berechnet)</span>
+                  </label>
+                  <input type="text" id="operatorCwInput" 
+                         style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                         placeholder="z.B. CW 47">
+                </div>
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    📍 Stellplatz <span style="color: var(--error);">*</span>
+                  </label>
+                  <div class="searchable-dropdown" id="operatorLocationDropdown">
+                    <input type="text" id="operatorLocationInput" 
+                           style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                           placeholder="Stellplatz suchen..." 
+                           autocomplete="off" required>
+                    <div class="searchable-dropdown-list" id="operatorLocationDropdownList" style="max-height: 300px; overflow-y: auto;"></div>
+                  </div>
+                  <div id="operatorLocationValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                  ← Zurück
+                </button>
+                <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                  Weiter →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schritt 3: Tracking-Nummern -->
+          <div id="operatorStep3" class="operator-step" style="display: none;">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title" style="font-size: 24px;">Schritt 3: Tracking-Nummern</div>
+                  <div class="card-subtitle">Scannen Sie die Nummern vom Label</div>
+                </div>
+              </div>
+              <div style="display: grid; gap: 24px; padding: 24px;">
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    📦 OLPN (Barcode scannen) <span style="color: var(--error);">*</span>
+                  </label>
+                  <input type="text" id="operatorOlpnInput" 
+                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
+                         placeholder="Barcode scannen oder eingeben..." 
+                         autofocus required>
+                  <div id="operatorOlpnValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                  <div style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">
+                    💡 Tipp: Scannen Sie den Barcode vom Label
+                  </div>
+                </div>
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    🚚 Carrier Tracking Number
+                  </label>
+                  <input type="text" id="operatorTrackingInput" 
+                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
+                         placeholder="Tracking-Nummer eingeben...">
+                </div>
+                <div class="form-group" style="font-size: 16px;">
+                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                    📦 Anzahl Kartons
+                  </label>
+                  <input type="number" id="operatorCartonInput" 
+                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                         placeholder="z.B. 2" min="1">
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                  ← Zurück
+                </button>
+                <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                  Weiter →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schritt 4: Bestätigung -->
+          <div id="operatorStep4" class="operator-step" style="display: none;">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title" style="font-size: 24px;">Schritt 4: Bestätigung</div>
+                  <div class="card-subtitle">Bitte überprüfen Sie die Daten</div>
+                </div>
+              </div>
+              <div id="operatorReviewData" style="padding: 24px;">
+                <!-- Zusammenfassung wird hier angezeigt -->
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                  ← Zurück
+                </button>
+                <button class="btn btn-primary" onclick="operatorSaveEntry()" id="operatorSaveBtn" style="font-size: 18px; padding: 16px 32px; font-weight: 600; min-height: 48px;">
+                  ✓ Speichern
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Erfolgsanzeige (nach Speichern) -->
+          <div id="operatorSuccessView" class="operator-step" style="display: none;">
+            <div class="card" style="max-width: 600px; margin: 0 auto; text-align: center;">
+              <div style="padding: 40px 24px;">
+                <div id="operatorSuccessIcon" style="font-size: 80px; margin-bottom: 20px; animation: successPulse 0.6s ease-out;">✓</div>
+                <div style="font-size: 24px; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">
+                  Wareneingang erfolgreich gespeichert!
+                </div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-bottom: 32px;">
+                  Eintrag #<span id="operatorSavedId"></span> wurde erstellt
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                  <button class="btn btn-primary" onclick="operatorNewEntry()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                    ➕ Weiteren Eintrag
+                  </button>
+                  <button class="btn btn-secondary" onclick="operatorBackToStart()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                    🏠 Zurück zum Start
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liste der letzten Einträge (nur in Admin-Ansicht) -->
         <div class="card" id="inboundListSection" style="display: block; margin-bottom: 0;">
           <div class="card-header">
             <div>
@@ -9216,6 +9411,718 @@
     }
     
   });
+
+  // ============================================
+  // OPERATOR VIEW FUNKTIONEN
+  // ============================================
+  
+  let operatorCurrentStep = 1;
+  let operatorData = {};
+  let operatorLastLocation = null;
+  let operatorLastCarrier = null;
+  
+  // Ansichts-Wechsel
+  function switchToOperatorView() {
+    document.getElementById('operatorView').style.display = 'block';
+    document.getElementById('inboundDetailView').style.display = 'none';
+    document.getElementById('carrierSelectionView').style.display = 'none';
+    document.getElementById('inboundListSection').style.display = 'none';
+    document.getElementById('bulkModeView').style.display = 'none';
+    
+    document.getElementById('viewToggleOperator').style.background = 'var(--gxo-orange)';
+    document.getElementById('viewToggleOperator').style.color = 'white';
+    document.getElementById('viewToggleAdmin').style.background = 'transparent';
+    document.getElementById('viewToggleAdmin').style.color = 'var(--text-muted)';
+    
+    operatorCurrentStep = 1;
+    operatorData = {};
+    showOperatorStep(1);
+    loadOperatorCarriers();
+    
+    // Datum und CW automatisch setzen
+    setOperatorDefaults();
+  }
+  
+  function switchToAdminView() {
+    document.getElementById('operatorView').style.display = 'none';
+    document.getElementById('carrierSelectionView').style.display = 'block';
+    document.getElementById('inboundDetailView').style.display = 'none';
+    document.getElementById('inboundListSection').style.display = 'block';
+    
+    document.getElementById('viewToggleAdmin').style.background = 'var(--gxo-orange)';
+    document.getElementById('viewToggleAdmin').style.color = 'white';
+    document.getElementById('viewToggleOperator').style.background = 'transparent';
+    document.getElementById('viewToggleOperator').style.color = 'var(--text-muted)';
+    
+    // Carrier-Buttons laden
+    if (typeof loadCarriers === 'function') {
+      loadCarriers();
+    }
+  }
+  
+  // Kalenderwoche und Datum automatisch setzen
+  function setOperatorDefaults() {
+    // Aktuelles Datum
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    const dateInput = document.getElementById('operatorDateInput');
+    if (dateInput) {
+      dateInput.value = dateStr;
+      operatorData.date = dateStr;
+    }
+    
+    // Kalenderwoche berechnen
+    const week = getCurrentWeek();
+    const cwInput = document.getElementById('operatorCwInput');
+    if (cwInput) {
+      cwInput.value = `CW ${week}`;
+      operatorData.cw = `CW ${week}`;
+    }
+    
+    // Letzten Stellplatz wiederherstellen
+    if (operatorLastLocation) {
+      const locationInput = document.getElementById('operatorLocationInput');
+      if (locationInput) {
+        locationInput.value = operatorLastLocation;
+        operatorData.location = operatorLastLocation;
+      }
+    }
+  }
+  
+  // Operator-Schritte verwalten
+  function showOperatorStep(step) {
+    // Alle Schritte ausblenden
+    for (let i = 1; i <= 4; i++) {
+      const stepEl = document.getElementById(`operatorStep${i}`);
+      if (stepEl) stepEl.style.display = 'none';
+    }
+    const successEl = document.getElementById('operatorSuccessView');
+    if (successEl) successEl.style.display = 'none';
+    
+    // Aktuellen Schritt anzeigen
+    const currentStepEl = document.getElementById(`operatorStep${step}`);
+    if (currentStepEl) {
+      currentStepEl.style.display = 'block';
+      operatorCurrentStep = step;
+      
+      // Fortschrittsanzeige aktualisieren
+      updateOperatorProgress(step);
+      
+      // Auto-Focus auf erstes Input-Feld
+      setTimeout(() => {
+        const firstInput = currentStepEl.querySelector('input, select');
+        if (firstInput) {
+          firstInput.focus();
+          if (firstInput.select) firstInput.select();
+        }
+      }, 100);
+    }
+  }
+  
+  function updateOperatorProgress(step) {
+    const progressBar = document.getElementById('operatorProgressBar');
+    const stepDisplay = document.getElementById('operatorCurrentStepDisplay');
+    const stepDots = document.querySelectorAll('.operator-step-dot');
+    
+    if (progressBar) {
+      // Schritt 5 = Erfolg = 100%
+      const progress = step >= 5 ? 100 : (step / 4) * 100;
+      progressBar.style.width = progress + '%';
+      if (step >= 5) {
+        progressBar.style.background = '#4CAF50'; // Grün bei Erfolg
+      } else {
+        progressBar.style.background = 'var(--gxo-orange)';
+      }
+    }
+    
+    if (stepDisplay) {
+      if (step >= 5) {
+        stepDisplay.textContent = '✓';
+      } else {
+        stepDisplay.textContent = step;
+      }
+    }
+    
+    stepDots.forEach((dot, index) => {
+      if (index + 1 <= Math.min(step, 4)) {
+        dot.style.background = 'var(--gxo-orange)';
+      } else {
+        dot.style.background = 'var(--border-soft)';
+      }
+    });
+  }
+  
+  function operatorNextStep() {
+    // Validierung je nach Schritt
+    if (operatorCurrentStep === 1) {
+      if (!operatorData.carrier) {
+        showValidationError('operatorCarrierGrid', 'Bitte wählen Sie einen Carrier aus');
+        return;
+      }
+    } else if (operatorCurrentStep === 2) {
+      const locationInput = document.getElementById('operatorLocationInput');
+      if (!locationInput || !locationInput.value.trim()) {
+        showValidationError('operatorLocationInput', 'Bitte wählen Sie einen Stellplatz aus');
+        locationInput?.focus();
+        return;
+      }
+      
+      // Stellplatz-Validierung
+      if (!operatorData.locationValid) {
+        showValidationError('operatorLocationInput', 'Stellplatz existiert nicht');
+        locationInput.focus();
+        return;
+      }
+      
+      // Daten sammeln
+      operatorData.location = locationInput.value.trim();
+      operatorData.date = document.getElementById('operatorDateInput')?.value || operatorData.date;
+      operatorData.cw = document.getElementById('operatorCwInput')?.value || operatorData.cw;
+      operatorLastLocation = operatorData.location;
+      
+    } else if (operatorCurrentStep === 3) {
+      const olpnInput = document.getElementById('operatorOlpnInput');
+      if (!olpnInput || !olpnInput.value.trim()) {
+        showValidationError('operatorOlpnInput', 'Bitte geben Sie die OLPN ein');
+        olpnInput?.focus();
+        return;
+      }
+      
+      // OLPN-Validierung
+      if (!operatorData.olpnValid) {
+        showValidationError('operatorOlpnInput', 'OLPN-Format ungültig oder bereits vorhanden');
+        olpnInput.focus();
+        return;
+      }
+      
+      // Daten sammeln
+      operatorData.olpn = olpnInput.value.trim();
+      operatorData.tracking = document.getElementById('operatorTrackingInput')?.value.trim() || '';
+      operatorData.cartons = document.getElementById('operatorCartonInput')?.value || '';
+      
+      // Review-Daten vorbereiten
+      showOperatorReview();
+    }
+    
+    if (operatorCurrentStep < 4) {
+      showOperatorStep(operatorCurrentStep + 1);
+    }
+  }
+  
+  function operatorPreviousStep() {
+    if (operatorCurrentStep > 1) {
+      showOperatorStep(operatorCurrentStep - 1);
+    }
+  }
+  
+  // Carrier-Buttons für Operator-Ansicht laden
+  async function loadOperatorCarriers() {
+    const grid = document.getElementById('operatorCarrierGrid');
+    if (!grid) {
+      console.warn('operatorCarrierGrid nicht gefunden');
+      return;
+    }
+    
+    grid.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">⏳ Carrier werden geladen...</div>';
+    
+    try {
+      const response = await fetch('/api/carriers');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      const carriers = await response.json();
+      
+      if (!carriers || !Array.isArray(carriers)) {
+        throw new Error('Ungültige Antwort vom Server');
+      }
+      
+      const activeCarriers = carriers.filter(c => c.is_active !== 0 && c.is_active !== false && c.is_active !== null);
+      
+      if (activeCarriers.length === 0) {
+        grid.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Keine aktiven Carrier vorhanden</div>';
+        return;
+      }
+      
+      grid.innerHTML = activeCarriers.map(carrier => {
+        // JSON sicher escapen für onclick
+        const carrierJson = JSON.stringify(carrier).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return `
+          <button class="operator-carrier-btn" 
+                  onclick="operatorSelectCarrier(${carrierJson})"
+                  style="
+                    padding: 40px 20px;
+                    background: var(--bg-card);
+                    border: 3px solid var(--border-soft);
+                    border-radius: 16px;
+                    font-size: 24px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    text-align: center;
+                    min-height: 120px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                  onmouseover="this.style.borderColor='var(--gxo-orange)'; this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(245,59,1,0.2)'"
+                  onmouseout="this.style.borderColor='var(--border-soft)'; this.style.transform='scale(1)'; this.style.boxShadow='none'">
+            <div style="font-size: 64px; margin-bottom: 12px;">🚚</div>
+            <div>${carrier.display_name || carrier.name || 'Unbekannt'}</div>
+          </button>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Fehler beim Laden der Carrier:', err);
+      grid.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: var(--error);">
+          <div style="font-size: 48px; margin-bottom: 12px;">❌</div>
+          <div style="font-weight: 600; margin-bottom: 8px;">Fehler beim Laden der Carrier</div>
+          <div style="font-size: 13px; color: var(--text-muted);">${err.message}</div>
+          <button onclick="loadOperatorCarriers()" class="btn btn-primary" style="margin-top: 12px; min-height: 48px;">
+            🔄 Erneut versuchen
+          </button>
+        </div>
+      `;
+    }
+  }
+  
+  function operatorSelectCarrier(carrier) {
+    operatorData.carrier = carrier;
+    operatorLastCarrier = carrier;
+    operatorNextStep();
+  }
+  
+  // Stellplatz-Dropdown für Operator
+  async function initOperatorLocationDropdown() {
+    const input = document.getElementById('operatorLocationInput');
+    const list = document.getElementById('operatorLocationDropdownList');
+    if (!input || !list) return;
+    
+    let locations = [];
+    
+    try {
+      const response = await fetch('/api/warehouse/locations');
+      if (response.ok) {
+        locations = await response.json();
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Stellplätze:', err);
+    }
+    
+    const renderOptions = (filter = '') => {
+      list.innerHTML = '';
+      const filtered = locations.filter(loc => 
+        loc.code.toLowerCase().includes(filter.toLowerCase()) ||
+        (loc.description && loc.description.toLowerCase().includes(filter.toLowerCase()))
+      );
+      
+      if (filtered.length === 0) {
+        list.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Keine Stellplätze gefunden</div>';
+        return;
+      }
+      
+      filtered.forEach(loc => {
+        const item = document.createElement('div');
+        item.className = 'searchable-dropdown-item';
+        item.style.cssText = 'padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-soft);';
+        item.innerHTML = `
+          <div style="font-weight: 600;">${loc.code}</div>
+          ${loc.description ? `<div style="font-size: 12px; color: var(--text-muted);">${loc.description}</div>` : ''}
+        `;
+        item.onmouseover = () => item.style.background = 'var(--bg-soft)';
+        item.onmouseout = () => item.style.background = 'transparent';
+        item.onclick = () => {
+          input.value = loc.code;
+          operatorData.location = loc.code;
+          operatorData.locationValid = true;
+          list.classList.remove('active');
+          showValidationSuccess('operatorLocationInput', 'Stellplatz gefunden');
+        };
+        list.appendChild(item);
+      });
+    };
+    
+    input.addEventListener('focus', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+    });
+    
+    input.addEventListener('input', () => {
+      renderOptions(input.value);
+      list.classList.add('active');
+      operatorData.locationValid = false;
+      clearValidation('operatorLocationInput');
+    });
+    
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        list.classList.remove('active');
+        // Validierung
+        if (input.value.trim()) {
+          validateOperatorLocation(input.value.trim());
+        }
+      }, 200);
+    });
+    
+    // Enter-Taste
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (input.value.trim()) {
+          validateOperatorLocation(input.value.trim());
+        }
+      }
+    });
+  }
+  
+  // Stellplatz-Validierung
+  async function validateOperatorLocation(locationCode) {
+    const validationEl = document.getElementById('operatorLocationValidation');
+    if (!validationEl) return;
+    
+    try {
+      const response = await fetch('/api/warehouse/locations');
+      if (!response.ok) throw new Error('Fehler beim Validieren');
+      const locations = await response.json();
+      const location = locations.find(l => l.code === locationCode);
+      
+      if (location) {
+        operatorData.locationValid = true;
+        showValidationSuccess('operatorLocationInput', `Stellplatz gefunden: ${location.description || ''}`);
+      } else {
+        operatorData.locationValid = false;
+        showValidationError('operatorLocationInput', 'Stellplatz existiert nicht');
+      }
+    } catch (err) {
+      operatorData.locationValid = false;
+      showValidationError('operatorLocationInput', 'Fehler bei der Validierung');
+    }
+  }
+  
+  // OLPN-Validierung
+  async function validateOperatorOlpn(olpn) {
+    const validationEl = document.getElementById('operatorOlpnValidation');
+    if (!validationEl) return;
+    
+    // Format-Validierung (mindestens 10 Zeichen, nur Zahlen)
+    if (!/^\d{10,}$/.test(olpn)) {
+      operatorData.olpnValid = false;
+      showValidationError('operatorOlpnInput', 'OLPN muss mindestens 10 Ziffern enthalten');
+      return;
+    }
+    
+    // Duplikat-Check über speziellen Endpunkt
+    try {
+      const response = await fetch(`/api/inbound-simple/check-olpn?olpn=${encodeURIComponent(olpn)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.exists) {
+          operatorData.olpnValid = false;
+          showValidationError('operatorOlpnInput', `OLPN bereits vorhanden (Eintrag #${data.entry.id})`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Fehler beim Duplikat-Check:', err);
+      // Bei Fehler trotzdem weitermachen, aber warnen
+      operatorData.olpnValid = true;
+      showValidationSuccess('operatorOlpnInput', 'OLPN gültig (Duplikat-Check fehlgeschlagen)');
+      return;
+    }
+    
+    operatorData.olpnValid = true;
+    showValidationSuccess('operatorOlpnInput', 'OLPN gültig');
+  }
+  
+  // Validierungs-Feedback
+  function showValidationError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const validationEl = document.getElementById(fieldId + 'Validation') || 
+                        (field?.parentElement?.querySelector('[id$="Validation"]'));
+    
+    if (field) {
+      field.style.borderColor = 'var(--error)';
+      field.style.borderWidth = '2px';
+    }
+    
+    if (validationEl) {
+      validationEl.innerHTML = `<span style="color: var(--error);">❌ ${message}</span>`;
+      validationEl.style.display = 'block';
+    }
+  }
+  
+  function showValidationSuccess(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const validationEl = document.getElementById(fieldId + 'Validation') || 
+                        (field?.parentElement?.querySelector('[id$="Validation"]'));
+    
+    if (field) {
+      field.style.borderColor = '#4CAF50';
+      field.style.borderWidth = '2px';
+    }
+    
+    if (validationEl) {
+      validationEl.innerHTML = `<span style="color: #4CAF50;">✓ ${message}</span>`;
+      validationEl.style.display = 'block';
+    }
+  }
+  
+  function clearValidation(fieldId) {
+    const field = document.getElementById(fieldId);
+    const validationEl = document.getElementById(fieldId + 'Validation') || 
+                        (field?.parentElement?.querySelector('[id$="Validation"]'));
+    
+    if (field) {
+      field.style.borderColor = 'var(--border-soft)';
+      field.style.borderWidth = '2px';
+    }
+    
+    if (validationEl) {
+      validationEl.innerHTML = '';
+      validationEl.style.display = 'none';
+    }
+  }
+  
+  // Review-Daten anzeigen
+  function showOperatorReview() {
+    const reviewEl = document.getElementById('operatorReviewData');
+    if (!reviewEl) return;
+    
+    reviewEl.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange);">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">Carrier:</div>
+          <div style="font-size: 18px;">${operatorData.carrier?.display_name || '-'}</div>
+        </div>
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #4CAF50;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">Stellplatz:</div>
+          <div style="font-size: 18px;">${operatorData.location || '-'}</div>
+        </div>
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #2196F3;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">OLPN:</div>
+          <div style="font-family: monospace; font-size: 18px;">${operatorData.olpn || '-'}</div>
+        </div>
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #FF9800;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">Tracking:</div>
+          <div style="font-family: monospace; font-size: 18px;">${operatorData.tracking || '-'}</div>
+        </div>
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #9C27B0;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">Kartons:</div>
+          <div style="font-size: 18px;">${operatorData.cartons || '-'}</div>
+        </div>
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 8px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+            <div><strong>Datum:</strong> ${operatorData.date || '-'}</div>
+            <div><strong>CW:</strong> ${operatorData.cw || '-'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Eintrag speichern
+  async function operatorSaveEntry() {
+    const saveBtn = document.getElementById('operatorSaveBtn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '⏳ Speichere...';
+    }
+    
+    // Location-ID aus Stellplatz-Code ermitteln
+    let locationId = null;
+    if (operatorData.location) {
+      try {
+        const locationResponse = await fetch('/api/warehouse/locations');
+        if (locationResponse.ok) {
+          const locations = await locationResponse.json();
+          const location = locations.find(l => l.code === operatorData.location);
+          if (location) {
+            locationId = location.id;
+          }
+        }
+      } catch (err) {
+        console.error('Fehler beim Ermitteln der Location-ID:', err);
+      }
+    }
+    
+    if (!locationId) {
+      alert('Fehler: Stellplatz-ID konnte nicht ermittelt werden');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✓ Speichern';
+      }
+      return;
+    }
+    
+    // Daten zusammenstellen (API erwartet camelCase)
+    const entryData = {
+      carrierName: operatorData.carrier?.name,
+      locationId: locationId,
+      olpn: operatorData.olpn,
+      carrierTrackingNr: operatorData.tracking || '',
+      actualCarton: parseInt(operatorData.cartons) || 1,
+      plannedCarton: parseInt(operatorData.cartons) || 1,
+      cw: operatorData.cw,
+      aufgenommenAm: operatorData.date || new Date().toISOString().split('T')[0],
+      area: operatorData.carrier?.default_area || '',
+      land: operatorData.carrier?.country || '',
+      shipStatus: operatorData.carrier?.default_ship_status || '',
+      stage: operatorData.carrier?.default_stage || '',
+      lastStage: operatorData.carrier?.default_last_stage || '',
+      addedBy: currentWindowsUser || 'System'
+    };
+    
+    try {
+      const response = await fetch('/api/inbound-simple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entryData)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Fehler beim Speichern');
+      }
+      
+      const result = await response.json();
+      
+      // Erfolgsanzeige
+      document.getElementById('operatorStep4').style.display = 'none';
+      const successView = document.getElementById('operatorSuccessView');
+      if (successView) {
+        successView.style.display = 'block';
+        const savedId = result.id || result.lastInsertRowid || '?';
+        const savedIdEl = document.getElementById('operatorSavedId');
+        if (savedIdEl) savedIdEl.textContent = savedId;
+      }
+      
+      // Erfolgsanimation
+      const successIcon = document.getElementById('operatorSuccessIcon');
+      if (successIcon) {
+        successIcon.style.animation = 'none';
+        setTimeout(() => {
+          successIcon.style.animation = 'successPulse 0.6s ease-out';
+        }, 10);
+      }
+      
+      // Fortschrittsanzeige auf 100% setzen
+      updateOperatorProgress(5);
+      
+    } catch (err) {
+      console.error('Fehler beim Speichern:', err);
+      alert('Fehler beim Speichern: ' + err.message);
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✓ Speichern';
+      }
+    }
+  }
+  
+  // Neuen Eintrag starten
+  function operatorNewEntry() {
+    operatorData = {
+      carrier: operatorLastCarrier,
+      location: operatorLastLocation,
+      date: new Date().toISOString().split('T')[0],
+      cw: `CW ${getCurrentWeek()}`
+    };
+    
+    showOperatorStep(1);
+    setOperatorDefaults();
+    
+    // Wenn Carrier bereits ausgewählt war, direkt zu Schritt 2
+    if (operatorLastCarrier) {
+      operatorData.carrier = operatorLastCarrier;
+      showOperatorStep(2);
+    }
+  }
+  
+  function operatorBackToStart() {
+    operatorData = {};
+    operatorLastCarrier = null;
+    operatorLastLocation = null;
+    showOperatorStep(1);
+    loadOperatorCarriers();
+    setOperatorDefaults();
+  }
+  
+  // Hilfsfunktion: Kalenderwoche aus Datum berechnen
+  function getWeekFromDate(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+  
+  // Event-Listener für OLPN-Validierung
+  document.addEventListener('DOMContentLoaded', () => {
+    const olpnInput = document.getElementById('operatorOlpnInput');
+    if (olpnInput) {
+      let timeout;
+      olpnInput.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        const value = e.target.value.trim();
+        if (value.length >= 10) {
+          timeout = setTimeout(() => {
+            validateOperatorOlpn(value);
+          }, 500);
+        } else {
+          clearValidation('operatorOlpnInput');
+          operatorData.olpnValid = false;
+        }
+      });
+    }
+    
+    // Stellplatz-Dropdown initialisieren
+    initOperatorLocationDropdown();
+    
+    // Datum-Input: CW automatisch aktualisieren wenn Datum geändert wird
+    const dateInput = document.getElementById('operatorDateInput');
+    if (dateInput) {
+      dateInput.addEventListener('change', (e) => {
+        const date = new Date(e.target.value);
+        if (!isNaN(date.getTime())) {
+          const week = getWeekFromDate(date);
+          const cwInput = document.getElementById('operatorCwInput');
+          if (cwInput) {
+            cwInput.value = `CW ${week}`;
+            operatorData.cw = `CW ${week}`;
+          }
+        }
+      });
+    }
+    
+    // Standard: Operator-Ansicht aktivieren
+    switchToOperatorView();
+  });
+  
+  // CSS für Erfolgsanimation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes successPulse {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Globale Funktionen verfügbar machen
+  window.switchToOperatorView = switchToOperatorView;
+  window.switchToAdminView = switchToAdminView;
+  window.operatorNextStep = operatorNextStep;
+  window.operatorPreviousStep = operatorPreviousStep;
+  window.operatorSelectCarrier = operatorSelectCarrier;
+  window.operatorSaveEntry = operatorSaveEntry;
+  window.operatorNewEntry = operatorNewEntry;
+  window.operatorBackToStart = operatorBackToStart;
+  
+  // ============================================
+  // ENDE OPERATOR VIEW FUNKTIONEN
+  // ============================================
 
   // Custom Modal Funktion
   function showCustomModal(message, type = "info", title = null, onConfirm = null, onCancel = null) {
