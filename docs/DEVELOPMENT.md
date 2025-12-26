@@ -185,3 +185,4 @@ Wenn Code aus der monolithischen Struktur migriert wird:
 5. **Version Control** - Sinnvolle Commit-Messages
 
 
+

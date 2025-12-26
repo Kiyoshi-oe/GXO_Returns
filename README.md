@@ -162,3 +162,4 @@ Proprietär - GXO Logistics
 Für Fragen zur Code-Struktur oder Erweiterungen, siehe [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 
 
+

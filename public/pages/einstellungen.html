@@ -179,6 +179,9 @@
           <button class="settings-tab-btn" data-tab="audit" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             📋 Audit-Logs
           </button>
+          <button class="settings-tab-btn" data-tab="backup" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            💾 Backup
+          </button>
           <button class="settings-tab-btn" data-tab="system" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             ⚙️ System Info
           </button>
@@ -687,6 +690,85 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup Tab -->
+      <div class="settings-tab-content" id="tab-backup" style="display:none;">
+        <!-- Manuelles Backup -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">💾 Manuelles Backup erstellen</div>
+              <div class="card-subtitle">Erstellen Sie ein sofortiges Backup der Datenbank</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-end;">
+            <div class="form-group" style="flex: 1;">
+              <label>Backup-Name (optional)</label>
+              <input type="text" id="backupNameInput" placeholder="z.B. Vor-Update-2024" maxlength="50">
+            </div>
+            <button class="btn btn-primary" id="btnCreateBackup" style="white-space: nowrap;">
+              <span id="backupBtnText">📦 Backup erstellen</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Automatische Backups -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">⏰ Automatische Backups</div>
+              <div class="card-subtitle">Konfigurieren Sie automatische Backups</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="autoBackupEnabled" style="margin-right: 8px;">
+                Automatische Backups aktivieren
+              </label>
+            </div>
+            <div class="form-group">
+              <label>Backup-Intervall</label>
+              <select id="backupInterval" class="form-control">
+                <option value="1">Jede Stunde</option>
+                <option value="6">Alle 6 Stunden</option>
+                <option value="12">Alle 12 Stunden</option>
+                <option value="24" selected>Täglich</option>
+                <option value="168">Wöchentlich</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Maximale Anzahl Backups</label>
+              <input type="number" id="maxBackups" class="form-control" value="10" min="1" max="100">
+              <small style="color: var(--text-muted); font-size: 12px;">Ältere Backups werden automatisch gelöscht</small>
+            </div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-secondary" id="btnSaveBackupSettings">💾 Einstellungen speichern</button>
+            <div style="margin-top: 12px; padding: 12px; background: var(--bg-soft); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
+              <strong>Status:</strong> <span id="autoBackupStatus">Nicht aktiviert</span><br>
+              <strong>Nächstes Backup:</strong> <span id="nextBackupTime">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backup-Liste -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Verfügbare Backups</div>
+              <div class="card-subtitle">Verwalten Sie Ihre Backups</div>
+            </div>
+            <button class="btn btn-ghost" id="btnRefreshBackups" style="white-space: nowrap;">🔄 Aktualisieren</button>
+          </div>
+          <div id="backupListContainer" style="margin-top: 16px;">
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+              <div>Lade Backups...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -5990,6 +6072,268 @@
       loadAuditLogs();
     }
   }
+
+  /* Backup Funktionen */
+  async function loadBackupList() {
+    const container = document.getElementById("backupListContainer");
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);"><div style="font-size: 48px; margin-bottom: 16px;">⏳</div><div>Lade Backups...</div></div>';
+    
+    try {
+      const response = await fetch("/api/backup/list");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.error || "Fehler beim Laden");
+      
+      const backups = data.backups || [];
+      
+      if (backups.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);"><div style="font-size: 48px; margin-bottom: 16px;">📦</div><div>Keine Backups vorhanden</div></div>';
+        return;
+      }
+      
+      container.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-soft);">
+              <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--text-main);">Dateiname</th>
+              <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--text-main);">Größe</th>
+              <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--text-main);">Erstellt am</th>
+              <th style="text-align: right; padding: 12px; font-weight: 600; color: var(--text-main);">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${backups.map(backup => {
+              const date = new Date(backup.createdAt);
+              const dateStr = date.toLocaleString('de-DE', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              });
+              return `
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 12px; color: var(--text-main);">${backup.filename}</td>
+                  <td style="padding: 12px; color: var(--text-muted);">${backup.sizeMB} MB</td>
+                  <td style="padding: 12px; color: var(--text-muted);">${dateStr}</td>
+                  <td style="padding: 12px; text-align: right;">
+                    <button class="btn btn-secondary" onclick="restoreBackup('${backup.filename}')" style="margin-right: 8px; padding: 6px 12px; font-size: 13px;">🔄 Wiederherstellen</button>
+                    <button class="btn btn-ghost" onclick="deleteBackup('${backup.filename}')" style="padding: 6px 12px; font-size: 13px;">🗑️ Löschen</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch (err) {
+      console.error("Fehler beim Laden der Backups:", err);
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);"><div style="font-size: 48px; margin-bottom: 16px;">❌</div><div>Fehler beim Laden der Backups</div></div>';
+    }
+  }
+
+  async function createManualBackup() {
+    const btn = document.getElementById("btnCreateBackup");
+    const btnText = document.getElementById("backupBtnText");
+    const nameInput = document.getElementById("backupNameInput");
+    
+    if (!btn || !btnText) return;
+    
+    const originalText = btnText.textContent;
+    btn.disabled = true;
+    btnText.textContent = "⏳ Erstelle Backup...";
+    
+    try {
+      const name = nameInput?.value?.trim() || null;
+      const response = await fetch("/api/backup/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Fehler beim Erstellen des Backups");
+      }
+      
+      const data = await response.json();
+      if (data.ok) {
+        showCustomModal(`✅ Backup erfolgreich erstellt!\n\nDateiname: ${data.backup.filename}\nGröße: ${(data.backup.size / 1024 / 1024).toFixed(2)} MB`, "success");
+        if (nameInput) nameInput.value = "";
+        loadBackupList();
+      } else {
+        throw new Error(data.error || "Unbekannter Fehler");
+      }
+    } catch (err) {
+      console.error("Fehler beim Erstellen des Backups:", err);
+      showCustomModal(`❌ Fehler beim Erstellen des Backups:\n${err.message}`, "error");
+    } finally {
+      btn.disabled = false;
+      btnText.textContent = originalText;
+    }
+  }
+
+  async function restoreBackup(filename) {
+    showCustomModal(
+      `⚠️ Möchten Sie wirklich das Backup "${filename}" wiederherstellen?\n\nWICHTIG: Die aktuelle Datenbank wird überschrieben. Es wird automatisch ein Backup vor der Wiederherstellung erstellt.`,
+      "question",
+      "Backup wiederherstellen",
+      async () => {
+        try {
+          const response = await fetch("/api/backup/restore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename })
+          });
+          
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Fehler beim Wiederherstellen");
+          }
+          
+          const data = await response.json();
+          if (data.ok) {
+            showCustomModal("✅ Backup erfolgreich wiederhergestellt!\n\nDie Seite wird neu geladen...", "success");
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            throw new Error(data.error || "Unbekannter Fehler");
+          }
+        } catch (err) {
+          console.error("Fehler beim Wiederherstellen des Backups:", err);
+          showCustomModal(`❌ Fehler beim Wiederherstellen:\n${err.message}`, "error");
+        }
+      },
+      () => {
+        // Abbrechen - nichts tun
+      }
+    );
+  }
+
+  async function deleteBackup(filename) {
+    showCustomModal(
+      `⚠️ Möchten Sie das Backup "${filename}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`,
+      "question",
+      "Backup löschen",
+      async () => {
+        try {
+          const response = await fetch(`/api/backup/${encodeURIComponent(filename)}`, {
+            method: "DELETE"
+          });
+          
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Fehler beim Löschen");
+          }
+          
+          const data = await response.json();
+          if (data.ok) {
+            showCustomModal("✅ Backup erfolgreich gelöscht", "success");
+            loadBackupList();
+          } else {
+            throw new Error(data.error || "Unbekannter Fehler");
+          }
+        } catch (err) {
+          console.error("Fehler beim Löschen des Backups:", err);
+          showCustomModal(`❌ Fehler beim Löschen:\n${err.message}`, "error");
+        }
+      },
+      () => {
+        // Abbrechen - nichts tun
+      }
+    );
+  }
+
+  async function loadBackupSettings() {
+    try {
+      const response = await fetch("/api/backup/settings");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.error || "Fehler beim Laden");
+      
+      const settings = data.settings;
+      
+      const enabledCheckbox = document.getElementById("autoBackupEnabled");
+      const intervalSelect = document.getElementById("backupInterval");
+      const maxBackupsInput = document.getElementById("maxBackups");
+      const statusSpan = document.getElementById("autoBackupStatus");
+      const nextBackupSpan = document.getElementById("nextBackupTime");
+      
+      if (enabledCheckbox) enabledCheckbox.checked = settings.enabled || false;
+      if (intervalSelect) intervalSelect.value = settings.interval || 24;
+      if (maxBackupsInput) maxBackupsInput.value = settings.maxBackups || 10;
+      
+      if (statusSpan) {
+        statusSpan.textContent = settings.enabled ? "✅ Aktiviert" : "❌ Nicht aktiviert";
+      }
+      
+      if (nextBackupSpan) {
+        if (settings.nextBackup && settings.enabled) {
+          const nextDate = new Date(settings.nextBackup);
+          nextBackupSpan.textContent = nextDate.toLocaleString('de-DE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } else {
+          nextBackupSpan.textContent = "-";
+        }
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden der Backup-Einstellungen:", err);
+    }
+  }
+
+  async function saveBackupSettings() {
+    const btn = document.getElementById("btnSaveBackupSettings");
+    if (!btn) return;
+    
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "⏳ Speichere...";
+    
+    try {
+      const enabled = document.getElementById("autoBackupEnabled")?.checked || false;
+      const interval = parseInt(document.getElementById("backupInterval")?.value || "24");
+      const maxBackups = parseInt(document.getElementById("maxBackups")?.value || "10");
+      
+      const response = await fetch("/api/backup/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled, interval, maxBackups })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Fehler beim Speichern");
+      }
+      
+      const data = await response.json();
+      if (data.ok) {
+        showCustomModal("✅ Backup-Einstellungen erfolgreich gespeichert", "success");
+        loadBackupSettings();
+      } else {
+        throw new Error(data.error || "Unbekannter Fehler");
+      }
+    } catch (err) {
+      console.error("Fehler beim Speichern der Backup-Einstellungen:", err);
+      showCustomModal(`❌ Fehler beim Speichern:\n${err.message}`, "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  // Globale Funktionen verfügbar machen
+  window.restoreBackup = restoreBackup;
+  window.deleteBackup = deleteBackup;
   
   // Eintrag-Details anzeigen (Popup mit allen Informationen)
   async function showInboundEntryDetails(inboundId) {
@@ -9311,6 +9655,9 @@
             loadSettingsLocations();
           } else if (tabName === 'audit') {
             loadAuditLogs();
+          } else if (tabName === 'backup') {
+            loadBackupList();
+            loadBackupSettings();
           }
         }
       });
@@ -9347,6 +9694,23 @@
     
     if (btnAddLandOption) {
       btnAddLandOption.addEventListener("click", () => addDropdownOption("land"));
+    }
+
+    // Backup Event Listener
+    const btnCreateBackup = document.getElementById("btnCreateBackup");
+    const btnRefreshBackups = document.getElementById("btnRefreshBackups");
+    const btnSaveBackupSettings = document.getElementById("btnSaveBackupSettings");
+    
+    if (btnCreateBackup) {
+      btnCreateBackup.addEventListener("click", createManualBackup);
+    }
+    
+    if (btnRefreshBackups) {
+      btnRefreshBackups.addEventListener("click", loadBackupList);
+    }
+    
+    if (btnSaveBackupSettings) {
+      btnSaveBackupSettings.addEventListener("click", saveBackupSettings);
     }
 
     // Enter-Taste für PIN

@@ -24,7 +24,7 @@ const upload = multer({
 });
 
 // Datenbank öffnen
-const db = new Database(path.join(__dirname, "lager.db"));
+let db = new Database(path.join(__dirname, "lager.db"));
 
 // Prepared Statements Cache (wird nach initDb() initialisiert)
 let stmts = {};
@@ -5158,17 +5158,343 @@ app.post("/api/import/upload", upload.single('file'), async (req, res) => {
   }
 });
 
-// 404 Handler für API-Routes - gibt immer JSON zurück (NACH allen API-Routen)
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    console.error(`❌ API-Endpunkt nicht gefunden: ${req.method} ${req.path}`);
-    return res.status(404).json({ 
-      ok: false, 
-      error: `API-Endpunkt nicht gefunden: ${req.method} ${req.path}` 
-    });
+// ============================================
+// BACKUP SYSTEM API
+// ============================================
+
+const backupsDir = path.join(__dirname, 'backups');
+const backupSettingsFile = path.join(__dirname, 'backup-settings.json');
+
+// Stelle sicher, dass Backups-Ordner existiert
+if (!fs.existsSync(backupsDir)) {
+  fs.mkdirSync(backupsDir, { recursive: true });
+}
+
+// Backup-Einstellungen laden
+function loadBackupSettings() {
+  try {
+    if (fs.existsSync(backupSettingsFile)) {
+      return JSON.parse(fs.readFileSync(backupSettingsFile, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Fehler beim Laden der Backup-Einstellungen:', err);
   }
-  next();
+  return {
+    enabled: false,
+    interval: 24, // Stunden
+    maxBackups: 10,
+    lastBackup: null,
+    nextBackup: null
+  };
+}
+
+// Backup-Einstellungen speichern
+function saveBackupSettings(settings) {
+  try {
+    fs.writeFileSync(backupSettingsFile, JSON.stringify(settings, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Fehler beim Speichern der Backup-Einstellungen:', err);
+    return false;
+  }
+}
+
+// Backup erstellen
+function createBackup(customName = null) {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const name = customName ? `${customName}_${timestamp}` : `backup_${timestamp}`;
+    const backupFileName = `${name}.db`;
+    const backupPath = path.join(backupsDir, backupFileName);
+    const dbPath = path.join(__dirname, 'lager.db');
+    
+    // Datenbank schließen, kopieren, wieder öffnen
+    db.close();
+    fs.copyFileSync(dbPath, backupPath);
+    db = new Database(dbPath);
+    
+    // Prepared Statements neu initialisieren
+    initPreparedStatements();
+    
+    const stats = fs.statSync(backupPath);
+    return {
+      ok: true,
+      filename: backupFileName,
+      path: backupPath,
+      size: stats.size,
+      createdAt: new Date().toISOString()
+    };
+  } catch (err) {
+    console.error('Fehler beim Erstellen des Backups:', err);
+    // Versuche Datenbank wieder zu öffnen
+    try {
+      const dbPath = path.join(__dirname, 'lager.db');
+      db = new Database(dbPath);
+    } catch (e) {
+      console.error('Kritischer Fehler: Datenbank konnte nicht wieder geöffnet werden:', e);
+    }
+    throw err;
+  }
+}
+
+// Backup-Liste abrufen
+app.get("/api/backup/list", (req, res) => {
+  try {
+    const files = fs.readdirSync(backupsDir)
+      .filter(file => file.endsWith('.db'))
+      .map(file => {
+        const filePath = path.join(backupsDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          filename: file,
+          size: stats.size,
+          sizeMB: (stats.size / 1024 / 1024).toFixed(2),
+          createdAt: stats.birthtime.toISOString(),
+          modifiedAt: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.json({ ok: true, backups: files });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Backup-Liste:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
+
+// Manuelles Backup erstellen
+app.post("/api/backup/create", (req, res) => {
+  try {
+    const { name } = req.body;
+    const backup = createBackup(name);
+    res.json({ ok: true, backup });
+  } catch (err) {
+    console.error("Fehler beim Erstellen des Backups:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Backup wiederherstellen
+app.post("/api/backup/restore", (req, res) => {
+  try {
+    const { filename } = req.body;
+    if (!filename) {
+      return res.status(400).json({ ok: false, error: 'Dateiname erforderlich' });
+    }
+    
+    const backupPath = path.join(backupsDir, filename);
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ ok: false, error: 'Backup nicht gefunden' });
+    }
+    
+    const dbPath = path.join(__dirname, 'lager.db');
+    
+    // Aktuelles Backup erstellen vor Wiederherstellung
+    try {
+      createBackup('vor-wiederherstellung');
+    } catch (e) {
+      console.warn('Konnte kein Sicherungs-Backup erstellen:', e);
+    }
+    
+    // Datenbank schließen
+    db.close();
+    
+    // Backup wiederherstellen
+    fs.copyFileSync(backupPath, dbPath);
+    
+    // Datenbank wieder öffnen
+    db = new Database(dbPath);
+    
+    // Prepared Statements neu initialisieren
+    initPreparedStatements();
+    
+    // Cache invalidieren
+    invalidateCache();
+    
+    res.json({ ok: true, message: 'Backup erfolgreich wiederhergestellt' });
+  } catch (err) {
+    console.error("Fehler beim Wiederherstellen des Backups:", err);
+    // Versuche Datenbank wieder zu öffnen
+    try {
+      const dbPath = path.join(__dirname, 'lager.db');
+      db = new Database(dbPath);
+      initPreparedStatements();
+    } catch (e) {
+      console.error('Kritischer Fehler: Datenbank konnte nicht wieder geöffnet werden:', e);
+    }
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Backup löschen
+app.delete("/api/backup/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const backupPath = path.join(backupsDir, filename);
+    
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ ok: false, error: 'Backup nicht gefunden' });
+    }
+    
+    fs.unlinkSync(backupPath);
+    res.json({ ok: true, message: 'Backup gelöscht' });
+  } catch (err) {
+    console.error("Fehler beim Löschen des Backups:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Backup-Einstellungen abrufen
+app.get("/api/backup/settings", (req, res) => {
+  try {
+    const settings = loadBackupSettings();
+    res.json({ ok: true, settings });
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Backup-Einstellungen:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Backup-Einstellungen speichern
+app.post("/api/backup/settings", (req, res) => {
+  try {
+    const { enabled, interval, maxBackups } = req.body;
+    const settings = loadBackupSettings();
+    
+    settings.enabled = enabled === true;
+    settings.interval = parseInt(interval) || 24;
+    settings.maxBackups = parseInt(maxBackups) || 10;
+    
+    if (settings.enabled) {
+      const now = new Date();
+      settings.lastBackup = settings.lastBackup || now.toISOString();
+      const nextBackup = new Date(now.getTime() + settings.interval * 60 * 60 * 1000);
+      settings.nextBackup = nextBackup.toISOString();
+    } else {
+      settings.nextBackup = null;
+    }
+    
+    if (saveBackupSettings(settings)) {
+      // Starte automatische Backups neu, wenn Einstellungen geändert wurden
+      startAutoBackup();
+      res.json({ ok: true, settings });
+    } else {
+      res.status(500).json({ ok: false, error: 'Fehler beim Speichern der Einstellungen' });
+    }
+  } catch (err) {
+    console.error("Fehler beim Speichern der Backup-Einstellungen:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Alte Backups löschen (wenn maxBackups überschritten)
+function cleanupOldBackups() {
+  try {
+    const settings = loadBackupSettings();
+    if (!settings.maxBackups) return;
+    
+    const files = fs.readdirSync(backupsDir)
+      .filter(file => file.endsWith('.db'))
+      .map(file => {
+        const filePath = path.join(backupsDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          filename: file,
+          createdAt: stats.birthtime
+        };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+    
+    if (files.length > settings.maxBackups) {
+      const toDelete = files.slice(settings.maxBackups);
+      toDelete.forEach(file => {
+        try {
+          fs.unlinkSync(path.join(backupsDir, file.filename));
+          console.log(`Altes Backup gelöscht: ${file.filename}`);
+        } catch (err) {
+          console.error(`Fehler beim Löschen von ${file.filename}:`, err);
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Fehler beim Aufräumen alter Backups:', err);
+  }
+}
+
+// Automatische Backup-Funktion
+let autoBackupInterval = null;
+
+function startAutoBackup() {
+  // Stoppe vorhandenes Intervall
+  if (autoBackupInterval) {
+    clearInterval(autoBackupInterval);
+    autoBackupInterval = null;
+  }
+  
+  const settings = loadBackupSettings();
+  if (!settings.enabled) {
+    console.log('📦 Automatische Backups sind deaktiviert');
+    return;
+  }
+  
+  console.log(`📦 Automatische Backups aktiviert - Intervall: ${settings.interval} Stunden`);
+  
+  // Prüfe ob Backup fällig ist
+  function checkAndBackup() {
+    const settings = loadBackupSettings();
+    if (!settings.enabled) {
+      if (autoBackupInterval) {
+        clearInterval(autoBackupInterval);
+        autoBackupInterval = null;
+      }
+      return;
+    }
+    
+    const now = new Date();
+    let nextBackup = settings.nextBackup ? new Date(settings.nextBackup) : null;
+    
+    // Wenn nextBackup nicht gesetzt oder in der Vergangenheit liegt, setze es neu
+    if (!nextBackup || now >= nextBackup) {
+      try {
+        console.log('💾 Automatisches Backup wird erstellt...');
+        createBackup('auto');
+        
+        // Einstellungen aktualisieren
+        settings.lastBackup = now.toISOString();
+        const newNextBackup = new Date(now.getTime() + settings.interval * 60 * 60 * 1000);
+        settings.nextBackup = newNextBackup.toISOString();
+        saveBackupSettings(settings);
+        
+        // Alte Backups aufräumen
+        cleanupOldBackups();
+        
+        console.log(`✅ Automatisches Backup erstellt. Nächstes Backup: ${new Date(settings.nextBackup).toLocaleString('de-DE')}`);
+      } catch (err) {
+        console.error('❌ Fehler beim automatischen Backup:', err);
+      }
+    } else {
+      // Backup ist noch nicht fällig
+      const timeUntilBackup = Math.round((nextBackup - now) / 1000 / 60); // Minuten
+      if (timeUntilBackup <= 10) {
+        console.log(`⏰ Nächstes automatisches Backup in ${timeUntilBackup} Minuten`);
+      }
+    }
+  }
+  
+  // Sofort prüfen beim Start
+  checkAndBackup();
+  
+  // Dann alle 5 Minuten prüfen
+  autoBackupInterval = setInterval(checkAndBackup, 5 * 60 * 1000);
+  console.log('🔄 Backup-Prüfung läuft alle 5 Minuten');
+}
+
+// Starte automatische Backups beim Server-Start
+// Wird nach app.listen() aufgerufen, damit alles initialisiert ist
+
+// ============================================
+// ENDE BACKUP SYSTEM API
+// ============================================
 
 // Statischer Ordner für statische Dateien (Bilder, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -5209,6 +5535,18 @@ app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/a
   }
 });
 
+// 404 Handler für API-Routes - gibt immer JSON zurück (NACH allen API-Routen)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.error(`❌ API-Endpunkt nicht gefunden: ${req.method} ${req.path}`);
+    return res.status(404).json({ 
+      ok: false, 
+      error: `API-Endpunkt nicht gefunden: ${req.method} ${req.path}` 
+    });
+  }
+  next();
+});
+
 // Catch-All-Route: Alle anderen Routen auf Dashboard umleiten
 app.use((req, res, next) => {
   // API-Routen nicht abfangen
@@ -5229,5 +5567,8 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server läuft auf http://localhost:${port}`);
+  console.log(`✅ Server läuft auf http://localhost:${port}`);
+  console.log('🔄 Initialisiere Backup-System...');
+  // Starte automatische Backups nach Server-Start
+  startAutoBackup();
 });
