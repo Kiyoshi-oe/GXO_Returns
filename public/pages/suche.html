@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>LVS Returns - Globale Suche</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+  <div class="loading-subtitle">
+    <span class="loading-dots"></span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/suche" class="nav-item active">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+      <a href="/dashboard" class="nav-item ">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item ">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/wareneingang" class="nav-item ">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/umlagerung" class="nav-item ">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item ">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/ra-import" class="nav-item ">
+        <span class="nav-icon">📑</span>
+        <span>RA Import</span>
+      </a>
+      <a href="/performance" class="nav-item ">
+        <span class="nav-icon">⚡</span>
+        <span>Performance</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/einstellungen" class="nav-item ">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item ">
+      <span class="nav-icon">📥</span>
+      <span>Import</span>
+    </a>
+    <a href="/export" class="nav-item ">
+      <span class="nav-icon">📤</span>
+      <span>Export</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="topbarTitle">🔍 Globale Suche</div>
+        <div class="topbar-subtitle" id="topbarSubtitle">Durchsuchen Sie alle Daten im System</div>
+      </div>
+      <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
+        <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="userAvatar">👤</div>
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="userName">Nicht angemeldet</span>
+            <span style="font-size: 11px; color: var(--text-soft); display: none;" id="userEmail">Windows-Benutzer</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="view active" id="view-search">
+        <!-- Suchleiste -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔍 Suche</div>
+              <div class="card-subtitle">Geben Sie einen Suchbegriff ein (OLPN, Tracking-Nr., Stellplatz, CW, etc.)</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-end;">
+            <div class="form-group" style="flex: 1;">
+              <label>Suchbegriff</label>
+              <input 
+                type="text" 
+                id="globalSearchInput" 
+                class="form-control" 
+                placeholder="z.B. OLPN, Tracking-Nr., Stellplatz-Code, CW, Kundenname..."
+                autocomplete="off"
+                style="font-size: 16px; padding: 12px;"
+              >
+            </div>
+            <button class="btn btn-primary" id="btnGlobalSearch" style="white-space: nowrap; padding: 12px 24px;">
+              🔍 Suchen
+            </button>
+            <button class="btn btn-ghost" id="btnClearSearch" style="white-space: nowrap;">
+              ✕ Zurücksetzen
+            </button>
+          </div>
+          <div style="margin-top: 12px; padding: 12px; background: var(--bg-soft); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
+            <strong>💡 Tipp:</strong> Die Suche durchsucht automatisch alle Bereiche: Wareneingänge, Stellplätze, Umlagerungen, Archiv, Audit-Logs und Carrier.
+          </div>
+        </div>
+
+        <!-- Suchergebnisse -->
+        <div id="searchResultsContainer">
+          <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+            <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
+            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Globale Suche</div>
+            <div>Geben Sie einen Suchbegriff ein, um alle Daten im System zu durchsuchen</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="/js/navigation/routing.js"></script>
+<script type="module" src="/js/features/search.js"></script>
+
+<script>
+  // Globale Suchfunktion
+  let searchTimeout = null;
+  
+  const searchInput = document.getElementById('globalSearchInput');
+  const searchBtn = document.getElementById('btnGlobalSearch');
+  const clearBtn = document.getElementById('btnClearSearch');
+  const resultsContainer = document.getElementById('searchResultsContainer');
+  
+  // URL-Parameter prüfen (für direkte Suche)
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  if (initialQuery) {
+    searchInput.value = initialQuery;
+    performSearch(initialQuery);
+  }
+  
+  // Enter-Taste für Suche
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch(searchInput.value);
+      }
+    });
+    
+    // Live-Suche beim Tippen (mit Debounce)
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      if (query.length >= 2) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performSearch(query);
+        }, 500);
+      } else if (query.length === 0) {
+        clearResults();
+      }
+    });
+  }
+  
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      performSearch(searchInput.value);
+    });
+  }
+  
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearResults();
+      window.history.replaceState({}, '', '/suche');
+    });
+  }
+  
+  async function performSearch(query) {
+    if (!query || query.trim() === '') {
+      clearResults();
+      return;
+    }
+    
+    const searchQuery = query.trim();
+    
+    // URL aktualisieren
+    window.history.replaceState({}, '', `/suche?q=${encodeURIComponent(searchQuery)}`);
+    
+    // Loading anzeigen
+    resultsContainer.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+        <div>Suche läuft...</div>
+      </div>
+    `;
+    
+    try {
+      const response = await fetch(`/api/search/global?q=${encodeURIComponent(searchQuery)}&limit=50`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.error || 'Fehler bei der Suche');
+      
+      displaySearchResults(data);
+    } catch (err) {
+      console.error('Fehler bei der Suche:', err);
+      resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; color: var(--error);">
+          <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Fehler bei der Suche</div>
+          <div>${err.message}</div>
+        </div>
+      `;
+    }
+  }
+  
+  function displaySearchResults(data) {
+    const { results, total, counts, query } = data;
+    
+    if (total === 0) {
+      resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+          <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Keine Ergebnisse gefunden</div>
+          <div>Keine Treffer für "<strong>${query}</strong>" gefunden</div>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = `
+      <div style="margin-bottom: 20px; padding: 16px; background: var(--bg-soft); border-radius: 12px; border-left: 4px solid var(--gxo-orange);">
+        <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
+          📊 Suchergebnisse für "<strong>${query}</strong>"
+        </div>
+        <div style="font-size: 14px; color: var(--text-muted);">
+          <strong>${total}</strong> Treffer gefunden:
+          ${counts.inbound > 0 ? `<span style="margin-left: 12px;">📦 ${counts.inbound} Wareneingänge</span>` : ''}
+          ${counts.locations > 0 ? `<span style="margin-left: 12px;">📍 ${counts.locations} Stellplätze</span>` : ''}
+          ${counts.movements > 0 ? `<span style="margin-left: 12px;">↔️ ${counts.movements} Umlagerungen</span>` : ''}
+          ${counts.archives > 0 ? `<span style="margin-left: 12px;">🗂️ ${counts.archives} Archiv</span>` : ''}
+          ${counts.audit > 0 ? `<span style="margin-left: 12px;">📋 ${counts.audit} Audit-Logs</span>` : ''}
+          ${counts.carriers > 0 ? `<span style="margin-left: 12px;">🚚 ${counts.carriers} Carrier</span>` : ''}
+        </div>
+      </div>
+    `;
+    
+    // Wareneingänge
+    if (results.inbound.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📦 Wareneingänge (${results.inbound.length})</div>
+              <div class="card-subtitle">Gefundene Wareneingänge</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.inbound.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange); cursor: pointer; transition: all 0.2s;" 
+                   onclick="showInboundEntryDetails(${item.id})"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: var(--gxo-orange); color: white; border-radius: 4px; font-weight: 600;">
+                    #${item.id}
+                  </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                  ${item.details.olpn ? `<span>OLPN: <strong>${item.details.olpn}</strong></span>` : ''}
+                  ${item.details.tracking ? `<span>Tracking: <strong>${item.details.tracking}</strong></span>` : ''}
+                  ${item.details.carrier ? `<span>Carrier: <strong>${item.details.carrier}</strong></span>` : ''}
+                  ${item.details.location ? `<span>📍 Stellplatz: <strong>${item.details.location}</strong></span>` : ''}
+                  ${item.details.cartons ? `<span>📦 Kartons: <strong>${item.details.cartons}</strong></span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Stellplätze
+    if (results.locations.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📍 Stellplätze (${results.locations.length})</div>
+              <div class="card-subtitle">Gefundene Stellplätze</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.locations.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #4CAF50; cursor: pointer; transition: all 0.2s;" 
+                   onclick="window.location.href='${item.link}'"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: #4CAF50; color: white; border-radius: 4px; font-weight: 600;">
+                    ${item.details.is_active ? 'Aktiv' : 'Inaktiv'}
+                  </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                  ${item.details.area ? `<span>Bereich: <strong>${item.details.area}</strong></span>` : ''}
+                  ${item.details.carton_count > 0 ? `<span>📦 ${item.details.carton_count} Einträge</span>` : ''}
+                  ${item.details.total_cartons > 0 ? `<span>Gesamt: <strong>${item.details.total_cartons} Kartons</strong></span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Umlagerungen
+    if (results.movements.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">↔️ Umlagerungen (${results.movements.length})</div>
+              <div class="card-subtitle">Gefundene Umlagerungen</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.movements.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #2196F3; cursor: pointer; transition: all 0.2s;" 
+                   onclick="window.location.href='${item.link}'"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: #2196F3; color: white; border-radius: 4px; font-weight: 600;">
+                    #${item.id}
+                  </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                  ${item.details.moved_by ? `<span>Von: <strong>${item.details.moved_by}</strong></span>` : ''}
+                  ${item.details.moved_at ? `<span>Am: <strong>${new Date(item.details.moved_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Archiv
+    if (results.archives.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🗂️ Archiv (${results.archives.length})</div>
+              <div class="card-subtitle">Gefundene Archiv-Einträge</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.archives.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #9E9E9E; cursor: pointer; transition: all 0.2s;" 
+                   onclick="window.location.href='${item.link}'"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: #9E9E9E; color: white; border-radius: 4px; font-weight: 600;">
+                    Archiviert
+                  </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                  ${item.details.archived_at ? `<span>Archiviert am: <strong>${new Date(item.details.archived_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                  ${item.details.archived_by ? `<span>Von: <strong>${item.details.archived_by}</strong></span>` : ''}
+                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Audit-Logs
+    if (results.audit.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📋 Audit-Logs (${results.audit.length})</div>
+              <div class="card-subtitle">Gefundene Änderungen</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.audit.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #FF9800; cursor: pointer; transition: all 0.2s;" 
+                   onclick="window.location.href='${item.link}'"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: #FF9800; color: white; border-radius: 4px; font-weight: 600;">
+                    #${item.id}
+                  </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                  ${item.details.changed_by ? `<span>Geändert von: <strong>${item.details.changed_by}</strong></span>` : ''}
+                  ${item.details.changed_at ? `<span>Am: <strong>${new Date(item.details.changed_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Carrier
+    if (results.carriers.length > 0) {
+      html += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🚚 Carrier (${results.carriers.length})</div>
+              <div class="card-subtitle">Gefundene Carrier</div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            ${results.carriers.map(item => `
+              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #9C27B0; cursor: pointer; transition: all 0.2s;" 
+                   onclick="window.location.href='${item.link}'"
+                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
+                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                  <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                      ${item.title}
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                      ${item.subtitle}
+                    </div>
+                  </div>
+                  <span style="font-size: 12px; padding: 4px 8px; background: #9C27B0; color: white; border-radius: 4px; font-weight: 600;">
+                    ${item.details.is_active ? 'Aktiv' : 'Inaktiv'}
+                  </span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    resultsContainer.innerHTML = html;
+  }
+  
+  function clearResults() {
+    resultsContainer.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Globale Suche</div>
+        <div>Geben Sie einen Suchbegriff ein, um alle Daten im System zu durchsuchen</div>
+      </div>
+    `;
+  }
+  
+  // Eintrag-Details anzeigen (Popup mit allen Informationen)
+  async function showInboundEntryDetails(inboundId) {
+    try {
+      const response = await fetch(`/api/inbound-simple/${inboundId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          alert("❌ Eintrag nicht gefunden");
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return;
+      }
+      
+      const entry = await response.json();
+      
+      // Stellplatz-Informationen abrufen, falls vorhanden
+      let locationInfo = "";
+      if (entry.location_id) {
+        try {
+          const locationResponse = await fetch(`/api/warehouse/locations`);
+          if (locationResponse.ok) {
+            const locations = await locationResponse.json();
+            const location = locations.find(l => l.id === entry.location_id);
+            if (location) {
+              locationInfo = `<div><strong>📍 Stellplatz:</strong> ${location.code}${location.description ? ` (${location.description})` : ''}${location.area ? ` - ${location.area}` : ''}</div>`;
+            }
+          }
+        } catch (e) {
+          console.error("Fehler beim Laden der Stellplatz-Info:", e);
+        }
+      }
+      
+      // Formatierungs-Hilfsfunktion
+      const formatValue = (value) => {
+        if (value === null || value === undefined || value === '') return '<span style="color: var(--text-muted);">-</span>';
+        return String(value);
+      };
+      
+      const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        try {
+          return new Date(dateString).toLocaleString('de-DE');
+        } catch (e) {
+          return dateString;
+        }
+      };
+      
+      // Modal HTML erstellen
+      const modalHtml = `
+        <div style="max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto;">
+          <h3 style="margin: 0 0 20px 0; font-size: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            📦 Eintrag #${entry.id} - Details
+          </h3>
+          
+          <div style="margin-bottom: 20px; padding: 16px; background: var(--bg-soft); border-radius: 8px; font-size: 13px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div><strong>📅 Erstellt am:</strong> ${formatDate(entry.created_at)}</div>
+              <div><strong>👤 Erstellt von:</strong> ${formatValue(entry.added_by)}</div>
+              ${locationInfo}
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">CW</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.cw)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Aufgenommen am</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.aufgenommen_am)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Carrier Name</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.carrier_name)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Area</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.area)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Land</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.land)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Ship Status</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.ship_status)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Planned Carton</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.planned_carton)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Actual Carton</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.actual_carton)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">OLPN</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-family: monospace; font-size: 12px;">${formatValue(entry.olpn)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Carrier Tracking Number</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-family: monospace; font-size: 12px;">${formatValue(entry.carrier_tracking_nr)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Customer ID</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.customer_id)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Customer Name</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.customer_name)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">ASN/RA Nummer</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.asn_ra_no)}</div></div>
+            <div><label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">MH Status</label><div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); font-size: 12px;">${formatValue(entry.mh_status)}</div></div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Kommentar</label>
+            <div style="padding: 8px; background: var(--bg-soft); border-radius: 6px; color: var(--text-main); min-height: 60px; white-space: pre-wrap; font-size: 12px;">${formatValue(entry.kommentar)}</div>
+          </div>
+          
+          <div style="padding: 12px; background: var(--bg-soft); border-radius: 8px; font-size: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div><strong>Ignore Flag:</strong> ${entry.ignore_flag ? 'Ja' : 'Nein'}</div>
+              <div><strong>Location ID:</strong> ${formatValue(entry.location_id)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Erstelle ein einfaches Modal
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+      modal.innerHTML = `
+        <div style="background: var(--bg-card); border-radius: 12px; padding: 24px; max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-soft)'; this.style.color='var(--text-main)'" onmouseout="this.style.background='none'; this.style.color='var(--text-muted)'">&times;</button>
+          ${modalHtml}
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+    } catch (err) {
+      console.error("Fehler beim Laden der Details:", err);
+      alert("❌ Fehler beim Laden der Details: " + err.message);
+    }
+  }
+  
+  // Theme Toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'light' ? '☀' : '☾';
+  
+  themeToggle.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lvsTheme', next);
+    themeToggle.textContent = next === 'light' ? '☀' : '☾';
+  });
+  
+  // Lade Benutzer-Informationen
+  fetch('/api/current-user')
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        const userNameEl = document.getElementById('userName');
+        const userAvatarEl = document.getElementById('userAvatar');
+        if (userNameEl) userNameEl.textContent = data.displayName || data.username;
+        if (userAvatarEl) userAvatarEl.textContent = (data.displayName || data.username).charAt(0).toUpperCase();
+      }
+    })
+    .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+  
+  // Loading Screen ausblenden
+  setTimeout(() => {
+    const loadingScreen = document.getElementById("loadingScreen");
+    if (loadingScreen) {
+      loadingScreen.style.display = "none";
+      loadingScreen.style.pointerEvents = "none";
+      loadingScreen.style.zIndex = "-1";
+      loadingScreen.style.opacity = "0";
+      loadingScreen.style.visibility = "hidden";
+    }
+  }, 100);
+</script>
+
+</body>
+</html>
+
