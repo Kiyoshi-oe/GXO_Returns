@@ -4181,11 +4181,13 @@
         const result = await response.json();
         currentWindowsUser = result.username;
         currentWindowsDisplayName = result.displayName || result.username;
+        currentProfilePicturePath = result.profilePicturePath || null;
         updateUserDisplay();
         
         console.log("👤 Windows Benutzer erkannt:", currentWindowsUser);
         console.log("👤 Vollständiger Name:", currentWindowsDisplayName);
         console.log("💻 Computer:", result.computerName);
+        console.log("🖼️ Profilbild:", currentProfilePicturePath ? "Verfügbar" : "Nicht verfügbar");
         
         // Added By Feld automatisch füllen falls bereits sichtbar
         const addedByInput = document.getElementById("addedByInput");
@@ -4199,6 +4201,7 @@
         console.error("❌ Fehler beim Laden des Windows-Benutzers");
         currentWindowsUser = "Unbekannt";
         currentWindowsDisplayName = null;
+        currentProfilePicturePath = null;
         updateUserDisplay();
         return currentWindowsUser;
       }
@@ -4206,13 +4209,15 @@
       console.error("❌ Fehler beim Laden des Windows-Benutzers:", err);
       currentWindowsUser = "Unbekannt";
       currentWindowsDisplayName = null;
+      currentProfilePicturePath = null;
       updateUserDisplay();
       return currentWindowsUser;
     }
   }
 
-  // Globale Variable für Display Name
+  // Globale Variable für Display Name und Profilbild
   let currentWindowsDisplayName = null;
+  let currentProfilePicturePath = null;
   
   function updateUserDisplay() {
     const userNameEl = document.getElementById("userName");
@@ -4229,7 +4234,18 @@
         : '?';
       
       if (userAvatarEl) {
-        userAvatarEl.textContent = firstLetter;
+        // Prüfe ob Profilbild verfügbar ist
+        if (currentProfilePicturePath) {
+          // Profilbild anzeigen
+          userAvatarEl.innerHTML = `<img src="${currentProfilePicturePath}" 
+            style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" 
+            onerror="this.parentElement.textContent='${firstLetter}'; this.parentElement.style.background='linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%)';" />`;
+          userAvatarEl.style.background = 'transparent';
+        } else {
+          // Fallback: Ersten Buchstaben anzeigen
+          userAvatarEl.textContent = firstLetter;
+          userAvatarEl.style.background = 'linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%)';
+        }
       }
       
       // Nur den Windows-Benutzernamen (Display-Name) anzeigen

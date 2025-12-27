@@ -267,33 +267,47 @@ async function loadAreasForExport() {
 }
 
 // Vorschau laden
+// Flag um zu verhindern, dass die Funktion mehrfach gleichzeitig ausgeführt wird
+let isLoadingPreview = false;
+
 async function loadExportPreview() {
-  const exportType = document.getElementById('exportType')?.value || 'all';
-  const previewHeader = document.getElementById('exportPreviewHeader');
-  const previewBody = document.getElementById('exportPreviewBody');
-  
-  if (!previewHeader || !previewBody) return;
-  
-  // Prüfen, ob mindestens eine Spalte ausgewählt ist
-  if (selectedColumns.size === 0) {
-    previewHeader.innerHTML = '';
-    previewBody.innerHTML = '';
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 1;
-    td.textContent = 'Bitte wählen Sie mindestens eine Spalte aus.';
-    td.style.cssText = 'text-align: center; padding: 30px; color: var(--text-muted);';
-    tr.appendChild(td);
-    previewBody.appendChild(tr);
+  // Verhindere mehrfache gleichzeitige Ausführung
+  if (isLoadingPreview) {
+    console.log('Vorschau wird bereits geladen, überspringe...');
     return;
   }
   
-    // Header erstellen - warte auf Daten, damit wir die richtige Reihenfolge haben
+  isLoadingPreview = true;
+  
+  try {
+    const exportType = document.getElementById('exportType')?.value || 'all';
+    const previewHeader = document.getElementById('exportPreviewHeader');
+    const previewBody = document.getElementById('exportPreviewBody');
+    
+    if (!previewHeader || !previewBody) {
+      console.error('Preview-Elemente nicht gefunden');
+      return;
+    }
+  
+    // Prüfen, ob mindestens eine Spalte ausgewählt ist
+    if (selectedColumns.size === 0) {
+      previewHeader.innerHTML = '';
+      previewBody.innerHTML = '';
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 1;
+      td.textContent = 'Bitte wählen Sie mindestens eine Spalte aus.';
+      td.style.cssText = 'text-align: center; padding: 30px; color: var(--text-muted);';
+      tr.appendChild(td);
+      previewBody.appendChild(tr);
+      return;
+    }
+    
+    // Header und Body komplett leeren
     previewHeader.innerHTML = '';
     previewBody.innerHTML = '';
-  
-  // Daten laden
-  try {
+    
+    // Daten laden
     let data = [];
     const params = new URLSearchParams();
     
@@ -360,17 +374,35 @@ async function loadExportPreview() {
     data = await response.json();
     exportData = data;
     
+    // Sicherstellen, dass data ein Array ist
+    if (!Array.isArray(data)) {
+      console.error('API hat kein Array zurückgegeben:', data);
+      data = [];
+    }
+    
+    // Debug: Prüfe erste Zeile
+    if (data.length > 0) {
+      console.log('Erste Datenzeile:', data[0]);
+      console.log('Anzahl Zeilen:', data.length);
+    }
+    
     // Header erstellen basierend auf verfügbaren Spalten in den Daten
     const selectedCols = Array.from(selectedColumns).map(key => {
       const col = exportColumns.find(c => c.key === key);
       return col || { key, label: key };
     }).filter(col => {
       // Nur Spalten anzeigen, die auch in den Daten vorhanden sind
-      return data.length === 0 || data.some(row => row.hasOwnProperty(col.key));
+      if (data.length === 0) return true;
+      // Prüfe, ob mindestens eine Zeile diese Spalte hat
+      return data.some(row => {
+        if (!row || typeof row !== 'object') return false;
+        return row.hasOwnProperty(col.key);
+      });
     });
     
     // Prüfen, ob nach dem Filtern noch Spalten vorhanden sind
     if (selectedCols.length === 0 && data.length > 0) {
+      previewHeader.innerHTML = '';
       const tr = document.createElement('tr');
       const td = document.createElement('td');
       td.colSpan = 1;
@@ -381,16 +413,18 @@ async function loadExportPreview() {
       return;
     }
     
-    const headerRow = document.createElement('tr');
+    // Header-Zeile NUR EINMAL erstellen
+    // previewHeader ist bereits ein <tr> Element, also direkt th-Elemente hinzufügen
+    previewHeader.innerHTML = ''; // Sicherstellen, dass es leer ist
     selectedCols.forEach(col => {
       const th = document.createElement('th');
       th.textContent = col.label;
       th.style.cssText = 'padding: 10px; text-align: left; border-bottom: 2px solid var(--border-main); font-weight: 600; background: var(--bg-card); white-space: nowrap;';
-      headerRow.appendChild(th);
+      previewHeader.appendChild(th);
     });
-    previewHeader.appendChild(headerRow);
     
-    // Body erstellen
+    // Body erstellen - NUR Datenzeilen, KEINE Header
+    previewBody.innerHTML = ''; // Sicherstellen, dass es leer ist
     if (data.length === 0) {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
@@ -400,9 +434,16 @@ async function loadExportPreview() {
       tr.appendChild(td);
       previewBody.appendChild(tr);
     } else {
-      data.forEach(row => {
+      data.forEach((row, rowIndex) => {
+        // Sicherstellen, dass row ein Objekt ist
+        if (!row || typeof row !== 'object') {
+          console.warn('Ungültige Zeile gefunden:', row);
+          return;
+        }
+        
         const tr = document.createElement('tr');
         tr.className = 'data-row';
+        // NUR td-Elemente erstellen, KEINE th-Elemente
         selectedCols.forEach(col => {
           const td = document.createElement('td');
           const value = row[col.key];
@@ -413,18 +454,25 @@ async function loadExportPreview() {
         previewBody.appendChild(tr);
       });
     }
-  } catch (err) {
-    console.error('Fehler beim Laden der Vorschau:', err);
-    previewHeader.innerHTML = '';
-    previewBody.innerHTML = '';
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 1;
-    const errorMessage = err.message || 'Fehler beim Laden der Vorschau. Bitte versuchen Sie es erneut.';
-    td.textContent = errorMessage;
-    td.style.cssText = 'text-align: center; padding: 30px; color: var(--error);';
-    tr.appendChild(td);
-    previewBody.appendChild(tr);
+    } catch (err) {
+      console.error('Fehler beim Laden der Vorschau:', err);
+      const previewHeader = document.getElementById('exportPreviewHeader');
+      const previewBody = document.getElementById('exportPreviewBody');
+      if (previewHeader) previewHeader.innerHTML = '';
+      if (previewBody) {
+        previewBody.innerHTML = '';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 1;
+        const errorMessage = err.message || 'Fehler beim Laden der Vorschau. Bitte versuchen Sie es erneut.';
+        td.textContent = errorMessage;
+        td.style.cssText = 'text-align: center; padding: 30px; color: var(--error);';
+        tr.appendChild(td);
+        previewBody.appendChild(tr);
+      }
+    } finally {
+      isLoadingPreview = false;
+    }
   }
 }
 

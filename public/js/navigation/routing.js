@@ -147,8 +147,10 @@ function activateView(viewName) {
     settingsContent.style.display = 'none';
   }
   
-  // View-spezifische Logik ausführen
-  handleViewSwitch(viewName);
+  // View-spezifische Logik ausführen (falls Funktion vorhanden)
+  if (typeof handleViewSwitch === 'function') {
+    handleViewSwitch(viewName);
+  }
 }
 
 /**

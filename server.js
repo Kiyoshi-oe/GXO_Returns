@@ -985,23 +985,26 @@ app.get("/api/dropdown-options/:fieldName", (req, res) => {
 app.get("/api/current-user", (req, res) => {
   const { exec } = require('child_process');
   const { promisify } = require('util');
+  const fs = require('fs');
+  const path = require('path');
   const execAsync = promisify(exec);
   
   const computerName = process.env.COMPUTERNAME || process.env.HOSTNAME || "";
   
-  // Verwende PowerShell, um den aktuellen Benutzer und Display-Name zu bekommen
-  // PowerShell-Befehl, der sowohl Benutzername als auch Display-Name zurückgibt
-  const psCommand = `powershell -Command "$user = [System.Security.Principal.WindowsIdentity]::GetCurrent(); $username = $user.Name.Split('\\\\')[-1]; $account = Get-LocalUser -Name $username -ErrorAction SilentlyContinue; if ($account) { $displayName = $account.FullName; if ([string]::IsNullOrWhiteSpace($displayName)) { $displayName = $username } } else { $displayName = $username }; Write-Output \"USERNAME=$username|DISPLAYNAME=$displayName\""`;
+  // Verwende PowerShell, um den aktuellen Benutzer, Display-Name und SID zu bekommen
+  const psCommand = `powershell -Command "$user = [System.Security.Principal.WindowsIdentity]::GetCurrent(); $username = $user.Name.Split('\\\\')[-1]; $sid = $user.User.Value; $account = Get-LocalUser -Name $username -ErrorAction SilentlyContinue; if ($account) { $displayName = $account.FullName; if ([string]::IsNullOrWhiteSpace($displayName)) { $displayName = $username } } else { $displayName = $username }; Write-Output \"USERNAME=$username|DISPLAYNAME=$displayName|SID=$sid\""`;
   
   execAsync(psCommand)
     .then(({ stdout }) => {
       let username = process.env.USERNAME || "Unbekannt";
       let displayName = username;
+      let sid = "";
       
       // Parse PowerShell Output
       const output = stdout.trim();
       const usernameMatch = output.match(/USERNAME=([^|]+)/);
       const displayNameMatch = output.match(/DISPLAYNAME=(.+)/);
+      const sidMatch = output.match(/SID=([^|]+)/);
       
       if (usernameMatch && usernameMatch[1]) {
         username = usernameMatch[1].trim();
@@ -1009,41 +1012,44 @@ app.get("/api/current-user", (req, res) => {
       
       if (displayNameMatch && displayNameMatch[1]) {
         displayName = displayNameMatch[1].trim();
-        // Falls Display-Name leer ist, verwende Benutzername
-        if (!displayName || displayName === username) {
-          // Versuche alternativen Weg über wmic
-          return execAsync(`wmic useraccount where name="${username}" get fullname /value`)
-            .then(({ stdout }) => {
-              const match = stdout.match(/FullName=(.+)/);
-              if (match && match[1] && match[1].trim()) {
-                displayName = match[1].trim();
-              }
-              
-              res.json({ 
-                ok: true, 
-                username: username,
-                displayName: displayName || username,
-                computerName: computerName
-              });
-            })
-            .catch(() => {
-              res.json({ 
-                ok: true, 
-                username: username,
-                displayName: displayName || username,
-                computerName: computerName
-              });
+      }
+      
+      if (sidMatch && sidMatch[1]) {
+        sid = sidMatch[1].trim();
+      }
+      
+      // Profilbild-Pfad ermitteln
+      const findProfilePicture = () => {
+        try {
+          const userProfilePath = process.env.USERPROFILE || path.join('C:', 'Users', username);
+          const accountPicturesPath = path.join(userProfilePath, 'AppData', 'Roaming', 'Microsoft', 'Windows', 'AccountPictures');
+          
+          if (fs.existsSync(accountPicturesPath)) {
+            const files = fs.readdirSync(accountPicturesPath);
+            // Suche nach .jpg, .png oder Dateien mit SID
+            const pictureFile = files.find(f => {
+              const ext = path.extname(f).toLowerCase();
+              return (ext === '.jpg' || ext === '.png' || ext === '.jpeg') && 
+                     (f.includes(sid) || !sid || files.filter(ff => ff.includes(sid)).length === 0);
             });
-        } else {
-          res.json({ 
-            ok: true, 
-            username: username,
-            displayName: displayName,
-            computerName: computerName
-          });
+            
+            if (pictureFile) {
+              const fullPath = path.join(accountPicturesPath, pictureFile);
+              if (fs.existsSync(fullPath)) {
+                return `/api/user-profile-picture?username=${encodeURIComponent(username)}`;
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Fehler beim Suchen des Profilbilds:", err);
         }
-      } else {
-        // Fallback: verwende wmic
+        return null;
+      };
+      
+      const profilePicturePath = findProfilePicture();
+      
+      // Falls Display-Name leer ist, versuche alternativen Weg
+      if (!displayName || displayName === username) {
         return execAsync(`wmic useraccount where name="${username}" get fullname /value`)
           .then(({ stdout }) => {
             const match = stdout.match(/FullName=(.+)/);
@@ -1055,20 +1061,34 @@ app.get("/api/current-user", (req, res) => {
               ok: true, 
               username: username,
               displayName: displayName || username,
-              computerName: computerName
+              computerName: computerName,
+              hasProfilePicture: !!profilePicturePath,
+              profilePicturePath: profilePicturePath
             });
           })
           .catch(() => {
             res.json({ 
               ok: true, 
               username: username,
-              displayName: username,
-              computerName: computerName
+              displayName: displayName || username,
+              computerName: computerName,
+              hasProfilePicture: !!profilePicturePath,
+              profilePicturePath: profilePicturePath
             });
           });
+      } else {
+        res.json({ 
+          ok: true, 
+          username: username,
+          displayName: displayName,
+          computerName: computerName,
+          hasProfilePicture: !!profilePicturePath,
+          profilePicturePath: profilePicturePath
+        });
       }
     })
-    .catch(() => {
+    .catch((error) => {
+      console.error("Fehler beim Abrufen der Benutzerinformationen:", error);
       // Fallback: verwende whoami und wmic
       execAsync('whoami')
         .then(({ stdout }) => {
@@ -1090,7 +1110,9 @@ app.get("/api/current-user", (req, res) => {
                 ok: true, 
                 username: username,
                 displayName: displayName,
-                computerName: computerName
+                computerName: computerName,
+                hasProfilePicture: false,
+                profilePicturePath: null
               });
             })
             .catch(() => {
@@ -1098,7 +1120,9 @@ app.get("/api/current-user", (req, res) => {
                 ok: true, 
                 username: username,
                 displayName: username,
-                computerName: computerName
+                computerName: computerName,
+                hasProfilePicture: false,
+                profilePicturePath: null
               });
             });
         })
@@ -1108,10 +1132,62 @@ app.get("/api/current-user", (req, res) => {
             ok: true, 
             username: username,
             displayName: username,
-            computerName: computerName
+            computerName: computerName,
+            hasProfilePicture: false,
+            profilePicturePath: null
           });
         });
     });
+});
+
+// Route für Profilbild
+app.get("/api/user-profile-picture", (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const username = req.query.username || process.env.USERNAME;
+  
+  if (!username) {
+    return res.status(404).send('Benutzer nicht gefunden');
+  }
+  
+  try {
+    const userProfilePath = process.env.USERPROFILE || path.join('C:', 'Users', username);
+    const accountPicturesPath = path.join(userProfilePath, 'AppData', 'Roaming', 'Microsoft', 'Windows', 'AccountPictures');
+    
+    // Suche nach Profilbild
+    let profilePicturePath = null;
+    
+    if (fs.existsSync(accountPicturesPath)) {
+      const files = fs.readdirSync(accountPicturesPath);
+      // Suche nach Bilddateien (.jpg, .png, .jpeg)
+      const pictureFile = files.find(f => {
+        const ext = path.extname(f).toLowerCase();
+        return ext === '.jpg' || ext === '.jpeg' || ext === '.png';
+      });
+      
+      if (pictureFile) {
+        profilePicturePath = path.join(accountPicturesPath, pictureFile);
+      }
+    }
+    
+    if (profilePicturePath && fs.existsSync(profilePicturePath)) {
+      // Bestimme Content-Type basierend auf Dateierweiterung
+      const ext = path.extname(profilePicturePath).toLowerCase();
+      const contentType = ext === '.png' ? 'image/png' : 
+                         ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 
+                         'image/jpeg'; // Fallback
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache für 1 Stunde
+      res.sendFile(path.resolve(profilePicturePath));
+    } else {
+      // Fallback: 404
+      res.status(404).send('Profilbild nicht gefunden');
+    }
+  } catch (error) {
+    console.error("Fehler beim Laden des Profilbilds:", error);
+    res.status(500).send('Fehler beim Laden des Profilbilds');
+  }
 });
 
 /* Einstellungen Zugriff testen, sehr simpel */
