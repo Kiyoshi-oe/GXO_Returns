@@ -738,7 +738,7 @@ textarea:focus {
   background: #282828;
   border: 1px solid var(--border-soft);
   border-radius: 9px;
-  z-index: 99999;
+  z-index: 999999;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: none;
   padding: 4px 0;

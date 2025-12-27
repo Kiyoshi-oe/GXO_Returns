@@ -106,6 +106,8 @@ function initDb() {
       field_placeholders text,            -- JSON Object mit Platzhalter-Texten
       olpn_validation text,               -- JSON Object mit OLPN Validierungsregeln
       tracking_validation text,           -- JSON Object mit Tracking Number Validierungsregeln
+      field_requirements text,            -- JSON Object mit Feldanforderungen (RA vorhanden/keine RA/keine OLPN)
+      show_labels_1to1 integer default 0, -- Labels 1:1 anzeigen (0=nein, 1=ja)
       created_at text
     );
 
@@ -231,6 +233,17 @@ function initDb() {
     db.exec(`
       alter table carrier add column bulk_fixed_fields text;
       alter table carrier add column bulk_variable_fields text;
+    `);
+  }
+  
+  // Prüfe ob field_requirements und show_labels_1to1 Spalten existieren
+  try {
+    db.prepare("select field_requirements from carrier limit 1").get();
+  } catch (e) {
+    console.log("Füge field_requirements und show_labels_1to1 Spalten hinzu...");
+    db.exec(`
+      alter table carrier add column field_requirements text;
+      alter table carrier add column show_labels_1to1 integer default 0;
     `);
   }
   
@@ -537,7 +550,7 @@ function initPreparedStatements() {
       SELECT id, name, display_name, country, is_active, default_area, default_stage, 
              default_last_stage, default_ship_status, label_image, label_help_text,
              visible_fields, field_placeholders, olpn_validation, tracking_validation,
-             bulk_fixed_fields, bulk_variable_fields 
+             bulk_fixed_fields, bulk_variable_fields, field_requirements, show_labels_1to1
       FROM carrier 
       WHERE is_active = 1 
       ORDER BY display_name
@@ -1120,7 +1133,9 @@ app.put("/api/carriers/:id", (req, res) => {
         olpn_validation = ?,
         tracking_validation = ?,
         bulk_fixed_fields = ?,
-        bulk_variable_fields = ?
+        bulk_variable_fields = ?,
+        field_requirements = ?,
+        show_labels_1to1 = ?
       where id = ?
     `);
 
@@ -1139,6 +1154,8 @@ app.put("/api/carriers/:id", (req, res) => {
       payload.tracking_validation || "{}",
       payload.bulk_fixed_fields || "[]",
       payload.bulk_variable_fields || "[]",
+      payload.field_requirements || "{}",
+      payload.show_labels_1to1 || 0,
       id
     );
 
@@ -1336,6 +1353,50 @@ app.post("/api/inbound-simple", (req, res) => {
 
     console.log("Erfolgreich gespeichert mit ID:", info.lastInsertRowid);
     
+    // Audit-Log für Erstellung erstellen
+    const currentUser = payload.addedBy || req.headers['x-user'] || 'System';
+    const insertAudit = db.prepare(`
+      insert into inbound_audit (inbound_id, field_name, old_value, new_value, changed_by, change_reason, changed_at)
+      values (?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    // Alle wichtigen Felder als "erstellt" loggen
+    const fieldsToLog = {
+      'carrier_name': payload.carrierName,
+      'location_id': locationId,
+      'olpn': payload.olpn,
+      'dn': payload.dn,
+      'carrier_tracking_nr': payload.carrierTrackingNr,
+      'actual_carton': actualCarton,
+      'planned_carton': plannedCarton,
+      'cw': payload.cw,
+      'aufgenommen_am': payload.aufgenommenAm,
+      'area': payload.area,
+      'land': payload.land,
+      'ship_status': payload.shipStatus,
+      'stage': payload.stage,
+      'last_stage': payload.lastStage,
+      'asn_ra_no': payload.asnRaNo,
+      'customer_id': payload.customerId,
+      'customer_name': payload.customerName,
+      'kommentar': payload.kommentar
+    };
+    
+    Object.keys(fieldsToLog).forEach(field => {
+      const value = fieldsToLog[field];
+      if (value !== null && value !== undefined && value !== '') {
+        insertAudit.run(
+          info.lastInsertRowid,
+          field,
+          null, // old_value ist null bei Erstellung
+          value !== null && value !== undefined ? String(value) : null,
+          currentUser,
+          'Eintrag erstellt',
+          now
+        );
+      }
+    });
+    
     // Cache invalidieren nach Änderung
     invalidateCache('dashboard-stats');
     
@@ -1369,6 +1430,31 @@ app.get("/api/inbound-simple/check-olpn", (req, res) => {
     });
   } catch (err) {
     console.error("Fehler bei OLPN-Check:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get("/api/inbound-simple/check-tracking", (req, res) => {
+  try {
+    const { tracking } = req.query;
+    if (!tracking || tracking.trim() === '') {
+      return res.json({ ok: true, exists: false, valid: false });
+    }
+    
+    const existing = db.prepare(`
+      SELECT id, carrier_tracking_nr, carrier_name, created_at 
+      FROM inbound_simple 
+      WHERE carrier_tracking_nr = ? AND ignore_flag = 0
+      LIMIT 1
+    `).get(tracking.trim());
+    
+    res.json({ 
+      ok: true, 
+      exists: !!existing,
+      entry: existing || null
+    });
+  } catch (err) {
+    console.error("Fehler bei Tracking-Check:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

@@ -349,6 +349,139 @@
             </div>
           </div>
 
+          <!-- Field Requirements für Operator-Ansicht -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📋 Feldanforderungen (Operator-Ansicht)</div>
+                <div class="card-subtitle">Definieren Sie Pflicht- und Optionalfelder je nach Situation</div>
+              </div>
+            </div>
+            <div style="padding: 16px;">
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; padding: 8px; background: var(--bg-soft); border-radius: 6px;">
+                <strong>Hinweis:</strong> Legen Sie fest, welche Felder in der Operator-Ansicht Pflicht oder optional sind, abhängig davon, ob eine RA vorhanden ist oder nicht.
+              </p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <!-- Wenn RA vorhanden -->
+                <div style="background: var(--bg-soft); padding: 16px; border-radius: 10px; border: 2px solid var(--border-soft);">
+                  <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--gxo-orange); font-weight: 600;">1. Wenn RA vorhanden</h4>
+                  <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Pflichtfelder:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqWithRa_ra" style="width: auto; cursor: pointer;" checked>
+                        <span>RA</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqWithRa_dn" style="width: auto; cursor: pointer;" checked>
+                        <span>DN</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqWithRa_location" style="width: auto; cursor: pointer;" checked>
+                        <span>Stellplatz</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Optional:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqWithRa_olpn" style="width: auto; cursor: pointer;">
+                        <span>OLPN</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqWithRa_tracking" style="width: auto; cursor: pointer;">
+                        <span>Carrier Tracking</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Wenn keine RA vorhanden -->
+                <div style="background: var(--bg-soft); padding: 16px; border-radius: 10px; border: 2px solid var(--border-soft);">
+                  <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--gxo-orange); font-weight: 600;">2. Wenn keine RA vorhanden</h4>
+                  <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Pflichtfelder:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoRa_dn" style="width: auto; cursor: pointer;" checked>
+                        <span>DN</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoRa_olpn" style="width: auto; cursor: pointer;" checked>
+                        <span>OLPN</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoRa_location" style="width: auto; cursor: pointer;" checked>
+                        <span>Stellplatz</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Optional:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoRa_tracking" style="width: auto; cursor: pointer;">
+                        <span>Carrier Tracking</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Wenn keine OLPN vorhanden -->
+                <div style="background: var(--bg-soft); padding: 16px; border-radius: 10px; border: 2px solid var(--border-soft);">
+                  <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--gxo-orange); font-weight: 600;">3. Wenn keine OLPN vorhanden</h4>
+                  <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Pflichtfelder:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoOlpn_tracking" style="width: auto; cursor: pointer;" checked>
+                        <span>Carrier Tracking</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoOlpn_dn" style="width: auto; cursor: pointer;" checked>
+                        <span>DN</span>
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoOlpn_location" style="width: auto; cursor: pointer;" checked>
+                        <span>Stellplatz</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-main);">Optional:</label>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="fieldReqNoOlpn_olpn" style="width: auto; cursor: pointer;">
+                        <span>OLPN (später nachtragen)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Label-Anzeige Einstellung -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🖼️ Label-Anzeige</div>
+                <div class="card-subtitle">Labels 1:1 für beide Ansichten anzeigen</div>
+              </div>
+            </div>
+            <div style="padding: 16px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;">
+                <input type="checkbox" id="settingsShowLabels1to1" style="width: auto; cursor: pointer;">
+                <span>Labels 1:1 in Operator- und Advanced-Ansicht anzeigen</span>
+              </label>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                Wenn aktiviert, werden die Label-Beispiele in voller Größe (1:1) sowohl in der Operator- als auch in der Advanced-Ansicht angezeigt.
+              </p>
+            </div>
+          </div>
+
           <!-- Felder-Konfiguration -->
           <div class="card">
             <div class="card-header">
@@ -7535,6 +7668,53 @@
     document.getElementById("settingsTrackingStartsWith").value = (trackingVal.startsWith || []).join(",");
     document.getElementById("settingsTrackingError").value = trackingVal.errorMessage || "";
     
+    // Field Requirements laden
+    const fieldReq = carrier.field_requirements ? JSON.parse(carrier.field_requirements) : {};
+    // Wenn RA vorhanden
+    if (fieldReq.withRa) {
+      document.getElementById("fieldReqWithRa_ra").checked = fieldReq.withRa.required?.includes('ra') || false;
+      document.getElementById("fieldReqWithRa_dn").checked = fieldReq.withRa.required?.includes('dn') || false;
+      document.getElementById("fieldReqWithRa_location").checked = fieldReq.withRa.required?.includes('location') || false;
+      document.getElementById("fieldReqWithRa_olpn").checked = fieldReq.withRa.optional?.includes('olpn') || false;
+      document.getElementById("fieldReqWithRa_tracking").checked = fieldReq.withRa.optional?.includes('tracking') || false;
+    } else {
+      // Standardwerte
+      document.getElementById("fieldReqWithRa_ra").checked = true;
+      document.getElementById("fieldReqWithRa_dn").checked = true;
+      document.getElementById("fieldReqWithRa_location").checked = true;
+      document.getElementById("fieldReqWithRa_olpn").checked = false;
+      document.getElementById("fieldReqWithRa_tracking").checked = false;
+    }
+    // Wenn keine RA vorhanden
+    if (fieldReq.noRa) {
+      document.getElementById("fieldReqNoRa_dn").checked = fieldReq.noRa.required?.includes('dn') || false;
+      document.getElementById("fieldReqNoRa_olpn").checked = fieldReq.noRa.required?.includes('olpn') || false;
+      document.getElementById("fieldReqNoRa_location").checked = fieldReq.noRa.required?.includes('location') || false;
+      document.getElementById("fieldReqNoRa_tracking").checked = fieldReq.noRa.optional?.includes('tracking') || false;
+    } else {
+      // Standardwerte
+      document.getElementById("fieldReqNoRa_dn").checked = true;
+      document.getElementById("fieldReqNoRa_olpn").checked = true;
+      document.getElementById("fieldReqNoRa_location").checked = true;
+      document.getElementById("fieldReqNoRa_tracking").checked = false;
+    }
+    // Wenn keine OLPN vorhanden
+    if (fieldReq.noOlpn) {
+      document.getElementById("fieldReqNoOlpn_tracking").checked = fieldReq.noOlpn.required?.includes('tracking') || false;
+      document.getElementById("fieldReqNoOlpn_dn").checked = fieldReq.noOlpn.required?.includes('dn') || false;
+      document.getElementById("fieldReqNoOlpn_location").checked = fieldReq.noOlpn.required?.includes('location') || false;
+      document.getElementById("fieldReqNoOlpn_olpn").checked = fieldReq.noOlpn.optional?.includes('olpn') || false;
+    } else {
+      // Standardwerte
+      document.getElementById("fieldReqNoOlpn_tracking").checked = true;
+      document.getElementById("fieldReqNoOlpn_dn").checked = true;
+      document.getElementById("fieldReqNoOlpn_location").checked = true;
+      document.getElementById("fieldReqNoOlpn_olpn").checked = false;
+    }
+    
+    // Label-Anzeige laden
+    document.getElementById("settingsShowLabels1to1").checked = carrier.show_labels_1to1 === 1 || carrier.show_labels_1to1 === true;
+    
     // Visible Fields Checkboxen
     const visibleFields = carrier.visible_fields ? JSON.parse(carrier.visible_fields) : [];
     const container = document.getElementById("visibleFieldsCheckboxes");
@@ -7718,6 +7898,41 @@
       errorMessage: document.getElementById("settingsTrackingError").value || ""
     };
     
+    // Field Requirements sammeln
+    const fieldRequirements = {
+      withRa: {
+        required: [],
+        optional: []
+      },
+      noRa: {
+        required: [],
+        optional: []
+      },
+      noOlpn: {
+        required: [],
+        optional: []
+      }
+    };
+    
+    // Wenn RA vorhanden
+    if (document.getElementById("fieldReqWithRa_ra").checked) fieldRequirements.withRa.required.push('ra');
+    if (document.getElementById("fieldReqWithRa_dn").checked) fieldRequirements.withRa.required.push('dn');
+    if (document.getElementById("fieldReqWithRa_location").checked) fieldRequirements.withRa.required.push('location');
+    if (document.getElementById("fieldReqWithRa_olpn").checked) fieldRequirements.withRa.optional.push('olpn');
+    if (document.getElementById("fieldReqWithRa_tracking").checked) fieldRequirements.withRa.optional.push('tracking');
+    
+    // Wenn keine RA vorhanden
+    if (document.getElementById("fieldReqNoRa_dn").checked) fieldRequirements.noRa.required.push('dn');
+    if (document.getElementById("fieldReqNoRa_olpn").checked) fieldRequirements.noRa.required.push('olpn');
+    if (document.getElementById("fieldReqNoRa_location").checked) fieldRequirements.noRa.required.push('location');
+    if (document.getElementById("fieldReqNoRa_tracking").checked) fieldRequirements.noRa.optional.push('tracking');
+    
+    // Wenn keine OLPN vorhanden
+    if (document.getElementById("fieldReqNoOlpn_tracking").checked) fieldRequirements.noOlpn.required.push('tracking');
+    if (document.getElementById("fieldReqNoOlpn_dn").checked) fieldRequirements.noOlpn.required.push('dn');
+    if (document.getElementById("fieldReqNoOlpn_location").checked) fieldRequirements.noOlpn.required.push('location');
+    if (document.getElementById("fieldReqNoOlpn_olpn").checked) fieldRequirements.noOlpn.optional.push('olpn');
+    
     const payload = {
       display_name: document.getElementById("settingsDisplayName").value,
       country: document.getElementById("settingsCountry").value,
@@ -7730,7 +7945,9 @@
       bulk_variable_fields: JSON.stringify(bulkVariableFields),
       field_placeholders: "{}",
       olpn_validation: JSON.stringify(olpnValidation),
-      tracking_validation: JSON.stringify(trackingValidation)
+      tracking_validation: JSON.stringify(trackingValidation),
+      field_requirements: JSON.stringify(fieldRequirements),
+      show_labels_1to1: document.getElementById("settingsShowLabels1to1").checked ? 1 : 0
     };
     
     try {
