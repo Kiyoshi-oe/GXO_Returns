@@ -17,6 +17,30 @@
   
   <!-- Chart.js für Diagramme -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Tab-Styling */
+    .mode-btn {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn.active {
+      background: var(--gxo-orange);
+      color: white;
+    }
+    
+    .mode-btn:hover:not(.active) {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+  </style>
 </head>
 <body>
 
@@ -71,21 +95,17 @@
 
     <nav class="nav">
       <div class="nav-section-title">Ansichten</div>
-      <a href="/suche" class="nav-item ">
-        <span class="nav-icon">🔍</span>
-        <span>Globale Suche</span>
-      </a>
       <a href="/dashboard" class="nav-item ">
         <span class="nav-icon">📊</span>
         <span>Dashboard</span>
       </a>
-      <a href="/lagerbestand" class="nav-item ">
-        <span class="nav-icon">📦</span>
-        <span>Lagerbestand</span>
-      </a>
       <a href="/wareneingang" class="nav-item ">
         <span class="nav-icon">📥</span>
         <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item ">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
       </a>
       <a href="/umlagerung" class="nav-item ">
         <span class="nav-icon">↔️</span>
@@ -95,28 +115,28 @@
         <span class="nav-icon">🗂️</span>
         <span>Archiv</span>
       </a>
-      <a href="/ra-import" class="nav-item ">
-        <span class="nav-icon">📑</span>
-        <span>RA Import</span>
-      </a>
-      <a href="/performance" class="nav-item ">
-        <span class="nav-icon">⚡</span>
-        <span>Performance</span>
+      <a href="/suche" class="nav-item ">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
       </a>
     </nav>
 
     <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item ">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item ">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
     <a href="/einstellungen" class="nav-item ">
       <span class="nav-icon">⚙️</span>
       <span>Einstellungen</span>
     </a>
     <a href="/import" class="nav-item active">
       <span class="nav-icon">📥</span>
-      <span>Import</span>
-    </a>
-    <a href="/export" class="nav-item ">
-      <span class="nav-icon">📤</span>
-      <span>Export</span>
+      <span>Datenverwaltung</span>
     </a>
 
     <div class="sidebar-footer">
@@ -131,8 +151,8 @@
   <div class="content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="topbar-title" id="topbarTitle">Import</div>
-        <div class="topbar-subtitle" id="topbarSubtitle">Lagerbestand aus Excel-Datei importieren</div>
+        <div class="topbar-title" id="topbarTitle">Datenverwaltung</div>
+        <div class="topbar-subtitle" id="topbarSubtitle">Import und Export von Daten</div>
       </div>
       <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
         <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
@@ -148,7 +168,18 @@
 
     <main class="main">
       <section class="view" id="view-import">
-        <div style="max-width: 800px; margin: 0 auto;">
+        <!-- Tab-Navigation -->
+        <div style="margin-bottom: 20px; display: flex; gap: 8px; padding: 4px; background: var(--bg-soft); border-radius: 8px; width: fit-content;">
+          <button class="mode-btn active" id="tabImport" onclick="switchDataTab('import')" style="padding: 8px 16px; border: none; background: var(--gxo-orange); color: white; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
+            📥 Import
+          </button>
+          <button class="mode-btn" id="tabExport" onclick="switchDataTab('export')" style="padding: 8px 16px; border: none; background: transparent; color: var(--text-muted); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
+            📤 Export
+          </button>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="importTab" style="max-width: 800px; margin: 0 auto;">
           <div class="card">
             <div class="card-header">
               <div>
@@ -258,7 +289,135 @@
             </div>
           </div>
         </div>
-      </section
+
+        <!-- Export Tab -->
+        <div id="exportTab" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Export</div>
+                <div class="card-subtitle">Lagerbestand als Excel-Datei exportieren</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📤 Datenexport</div>
+                <div class="card-subtitle">Exportieren Sie Lagerbestand, Aktivitäten (Wareneingänge, Umlagerungen, Archivierungen) oder Stellplätze als strukturierte Excel-Datei für Inventur und Analyse</div>
+              </div>
+            </div>
+
+            <!-- Export-Optionen -->
+            <div class="form-grid" style="margin-bottom: 20px;">
+              <div class="form-group">
+                <label>Export-Typ</label>
+                <select id="exportType" onchange="updateExportOptions()">
+                  <optgroup label="Lagerbestand">
+                    <option value="all">Alles exportieren</option>
+                    <option value="locations">Einzelne Stellplätze</option>
+                    <option value="cartons">Kartons</option>
+                    <option value="areas">Nach Bereichen (Areas)</option>
+                  </optgroup>
+                  <optgroup label="Aktivitäten">
+                    <option value="activities">Alle Aktivitäten</option>
+                    <option value="inbounds">Wareneingänge</option>
+                    <option value="movements">Umlagerungen</option>
+                    <option value="archives">Archivierungen</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="form-group" id="exportLocationGroup" style="display: none;">
+                <label>Stellplatz auswählen</label>
+                <select id="exportLocationSelect" multiple style="min-height: 100px;">
+                  <!-- Wird dynamisch geladen -->
+                </select>
+                <span class="muted" style="font-size: 11px;">Mehrfachauswahl mit Strg/Cmd möglich</span>
+              </div>
+              <div class="form-group" id="exportAreaGroup" style="display: none;">
+                <label>Bereich auswählen</label>
+                <select id="exportAreaSelect" multiple style="min-height: 100px;">
+                  <!-- Wird dynamisch geladen -->
+                </select>
+                <span class="muted" style="font-size: 11px;">Mehrfachauswahl mit Strg/Cmd möglich</span>
+              </div>
+              <div class="form-group" id="exportDateRangeGroup" style="display: none;">
+                <label>Zeitraum</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-soft); margin-bottom: 4px; display: block;">Von</label>
+                    <input type="date" id="exportDateFrom" style="width: 100%; padding: 6px 9px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-soft); margin-bottom: 4px; display: block;">Bis</label>
+                    <input type="date" id="exportDateTo" style="width: 100%; padding: 6px 9px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-size: 12px;">
+                  </div>
+                </div>
+                <span class="muted" style="font-size: 11px;">Optional: Zeitraum für Aktivitäten eingrenzen</span>
+              </div>
+            </div>
+
+            <!-- Spalten-Auswahl -->
+            <div class="card" style="margin-bottom: 20px; background: var(--bg-soft);">
+              <div class="card-header" style="margin-bottom: 12px;">
+                <div>
+                  <div class="card-title" style="font-size: 14px;">📋 Spalten auswählen</div>
+                  <div class="card-subtitle" style="font-size: 11px;">Wählen Sie die Spalten aus, die exportiert werden sollen</div>
+                </div>
+                <div class="card-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="selectAllColumns()" style="padding: 4px 10px; font-size: 11px;">Alle auswählen</button>
+                  <button class="btn btn-secondary btn-sm" onclick="deselectAllColumns()" style="padding: 4px 10px; font-size: 11px;">Alle abwählen</button>
+                </div>
+              </div>
+              <div id="exportColumnsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; padding: 12px;">
+                <!-- Wird dynamisch generiert -->
+              </div>
+            </div>
+
+            <!-- Vorschau -->
+            <div class="card" style="margin-bottom: 20px;">
+              <div class="card-header" style="margin-bottom: 12px;">
+                <div>
+                  <div class="card-title" style="font-size: 14px;">👁️ Vorschau</div>
+                  <div class="card-subtitle" style="font-size: 11px;">So wird die Excel-Datei aussehen</div>
+                </div>
+                <div class="card-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="loadExportPreview()" style="padding: 4px 10px; font-size: 11px;">🔄 Aktualisieren</button>
+                </div>
+              </div>
+              <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                <table class="data-table" id="exportPreviewTable" style="font-size: 12px; width: 100%; border-collapse: collapse;">
+                  <thead style="position: sticky; top: 0; z-index: 10; background: var(--bg-card);">
+                    <tr id="exportPreviewHeader">
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-main);">Lade Vorschau...</th>
+                    </tr>
+                  </thead>
+                  <tbody id="exportPreviewBody">
+                    <tr>
+                      <td colspan="100" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                        Bitte wählen Sie einen Export-Typ und klicken Sie auf "Aktualisieren"
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="margin-top: 12px; padding: 10px; background: var(--bg-soft); border-radius: 6px; font-size: 11px; color: var(--text-muted);">
+                <strong>Hinweis:</strong> Die Vorschau zeigt maximal 50 Zeilen. Die Excel-Datei enthält alle ausgewählten Daten.
+              </div>
+            </div>
+
+            <!-- Export-Button -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+              <button class="btn btn-secondary" onclick="resetExportForm()" style="padding: 10px 20px;">
+                Zurücksetzen
+              </button>
+              <button class="btn btn-primary" id="btnExportExcel" onclick="executeExport()" style="padding: 10px 24px; font-weight: 600;">
+                📥 Excel exportieren
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 </div>
@@ -9110,6 +9269,56 @@
 
 <!-- Seiten-spezifische Initialisierung -->
 <script>
+  // Tab-Switching
+  function switchDataTab(tab) {
+    const importTab = document.getElementById('importTab');
+    const exportTab = document.getElementById('exportTab');
+    const tabImportBtn = document.getElementById('tabImport');
+    const tabExportBtn = document.getElementById('tabExport');
+    
+    if (tab === 'import') {
+      importTab.style.display = 'block';
+      exportTab.style.display = 'none';
+      tabImportBtn.classList.add('active');
+      tabImportBtn.style.background = 'var(--gxo-orange)';
+      tabImportBtn.style.color = 'white';
+      tabExportBtn.classList.remove('active');
+      tabExportBtn.style.background = 'transparent';
+      tabExportBtn.style.color = 'var(--text-muted)';
+    } else {
+      importTab.style.display = 'none';
+      exportTab.style.display = 'block';
+      tabExportBtn.classList.add('active');
+      tabExportBtn.style.background = 'var(--gxo-orange)';
+      tabExportBtn.style.color = 'white';
+      tabImportBtn.classList.remove('active');
+      tabImportBtn.style.background = 'transparent';
+      tabImportBtn.style.color = 'var(--text-muted)';
+      
+      // Export-Daten laden wenn noch nicht geladen
+      setTimeout(() => {
+        if (typeof initExport === 'function') {
+          initExport();
+        } else if (typeof loadExportColumns === 'function') {
+          loadExportColumns();
+        }
+        if (typeof updateExportOptions === 'function') {
+          updateExportOptions();
+        }
+      }, 200);
+    }
+  }
+  
+  // Globale Funktion verfügbar machen
+  window.switchDataTab = switchDataTab;
+  
+  // URL-Parameter prüfen (für direkten Export-Zugriff)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get('tab');
+  if (tab === 'export') {
+    setTimeout(() => switchDataTab('export'), 100);
+  }
+  
   // Initialisiere Theme
   const themeToggle = document.getElementById('themeToggle');
   const savedTheme = localStorage.getItem('lvsTheme') || 'dark';

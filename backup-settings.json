@@ -1,7 +1,7 @@
 {
   "enabled": true,
-  "interval": 1,
+  "interval": 24,
   "maxBackups": 10,
   "lastBackup": "2025-12-27T18:28:41.269Z",
-  "nextBackup": "2025-12-27T19:28:41.269Z"
+  "nextBackup": "2025-12-28T18:32:12.322Z"
 }

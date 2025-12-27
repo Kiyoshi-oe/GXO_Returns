@@ -12,6 +12,801 @@
   
   <!-- Externes CSS -->
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Anpassungen für Suche-Seite */
+    .search-container {
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .search-mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 4px;
+      background: var(--bg-soft);
+      border-radius: 8px;
+      width: fit-content;
+    }
+    
+    .mode-btn {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn.active {
+      background: var(--gxo-orange);
+      color: white;
+    }
+    
+    .mode-btn:hover:not(.active) {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+    
+    /* Multi-Input Formular */
+    .multi-search-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    
+    body[data-theme="light"] .multi-search-form {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .search-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .search-field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .search-field input,
+    .search-field select,
+    .search-field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--bg-soft);
+      color: var(--text-main);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .search-field input:focus,
+    .search-field select:focus,
+    .search-field textarea:focus {
+      outline: none;
+      border-color: var(--gxo-orange);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(255, 58, 0, 0.1);
+    }
+    
+    .search-field input::placeholder,
+    .search-field textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+    
+    /* Single Search */
+    .single-search-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    
+    body[data-theme="light"] .single-search-form {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    
+    .single-search-input {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .single-search-input label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .single-search-input input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--bg-soft);
+      color: var(--text-main);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .single-search-input input:focus {
+      outline: none;
+      border-color: var(--gxo-orange);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(255, 58, 0, 0.1);
+    }
+    
+    .search-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    
+    .btn-search {
+      padding: 10px 24px;
+      background: var(--gxo-orange);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    
+    .btn-search:hover {
+      background: #FF6B3D;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 58, 0, 0.3);
+    }
+    
+    .btn-clear {
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .btn-clear:hover {
+      background: var(--bg-soft);
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+    
+    /* Suchergebnisse Header */
+    .search-results-header {
+      margin: 0 0 20px 0;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%);
+      border-radius: 14px;
+      color: white;
+      box-shadow: 0 8px 20px rgba(255, 58, 0, 0.3);
+    }
+    
+    .search-results-header h2 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .search-results-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.95;
+    }
+    
+    /* Result Section mit Toggle */
+    .result-section {
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    
+    body[data-theme="light"] .result-section {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    
+    .result-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--bg-soft);
+      border-bottom: 1px solid var(--border-soft);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .result-section-header:hover {
+      background: var(--bg-card);
+    }
+    
+    .result-section-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    
+    .result-section-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+    
+    .result-section-count {
+      padding: 4px 10px;
+      background: var(--gxo-orange);
+      color: white;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .result-section-toggle {
+      font-size: 18px;
+      color: var(--gxo-orange);
+      transition: transform 0.3s ease;
+      user-select: none;
+    }
+    
+    .result-section-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+    
+    .result-section-content {
+      padding: 0;
+      background: var(--bg-card);
+    }
+    
+    .result-section-content.collapsed {
+      display: none;
+    }
+    
+    .result-items {
+      display: grid;
+      gap: 1px;
+      background: var(--border-soft);
+    }
+    
+    .result-item {
+      padding: 12px 20px;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    
+    .result-item:hover {
+      background: var(--bg-soft);
+    }
+    
+    .result-item-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .result-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    
+    .result-item-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .result-item-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    .result-item-details span {
+      padding: 2px 6px;
+      background: var(--bg-soft);
+      border-radius: 4px;
+    }
+    
+    .result-item-details strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+    
+    .result-item-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--gxo-orange);
+      color: white;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-soft);
+      border-top-color: var(--gxo-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .search-hint {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--bg-soft);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-left: 3px solid var(--gxo-orange);
+    }
+    
+    .search-hint strong {
+      color: var(--text-main);
+    }
+    
+    /* Bulk Info */
+    .bulk-info {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    /* SAP-ähnliches kompaktes Design */
+    .search-container {
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .search-mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 4px;
+      background: var(--bg-soft);
+      border-radius: 8px;
+      width: fit-content;
+    }
+    
+    .mode-btn {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn.active {
+      background: var(--gxo-orange);
+      color: white;
+    }
+    
+    .mode-btn:hover:not(.active) {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+    
+    /* Multi-Input Formular (SAP-Style) */
+    .multi-search-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    
+    body[data-theme="light"] .multi-search-form {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .search-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .search-field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .search-field input,
+    .search-field select,
+    .search-field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--bg-soft);
+      color: var(--text-main);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .search-field input:focus,
+    .search-field select:focus,
+    .search-field textarea:focus {
+      outline: none;
+      border-color: var(--gxo-orange);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(255, 58, 0, 0.1);
+    }
+    
+    .search-field input::placeholder,
+    .search-field textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+    
+    /* Single Search (kompakt) */
+    .single-search-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+    }
+    
+    body[data-theme="light"] .single-search-form {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    
+    .single-search-input {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .single-search-input label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .single-search-input input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--bg-soft);
+      color: var(--text-main);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .single-search-input input:focus {
+      outline: none;
+      border-color: var(--gxo-orange);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(255, 58, 0, 0.1);
+    }
+    
+    .search-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    
+    .btn-search {
+      padding: 10px 24px;
+      background: var(--gxo-orange);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    
+    .btn-search:hover {
+      background: #FF6B3D;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 58, 0, 0.3);
+    }
+    
+    .btn-clear {
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .btn-clear:hover {
+      background: var(--bg-soft);
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+    
+    /* Suchergebnisse - kompakt */
+    .search-results-header {
+      margin: 0 0 16px 0;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%);
+      border-radius: 8px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(255, 107, 0, 0.2);
+    }
+    
+    .search-results-header h2 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .search-results-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.95;
+    }
+    
+    .result-section {
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .result-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-soft);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+    
+    .result-section-count {
+      padding: 4px 10px;
+      background: var(--gxo-orange);
+      color: white;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .result-items {
+      display: grid;
+      gap: 1px;
+      background: var(--border);
+    }
+    
+    .result-item {
+      padding: 12px 16px;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    
+    .result-item:hover {
+      background: var(--bg-soft);
+    }
+    
+    .result-item-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .result-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    
+    .result-item-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .result-item-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    .result-item-details span {
+      padding: 2px 6px;
+      background: var(--bg-soft);
+      border-radius: 4px;
+    }
+    
+    .result-item-details strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+    
+    .result-item-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--gxo-orange);
+      color: white;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-soft);
+      border-top-color: var(--gxo-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .search-hint {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--bg-soft);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-left: 3px solid var(--gxo-orange);
+    }
+    
+    .search-hint strong {
+      color: var(--text-main);
+    }
+  </style>
 </head>
 <body>
 
@@ -42,21 +837,17 @@
 
     <nav class="nav">
       <div class="nav-section-title">Ansichten</div>
-      <a href="/suche" class="nav-item active">
-        <span class="nav-icon">🔍</span>
-        <span>Globale Suche</span>
-      </a>
       <a href="/dashboard" class="nav-item ">
         <span class="nav-icon">📊</span>
         <span>Dashboard</span>
       </a>
-      <a href="/lagerbestand" class="nav-item ">
-        <span class="nav-icon">📦</span>
-        <span>Lagerbestand</span>
-      </a>
       <a href="/wareneingang" class="nav-item ">
         <span class="nav-icon">📥</span>
         <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item ">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
       </a>
       <a href="/umlagerung" class="nav-item ">
         <span class="nav-icon">↔️</span>
@@ -66,28 +857,28 @@
         <span class="nav-icon">🗂️</span>
         <span>Archiv</span>
       </a>
-      <a href="/ra-import" class="nav-item ">
-        <span class="nav-icon">📑</span>
-        <span>RA Import</span>
-      </a>
-      <a href="/performance" class="nav-item ">
-        <span class="nav-icon">⚡</span>
-        <span>Performance</span>
+      <a href="/suche" class="nav-item active">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
       </a>
     </nav>
 
     <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item ">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item ">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
     <a href="/einstellungen" class="nav-item ">
       <span class="nav-icon">⚙️</span>
       <span>Einstellungen</span>
     </a>
     <a href="/import" class="nav-item ">
       <span class="nav-icon">📥</span>
-      <span>Import</span>
-    </a>
-    <a href="/export" class="nav-item ">
-      <span class="nav-icon">📤</span>
-      <span>Export</span>
+      <span>Datenverwaltung</span>
     </a>
 
     <div class="sidebar-footer">
@@ -119,44 +910,126 @@
 
     <main class="main">
       <section class="view active" id="view-search">
-        <!-- Suchleiste -->
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">🔍 Suche</div>
-              <div class="card-subtitle">Geben Sie einen Suchbegriff ein (OLPN, Tracking-Nr., Stellplatz, CW, etc.)</div>
+        <div class="search-container">
+          <!-- Modus-Toggle -->
+          <div class="search-mode-toggle">
+            <button class="mode-btn active" id="modeMulti" onclick="switchMode('multi')">
+              🔍 Multi-Suche
+            </button>
+            <button class="mode-btn" id="modeSingle" onclick="switchMode('single')">
+              ⚡ Einfache Suche
+            </button>
+          </div>
+
+          <!-- Multi-Search Form (SAP-Style) -->
+          <div id="multiSearchForm" class="multi-search-form">
+            <div class="search-grid">
+              <div class="search-field" style="grid-column: span 2;">
+                <label>OLPN (Einzelwert oder Bulk-Eingabe aus Excel)</label>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <input type="text" id="searchOlpn" placeholder="z.B. 00050197980027746580" autocomplete="off" style="flex: 1;">
+                  <button class="btn-clear" onclick="toggleBulkOlpn()" style="white-space: nowrap; padding: 10px 16px; font-size: 12px;">
+                    📋 Bulk-Modus
+                  </button>
+                </div>
+                <textarea 
+                  id="bulkOlpnTextarea" 
+                  placeholder="Mehrere OLPNs hier einfügen (aus Excel kopieren):&#10;00050197980027746580&#10;00050197980027746581&#10;00050197980027746582&#10;&#10;Unterstützt: Zeilen, Komma, Tabs"
+                  style="display: none; width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); color: var(--text-main); font-size: 13px; font-family: monospace; resize: vertical; margin-top: 8px;"
+                  autocomplete="off"
+                ></textarea>
+                <div id="bulkOlpnInfo" class="bulk-info" style="display: none;">
+                  <span id="bulkOlpnCount">0</span> OLPN(s) erkannt
+                </div>
+              </div>
+              <div class="search-field" style="grid-column: span 2;">
+                <label>Tracking-Nummer (Einzelwert oder Bulk-Eingabe)</label>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <input type="text" id="searchTracking" placeholder="z.B. 882826466627" autocomplete="off" style="flex: 1;">
+                  <button class="btn-clear" onclick="toggleBulkTracking()" style="white-space: nowrap; padding: 10px 16px; font-size: 12px;">
+                    📋 Bulk-Modus
+                  </button>
+                </div>
+                <textarea 
+                  id="bulkTrackingTextarea" 
+                  placeholder="Mehrere Tracking-Nummern hier einfügen (aus Excel kopieren):&#10;882826466627&#10;882826466628&#10;882826466629"
+                  style="display: none; width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); color: var(--text-main); font-size: 13px; font-family: monospace; resize: vertical; margin-top: 8px;"
+                  autocomplete="off"
+                ></textarea>
+                <div id="bulkTrackingInfo" class="bulk-info" style="display: none;">
+                  <span id="bulkTrackingCount">0</span> Tracking-Nummer(n) erkannt
+                </div>
+              </div>
+              <div class="search-field">
+                <label>CW</label>
+                <input type="text" id="searchCw" placeholder="z.B. CW 47" autocomplete="off">
+              </div>
+              <div class="search-field">
+                <label>Stellplatz-Code</label>
+                <input type="text" id="searchLocation" placeholder="z.B. A-01-01" autocomplete="off">
+              </div>
+              <div class="search-field">
+                <label>Carrier Name</label>
+                <input type="text" id="searchCarrier" placeholder="z.B. DPD" autocomplete="off">
+              </div>
+              <div class="search-field">
+                <label>Kundenname</label>
+                <input type="text" id="searchCustomer" placeholder="z.B. Zalando" autocomplete="off">
+              </div>
+              <div class="search-field">
+                <label>Customer ID</label>
+                <input type="text" id="searchCustomerId" placeholder="z.B. 20062673" autocomplete="off">
+              </div>
+              <div class="search-field">
+                <label>ASN/RA Nummer</label>
+                <input type="text" id="searchAsn" placeholder="z.B. 70378154" autocomplete="off">
+              </div>
+            </div>
+            <div class="search-actions">
+              <button class="btn-search" onclick="performMultiSearch()">
+                <span>🔍</span>
+                <span>Suchen</span>
+              </button>
+              <button class="btn-clear" onclick="clearMultiSearch()">
+                ✕ Zurücksetzen
+              </button>
+            </div>
+            <div class="search-hint">
+              <strong>💡 Tipp:</strong> Geben Sie in einem oder mehreren Feldern Suchbegriffe ein. 
+              <strong>Bulk-Eingabe:</strong> Klicken Sie auf "📋 Bulk-Modus" bei OLPN oder Tracking-Nummer, um mehrere Werte aus Excel einzufügen (Zeilenweise, Komma oder Tab-getrennt). 
+              Bei Bulk-Eingaben werden alle Werte gesucht (OR-Logik), bei einzelnen Feldern müssen <strong>alle</strong> Kriterien erfüllt sein (AND-Logik).
             </div>
           </div>
-          <div style="display: flex; gap: 12px; align-items: flex-end;">
-            <div class="form-group" style="flex: 1;">
+
+          <!-- Single Search Form (kompakt) -->
+          <div id="singleSearchForm" class="single-search-form" style="display: none;">
+            <div class="single-search-input">
               <label>Suchbegriff</label>
               <input 
                 type="text" 
-                id="globalSearchInput" 
-                class="form-control" 
-                placeholder="z.B. OLPN, Tracking-Nr., Stellplatz-Code, CW, Kundenname..."
+                id="singleSearchInput" 
+                placeholder="OLPN, Tracking-Nr., Stellplatz, CW, Kundenname, etc..."
                 autocomplete="off"
-                style="font-size: 16px; padding: 12px;"
               >
             </div>
-            <button class="btn btn-primary" id="btnGlobalSearch" style="white-space: nowrap; padding: 12px 24px;">
-              🔍 Suchen
-            </button>
-            <button class="btn btn-ghost" id="btnClearSearch" style="white-space: nowrap;">
-              ✕ Zurücksetzen
-            </button>
+            <div class="search-actions">
+              <button class="btn-search" onclick="performSingleSearch()">
+                <span>🔍</span>
+                <span>Suchen</span>
+              </button>
+              <button class="btn-clear" onclick="clearSingleSearch()">
+                ✕ Zurücksetzen
+              </button>
+            </div>
           </div>
-          <div style="margin-top: 12px; padding: 12px; background: var(--bg-soft); border-radius: 8px; font-size: 13px; color: var(--text-muted);">
-            <strong>💡 Tipp:</strong> Die Suche durchsucht automatisch alle Bereiche: Wareneingänge, Stellplätze, Umlagerungen, Archiv, Audit-Logs und Carrier.
-          </div>
-        </div>
 
-        <!-- Suchergebnisse -->
-        <div id="searchResultsContainer">
-          <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-            <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
-            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Globale Suche</div>
-            <div>Geben Sie einen Suchbegriff ein, um alle Daten im System zu durchsuchen</div>
+          <!-- Suchergebnisse -->
+          <div id="searchResultsContainer">
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <div class="empty-state-title">Globale Suche</div>
+              <div>Geben Sie Suchkriterien ein, um alle Daten im System zu durchsuchen</div>
+            </div>
           </div>
         </div>
       </section>
@@ -168,79 +1041,319 @@
 <script type="module" src="/js/features/search.js"></script>
 
 <script>
-  // Globale Suchfunktion
+  let currentMode = 'multi';
   let searchTimeout = null;
-  
-  const searchInput = document.getElementById('globalSearchInput');
-  const searchBtn = document.getElementById('btnGlobalSearch');
-  const clearBtn = document.getElementById('btnClearSearch');
   const resultsContainer = document.getElementById('searchResultsContainer');
   
-  // URL-Parameter prüfen (für direkte Suche)
-  const urlParams = new URLSearchParams(window.location.search);
-  const initialQuery = urlParams.get('q');
-  if (initialQuery) {
-    searchInput.value = initialQuery;
-    performSearch(initialQuery);
+  // Modus wechseln
+  function switchMode(mode) {
+    currentMode = mode;
+    const multiForm = document.getElementById('multiSearchForm');
+    const singleForm = document.getElementById('singleSearchForm');
+    const multiBtn = document.getElementById('modeMulti');
+    const singleBtn = document.getElementById('modeSingle');
+    
+    if (mode === 'multi') {
+      multiForm.style.display = 'block';
+      singleForm.style.display = 'none';
+      multiBtn.classList.add('active');
+      singleBtn.classList.remove('active');
+    } else {
+      multiForm.style.display = 'none';
+      singleForm.style.display = 'flex';
+      multiBtn.classList.remove('active');
+      singleBtn.classList.add('active');
+    }
   }
   
-  // Enter-Taste für Suche
-  if (searchInput) {
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        performSearch(searchInput.value);
+  // Bulk-Eingabe parsen (Zeilen, Komma, Tabs)
+  function parseBulkInput(text) {
+    if (!text || text.trim() === '') return [];
+    
+    // Ersetze Tabs durch Zeilenumbrüche
+    text = text.replace(/\t/g, '\n');
+    
+    // Teile nach Zeilenumbrüchen und Kommas
+    const values = text
+      .split(/[\n,;]/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    return values;
+  }
+  
+  // Bulk-Modus für OLPN umschalten
+  function toggleBulkOlpn() {
+    const input = document.getElementById('searchOlpn');
+    const textarea = document.getElementById('bulkOlpnTextarea');
+    const info = document.getElementById('bulkOlpnInfo');
+    const isBulk = textarea.style.display !== 'none';
+    
+    if (isBulk) {
+      // Wechsel zu Einzelwert
+      const values = parseBulkInput(textarea.value);
+      if (values.length > 0) {
+        input.value = values[0]; // Ersten Wert ins Input-Feld
       }
+      textarea.style.display = 'none';
+      info.style.display = 'none';
+      input.style.display = 'block';
+    } else {
+      // Wechsel zu Bulk
+      if (input.value.trim()) {
+        textarea.value = input.value; // Aktuellen Wert ins Textarea
+      }
+      input.style.display = 'none';
+      textarea.style.display = 'block';
+      info.style.display = 'block';
+      updateBulkOlpnCount();
+      textarea.focus();
+    }
+  }
+  
+  // Bulk-Modus für Tracking umschalten
+  function toggleBulkTracking() {
+    const input = document.getElementById('searchTracking');
+    const textarea = document.getElementById('bulkTrackingTextarea');
+    const info = document.getElementById('bulkTrackingInfo');
+    const isBulk = textarea.style.display !== 'none';
+    
+    if (isBulk) {
+      // Wechsel zu Einzelwert
+      const values = parseBulkInput(textarea.value);
+      if (values.length > 0) {
+        input.value = values[0]; // Ersten Wert ins Input-Feld
+      }
+      textarea.style.display = 'none';
+      info.style.display = 'none';
+      input.style.display = 'block';
+    } else {
+      // Wechsel zu Bulk
+      if (input.value.trim()) {
+        textarea.value = input.value; // Aktuellen Wert ins Textarea
+      }
+      input.style.display = 'none';
+      textarea.style.display = 'block';
+      info.style.display = 'block';
+      updateBulkTrackingCount();
+      textarea.focus();
+    }
+  }
+  
+  // Bulk OLPN Count aktualisieren
+  function updateBulkOlpnCount() {
+    const textarea = document.getElementById('bulkOlpnTextarea');
+    const countEl = document.getElementById('bulkOlpnCount');
+    const values = parseBulkInput(textarea.value);
+    countEl.textContent = values.length;
+  }
+  
+  // Bulk Tracking Count aktualisieren
+  function updateBulkTrackingCount() {
+    const textarea = document.getElementById('bulkTrackingTextarea');
+    const countEl = document.getElementById('bulkTrackingCount');
+    const values = parseBulkInput(textarea.value);
+    countEl.textContent = values.length;
+  }
+  
+  // Event Listener für Bulk-Textareas
+  document.getElementById('bulkOlpnTextarea')?.addEventListener('input', updateBulkOlpnCount);
+  document.getElementById('bulkTrackingTextarea')?.addEventListener('input', updateBulkTrackingCount);
+  
+  // Multi-Suche durchführen
+  async function performMultiSearch() {
+    // OLPN-Werte sammeln (Einzelwert oder Bulk)
+    const olpnInput = document.getElementById('searchOlpn');
+    const olpnTextarea = document.getElementById('bulkOlpnTextarea');
+    const olpnValues = olpnTextarea.style.display !== 'none' 
+      ? parseBulkInput(olpnTextarea.value)
+      : (olpnInput.value.trim() ? [olpnInput.value.trim()] : []);
+    
+    // Tracking-Werte sammeln (Einzelwert oder Bulk)
+    const trackingInput = document.getElementById('searchTracking');
+    const trackingTextarea = document.getElementById('bulkTrackingTextarea');
+    const trackingValues = trackingTextarea.style.display !== 'none'
+      ? parseBulkInput(trackingTextarea.value)
+      : (trackingInput.value.trim() ? [trackingInput.value.trim()] : []);
+    
+    const searchFields = {
+      olpn: olpnValues,
+      tracking: trackingValues,
+      cw: document.getElementById('searchCw').value.trim() ? [document.getElementById('searchCw').value.trim()] : [],
+      location: document.getElementById('searchLocation').value.trim() ? [document.getElementById('searchLocation').value.trim()] : [],
+      carrier: document.getElementById('searchCarrier').value.trim() ? [document.getElementById('searchCarrier').value.trim()] : [],
+      customer: document.getElementById('searchCustomer').value.trim() ? [document.getElementById('searchCustomer').value.trim()] : [],
+      customerId: document.getElementById('searchCustomerId').value.trim() ? [document.getElementById('searchCustomerId').value.trim()] : [],
+      asn: document.getElementById('searchAsn').value.trim() ? [document.getElementById('searchAsn').value.trim()] : []
+    };
+    
+    // Sammle alle Suchbegriffe (flatten)
+    const allSearchTerms = [];
+    Object.values(searchFields).forEach(values => {
+      values.forEach(val => {
+        if (val && val.trim()) {
+          allSearchTerms.push(val.trim());
+        }
+      });
     });
     
-    // Live-Suche beim Tippen (mit Debounce)
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.trim();
-      if (query.length >= 2) {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          performSearch(query);
-        }, 500);
-      } else if (query.length === 0) {
-        clearResults();
-      }
-    });
-  }
-  
-  if (searchBtn) {
-    searchBtn.addEventListener('click', () => {
-      performSearch(searchInput.value);
-    });
-  }
-  
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      clearResults();
-      window.history.replaceState({}, '', '/suche');
-    });
-  }
-  
-  async function performSearch(query) {
-    if (!query || query.trim() === '') {
+    if (allSearchTerms.length === 0) {
       clearResults();
       return;
     }
     
-    const searchQuery = query.trim();
+    // Wenn Bulk-Eingaben vorhanden sind, führe OR-Suche durch
+    const hasBulkInput = olpnValues.length > 1 || trackingValues.length > 1;
     
+    if (hasBulkInput) {
+      // Bulk-Suche: Kombiniere alle Werte mit OR-Logik
+      await performBulkSearch(allSearchTerms);
+    } else {
+      // Normale Suche: AND-Logik
+      const searchQuery = allSearchTerms.join(',');
+      await performSearch(searchQuery, allSearchTerms);
+    }
+  }
+  
+  // Bulk-Suche mit OR-Logik (mehrere Suchen kombinieren)
+  async function performBulkSearch(searchTerms) {
     // URL aktualisieren
-    window.history.replaceState({}, '', `/suche?q=${encodeURIComponent(searchQuery)}`);
+    window.history.replaceState({}, '', `/suche?q=${encodeURIComponent(searchTerms.join(','))}`);
     
     // Loading anzeigen
     resultsContainer.innerHTML = `
-      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-        <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <div>Suche läuft... (${searchTerms.length} Suchbegriff(e))</div>
+      </div>
+    `;
+    
+    try {
+      // Führe für jeden Suchbegriff eine separate Suche durch
+      const searchPromises = searchTerms.map(term => 
+        fetch(`/api/search/global?q=${encodeURIComponent(term)}&limit=100`)
+          .then(res => res.json())
+          .then(data => data.ok ? data : { ok: false, results: { inbound: [], locations: [], movements: [], archives: [], audit: [], carriers: [] }, total: 0 })
+      );
+      
+      const allResults = await Promise.all(searchPromises);
+      
+      // Kombiniere alle Ergebnisse (OR-Logik)
+      const combinedResults = {
+        inbound: [],
+        locations: [],
+        movements: [],
+        archives: [],
+        audit: [],
+        carriers: []
+      };
+      
+      const seenIds = {
+        inbound: new Set(),
+        locations: new Set(),
+        movements: new Set(),
+        archives: new Set(),
+        audit: new Set(),
+        carriers: new Set()
+      };
+      
+      // Kombiniere Ergebnisse und entferne Duplikate
+      allResults.forEach(result => {
+        if (result.ok) {
+          ['inbound', 'locations', 'movements', 'archives', 'audit', 'carriers'].forEach(type => {
+            result.results[type].forEach(item => {
+              if (!seenIds[type].has(item.id)) {
+                seenIds[type].add(item.id);
+                combinedResults[type].push(item);
+              }
+            });
+          });
+        }
+      });
+      
+      // Sortiere Ergebnisse
+      combinedResults.inbound.sort((a, b) => b.id - a.id);
+      combinedResults.locations.sort((a, b) => a.title.localeCompare(b.title));
+      combinedResults.movements.sort((a, b) => new Date(b.details.moved_at || 0) - new Date(a.details.moved_at || 0));
+      combinedResults.archives.sort((a, b) => new Date(b.details.archived_at || 0) - new Date(a.details.archived_at || 0));
+      combinedResults.audit.sort((a, b) => new Date(b.details.changed_at || 0) - new Date(a.details.changed_at || 0));
+      combinedResults.carriers.sort((a, b) => a.title.localeCompare(b.title));
+      
+      const total = 
+        combinedResults.inbound.length +
+        combinedResults.locations.length +
+        combinedResults.movements.length +
+        combinedResults.archives.length +
+        combinedResults.audit.length +
+        combinedResults.carriers.length;
+      
+      const counts = {
+        inbound: combinedResults.inbound.length,
+        locations: combinedResults.locations.length,
+        movements: combinedResults.movements.length,
+        archives: combinedResults.archives.length,
+        audit: combinedResults.audit.length,
+        carriers: combinedResults.carriers.length
+      };
+      
+      displaySearchResults({
+        ok: true,
+        query: searchTerms.join(', '),
+        searchTerms: searchTerms,
+        results: combinedResults,
+        total: total,
+        counts: counts
+      });
+    } catch (err) {
+      console.error('Fehler bei Bulk-Suche:', err);
+      resultsContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">❌</div>
+          <div class="empty-state-title">Fehler bei der Suche</div>
+          <div>${err.message}</div>
+        </div>
+      `;
+    }
+  }
+  
+  // Single-Suche durchführen
+  async function performSingleSearch() {
+    const query = document.getElementById('singleSearchInput').value.trim();
+    
+    if (!query) {
+      clearResults();
+      return;
+    }
+    
+    // Parse Suchbegriffe (Komma/Semikolon getrennt)
+    const searchTerms = query
+      .split(/[,;]/)
+      .map(term => term.trim())
+      .filter(term => term.length > 0);
+    
+    if (searchTerms.length === 0) {
+      clearResults();
+      return;
+    }
+    
+    await performSearch(query, searchTerms);
+  }
+  
+  // Hauptsuchfunktion
+  async function performSearch(query, searchTerms) {
+    // URL aktualisieren
+    window.history.replaceState({}, '', `/suche?q=${encodeURIComponent(query)}`);
+    
+    // Loading anzeigen
+    resultsContainer.innerHTML = `
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
         <div>Suche läuft...</div>
       </div>
     `;
     
     try {
-      const response = await fetch(`/api/search/global?q=${encodeURIComponent(searchQuery)}&limit=50`);
+      const response = await fetch(`/api/search/global?q=${encodeURIComponent(query)}&limit=50`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const data = await response.json();
@@ -250,303 +1363,326 @@
     } catch (err) {
       console.error('Fehler bei der Suche:', err);
       resultsContainer.innerHTML = `
-        <div style="text-align: center; padding: 60px 20px; color: var(--error);">
-          <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
-          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Fehler bei der Suche</div>
+        <div class="empty-state">
+          <div class="empty-state-icon">❌</div>
+          <div class="empty-state-title">Fehler bei der Suche</div>
           <div>${err.message}</div>
         </div>
       `;
     }
   }
   
-  function displaySearchResults(data) {
-    const { results, total, counts, query } = data;
-    
-    if (total === 0) {
-      resultsContainer.innerHTML = `
-        <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-          <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Keine Ergebnisse gefunden</div>
-          <div>Keine Treffer für "<strong>${query}</strong>" gefunden</div>
+    // Ergebnisse anzeigen
+    function displaySearchResults(data) {
+      const { results, total, counts, searchTerms } = data;
+      
+      if (total === 0) {
+        resultsContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">Keine Ergebnisse gefunden</div>
+            <div>Keine Treffer für die eingegebenen Suchkriterien gefunden</div>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = `
+        <div class="search-results-header">
+          <h2>📊 Suchergebnisse</h2>
+          <div class="search-results-stats">
+            <span><strong>${total}</strong> Treffer insgesamt</span>
+            ${counts.inbound > 0 ? `<span>📦 ${counts.inbound} Wareneingänge</span>` : ''}
+            ${counts.locations > 0 ? `<span>📍 ${counts.locations} Stellplätze</span>` : ''}
+            ${counts.movements > 0 ? `<span>↔️ ${counts.movements} Umlagerungen</span>` : ''}
+            ${counts.archives > 0 ? `<span>🗂️ ${counts.archives} Archiv</span>` : ''}
+            ${counts.audit > 0 ? `<span>📋 ${counts.audit} Audit-Logs</span>` : ''}
+            ${counts.carriers > 0 ? `<span>🚚 ${counts.carriers} Carrier</span>` : ''}
+          </div>
         </div>
       `;
-      return;
-    }
-    
-    let html = `
-      <div style="margin-bottom: 20px; padding: 16px; background: var(--bg-soft); border-radius: 12px; border-left: 4px solid var(--gxo-orange);">
-        <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
-          📊 Suchergebnisse für "<strong>${query}</strong>"
-        </div>
-        <div style="font-size: 14px; color: var(--text-muted);">
-          <strong>${total}</strong> Treffer gefunden:
-          ${counts.inbound > 0 ? `<span style="margin-left: 12px;">📦 ${counts.inbound} Wareneingänge</span>` : ''}
-          ${counts.locations > 0 ? `<span style="margin-left: 12px;">📍 ${counts.locations} Stellplätze</span>` : ''}
-          ${counts.movements > 0 ? `<span style="margin-left: 12px;">↔️ ${counts.movements} Umlagerungen</span>` : ''}
-          ${counts.archives > 0 ? `<span style="margin-left: 12px;">🗂️ ${counts.archives} Archiv</span>` : ''}
-          ${counts.audit > 0 ? `<span style="margin-left: 12px;">📋 ${counts.audit} Audit-Logs</span>` : ''}
-          ${counts.carriers > 0 ? `<span style="margin-left: 12px;">🚚 ${counts.carriers} Carrier</span>` : ''}
-        </div>
-      </div>
-    `;
-    
-    // Wareneingänge
-    if (results.inbound.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">📦 Wareneingänge (${results.inbound.length})</div>
-              <div class="card-subtitle">Gefundene Wareneingänge</div>
+      
+      // Wareneingänge
+      if (results.inbound.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('inbound')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">📦 Wareneingänge</span>
+                <span class="result-section-count">${results.inbound.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-inbound">▼</span>
             </div>
-          </div>
-          <div style="display: grid; gap: 12px;">
+            <div class="result-section-content" id="content-inbound">
+              <div class="result-items">
             ${results.inbound.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--gxo-orange); cursor: pointer; transition: all 0.2s;" 
-                   onclick="showInboundEntryDetails(${item.id})"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
+              <div class="result-item" onclick="showInboundEntryDetails(${item.id})">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
+                  <div class="result-item-details">
+                    ${item.details.olpn ? `<span>OLPN: <strong>${item.details.olpn}</strong></span>` : ''}
+                    ${item.details.tracking ? `<span>Tracking: <strong>${item.details.tracking}</strong></span>` : ''}
+                    ${item.details.carrier ? `<span>Carrier: <strong>${item.details.carrier}</strong></span>` : ''}
+                    ${item.details.location ? `<span>📍 <strong>${item.details.location}</strong></span>` : ''}
+                    ${item.details.cartons ? `<span>📦 <strong>${item.details.cartons}</strong> Kartons</span>` : ''}
                   </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: var(--gxo-orange); color: white; border-radius: 4px; font-weight: 600;">
-                    #${item.id}
-                  </span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                  ${item.details.olpn ? `<span>OLPN: <strong>${item.details.olpn}</strong></span>` : ''}
-                  ${item.details.tracking ? `<span>Tracking: <strong>${item.details.tracking}</strong></span>` : ''}
-                  ${item.details.carrier ? `<span>Carrier: <strong>${item.details.carrier}</strong></span>` : ''}
-                  ${item.details.location ? `<span>📍 Stellplatz: <strong>${item.details.location}</strong></span>` : ''}
-                  ${item.details.cartons ? `<span>📦 Kartons: <strong>${item.details.cartons}</strong></span>` : ''}
-                </div>
+                <span class="result-item-badge">#${item.id}</span>
               </div>
             `).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Stellplätze
-    if (results.locations.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">📍 Stellplätze (${results.locations.length})</div>
-              <div class="card-subtitle">Gefundene Stellplätze</div>
+              </div>
             </div>
           </div>
-          <div style="display: grid; gap: 12px;">
+        `;
+      }
+      
+      // Stellplätze
+      if (results.locations.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('locations')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">📍 Stellplätze</span>
+                <span class="result-section-count">${results.locations.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-locations">▼</span>
+            </div>
+            <div class="result-section-content" id="content-locations">
+              <div class="result-items">
             ${results.locations.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #4CAF50; cursor: pointer; transition: all 0.2s;" 
-                   onclick="window.location.href='${item.link}'"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
+              <div class="result-item" onclick="window.location.href='${item.link}'">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
+                  <div class="result-item-details">
+                    ${item.details.area ? `<span>Bereich: <strong>${item.details.area}</strong></span>` : ''}
+                    ${item.details.carton_count > 0 ? `<span>📦 <strong>${item.details.carton_count}</strong> Einträge</span>` : ''}
+                    ${item.details.total_cartons > 0 ? `<span>Gesamt: <strong>${item.details.total_cartons}</strong> Kartons</span>` : ''}
                   </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: #4CAF50; color: white; border-radius: 4px; font-weight: 600;">
-                    ${item.details.is_active ? 'Aktiv' : 'Inaktiv'}
-                  </span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                  ${item.details.area ? `<span>Bereich: <strong>${item.details.area}</strong></span>` : ''}
-                  ${item.details.carton_count > 0 ? `<span>📦 ${item.details.carton_count} Einträge</span>` : ''}
-                  ${item.details.total_cartons > 0 ? `<span>Gesamt: <strong>${item.details.total_cartons} Kartons</strong></span>` : ''}
-                </div>
+                <span class="result-item-badge">${item.details.is_active ? 'Aktiv' : 'Inaktiv'}</span>
               </div>
             `).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Umlagerungen
-    if (results.movements.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">↔️ Umlagerungen (${results.movements.length})</div>
-              <div class="card-subtitle">Gefundene Umlagerungen</div>
+              </div>
             </div>
           </div>
-          <div style="display: grid; gap: 12px;">
+        `;
+      }
+      
+      // Umlagerungen
+      if (results.movements.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('movements')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">↔️ Umlagerungen</span>
+                <span class="result-section-count">${results.movements.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-movements">▼</span>
+            </div>
+            <div class="result-section-content" id="content-movements">
+              <div class="result-items">
             ${results.movements.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #2196F3; cursor: pointer; transition: all 0.2s;" 
-                   onclick="window.location.href='${item.link}'"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
+              <div class="result-item" onclick="window.location.href='${item.link}'">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
+                  <div class="result-item-details">
+                    ${item.details.moved_by ? `<span>Von: <strong>${item.details.moved_by}</strong></span>` : ''}
+                    ${item.details.moved_at ? `<span>Am: <strong>${new Date(item.details.moved_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                    ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
                   </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: #2196F3; color: white; border-radius: 4px; font-weight: 600;">
-                    #${item.id}
-                  </span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                  ${item.details.moved_by ? `<span>Von: <strong>${item.details.moved_by}</strong></span>` : ''}
-                  ${item.details.moved_at ? `<span>Am: <strong>${new Date(item.details.moved_at).toLocaleString('de-DE')}</strong></span>` : ''}
-                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
-                </div>
+                <span class="result-item-badge">#${item.id}</span>
               </div>
             `).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Archiv
-    if (results.archives.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">🗂️ Archiv (${results.archives.length})</div>
-              <div class="card-subtitle">Gefundene Archiv-Einträge</div>
+              </div>
             </div>
           </div>
-          <div style="display: grid; gap: 12px;">
+        `;
+      }
+      
+      // Archiv
+      if (results.archives.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('archives')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">🗂️ Archiv</span>
+                <span class="result-section-count">${results.archives.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-archives">▼</span>
+            </div>
+            <div class="result-section-content" id="content-archives">
+              <div class="result-items">
             ${results.archives.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #9E9E9E; cursor: pointer; transition: all 0.2s;" 
-                   onclick="window.location.href='${item.link}'"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
+              <div class="result-item" onclick="window.location.href='${item.link}'">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
+                  <div class="result-item-details">
+                    ${item.details.archived_at ? `<span>Archiviert am: <strong>${new Date(item.details.archived_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                    ${item.details.archived_by ? `<span>Von: <strong>${item.details.archived_by}</strong></span>` : ''}
+                    ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
                   </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: #9E9E9E; color: white; border-radius: 4px; font-weight: 600;">
-                    Archiviert
-                  </span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                  ${item.details.archived_at ? `<span>Archiviert am: <strong>${new Date(item.details.archived_at).toLocaleString('de-DE')}</strong></span>` : ''}
-                  ${item.details.archived_by ? `<span>Von: <strong>${item.details.archived_by}</strong></span>` : ''}
-                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
-                </div>
+                <span class="result-item-badge">Archiviert</span>
               </div>
             `).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Audit-Logs
-    if (results.audit.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">📋 Audit-Logs (${results.audit.length})</div>
-              <div class="card-subtitle">Gefundene Änderungen</div>
+              </div>
             </div>
           </div>
-          <div style="display: grid; gap: 12px;">
+        `;
+      }
+      
+      // Audit-Logs
+      if (results.audit.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('audit')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">📋 Audit-Logs</span>
+                <span class="result-section-count">${results.audit.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-audit">▼</span>
+            </div>
+            <div class="result-section-content" id="content-audit">
+              <div class="result-items">
             ${results.audit.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #FF9800; cursor: pointer; transition: all 0.2s;" 
-                   onclick="window.location.href='${item.link}'"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
+              <div class="result-item" onclick="window.location.href='${item.link}'">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
+                  <div class="result-item-details">
+                    ${item.details.changed_by ? `<span>Geändert von: <strong>${item.details.changed_by}</strong></span>` : ''}
+                    ${item.details.changed_at ? `<span>Am: <strong>${new Date(item.details.changed_at).toLocaleString('de-DE')}</strong></span>` : ''}
+                    ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
                   </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: #FF9800; color: white; border-radius: 4px; font-weight: 600;">
-                    #${item.id}
-                  </span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
-                  ${item.details.changed_by ? `<span>Geändert von: <strong>${item.details.changed_by}</strong></span>` : ''}
-                  ${item.details.changed_at ? `<span>Am: <strong>${new Date(item.details.changed_at).toLocaleString('de-DE')}</strong></span>` : ''}
-                  ${item.details.reason ? `<span>Grund: <strong>${item.details.reason}</strong></span>` : ''}
-                </div>
+                <span class="result-item-badge">#${item.id}</span>
               </div>
             `).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Carrier
-    if (results.carriers.length > 0) {
-      html += `
-        <div class="card" style="margin-bottom: 20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">🚚 Carrier (${results.carriers.length})</div>
-              <div class="card-subtitle">Gefundene Carrier</div>
+              </div>
             </div>
           </div>
-          <div style="display: grid; gap: 12px;">
+        `;
+      }
+      
+      // Carrier
+      if (results.carriers.length > 0) {
+        html += `
+          <div class="result-section">
+            <div class="result-section-header" onclick="toggleResultSection('carriers')">
+              <div class="result-section-header-left">
+                <span class="result-section-title">🚚 Carrier</span>
+                <span class="result-section-count">${results.carriers.length}</span>
+              </div>
+              <span class="result-section-toggle" id="toggle-carriers">▼</span>
+            </div>
+            <div class="result-section-content" id="content-carriers">
+              <div class="result-items">
             ${results.carriers.map(item => `
-              <div style="padding: 16px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid #9C27B0; cursor: pointer; transition: all 0.2s;" 
-                   onclick="window.location.href='${item.link}'"
-                   onmouseover="this.style.background='var(--bg-card)'; this.style.transform='translateX(4px)'"
-                   onmouseout="this.style.background='var(--bg-soft)'; this.style.transform='translateX(0)'">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                  <div>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
-                      ${item.title}
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted);">
-                      ${item.subtitle}
-                    </div>
-                  </div>
-                  <span style="font-size: 12px; padding: 4px 8px; background: #9C27B0; color: white; border-radius: 4px; font-weight: 600;">
-                    ${item.details.is_active ? 'Aktiv' : 'Inaktiv'}
-                  </span>
+              <div class="result-item" onclick="window.location.href='${item.link}'">
+                <div class="result-item-content">
+                  <div class="result-item-title">${item.title}</div>
+                  <div class="result-item-subtitle">${item.subtitle}</div>
                 </div>
+                <span class="result-item-badge">${item.details.is_active ? 'Aktiv' : 'Inaktiv'}</span>
               </div>
             `).join('')}
+              </div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      }
+      
+      resultsContainer.innerHTML = html;
     }
     
-    resultsContainer.innerHTML = html;
-  }
+    // Toggle-Funktion für Result-Sections
+    function toggleResultSection(sectionId) {
+      const content = document.getElementById(`content-${sectionId}`);
+      const toggle = document.getElementById(`toggle-${sectionId}`);
+      
+      if (content && toggle) {
+        const isCollapsed = content.classList.contains('collapsed');
+        
+        if (isCollapsed) {
+          content.classList.remove('collapsed');
+          toggle.classList.remove('collapsed');
+        } else {
+          content.classList.add('collapsed');
+          toggle.classList.add('collapsed');
+        }
+      }
+    }
   
   function clearResults() {
     resultsContainer.innerHTML = `
-      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
-        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Globale Suche</div>
-        <div>Geben Sie einen Suchbegriff ein, um alle Daten im System zu durchsuchen</div>
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title">Globale Suche</div>
+        <div>Geben Sie Suchkriterien ein, um alle Daten im System zu durchsuchen</div>
       </div>
     `;
   }
   
-  // Eintrag-Details anzeigen (Popup mit allen Informationen)
+  function clearMultiSearch() {
+    document.getElementById('searchOlpn').value = '';
+    document.getElementById('bulkOlpnTextarea').value = '';
+    document.getElementById('bulkOlpnTextarea').style.display = 'none';
+    document.getElementById('bulkOlpnInfo').style.display = 'none';
+    document.getElementById('searchOlpn').style.display = 'block';
+    
+    document.getElementById('searchTracking').value = '';
+    document.getElementById('bulkTrackingTextarea').value = '';
+    document.getElementById('bulkTrackingTextarea').style.display = 'none';
+    document.getElementById('bulkTrackingInfo').style.display = 'none';
+    document.getElementById('searchTracking').style.display = 'block';
+    
+    document.getElementById('searchCw').value = '';
+    document.getElementById('searchLocation').value = '';
+    document.getElementById('searchCarrier').value = '';
+    document.getElementById('searchCustomer').value = '';
+    document.getElementById('searchCustomerId').value = '';
+    document.getElementById('searchAsn').value = '';
+    clearResults();
+    window.history.replaceState({}, '', '/suche');
+  }
+  
+  function clearSingleSearch() {
+    document.getElementById('singleSearchInput').value = '';
+    clearResults();
+    window.history.replaceState({}, '', '/suche');
+  }
+  
+  // Enter-Taste für Single-Suche
+  document.getElementById('singleSearchInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      performSingleSearch();
+    }
+  });
+  
+  // Enter-Taste für Multi-Suche (alle Felder)
+  ['searchOlpn', 'searchTracking', 'searchCw', 'searchLocation', 'searchCarrier', 'searchCustomer', 'searchCustomerId', 'searchAsn'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performMultiSearch();
+      }
+    });
+  });
+  
+  // URL-Parameter prüfen (für direkte Suche)
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  if (initialQuery) {
+    switchMode('single');
+    document.getElementById('singleSearchInput').value = initialQuery;
+    performSingleSearch();
+  }
+  
+  // Eintrag-Details anzeigen
   async function showInboundEntryDetails(inboundId) {
     try {
       const response = await fetch(`/api/inbound-simple/${inboundId}`);
@@ -561,7 +1697,6 @@
       
       const entry = await response.json();
       
-      // Stellplatz-Informationen abrufen, falls vorhanden
       let locationInfo = "";
       if (entry.location_id) {
         try {
@@ -578,7 +1713,6 @@
         }
       }
       
-      // Formatierungs-Hilfsfunktion
       const formatValue = (value) => {
         if (value === null || value === undefined || value === '') return '<span style="color: var(--text-muted);">-</span>';
         return String(value);
@@ -593,7 +1727,6 @@
         }
       };
       
-      // Modal HTML erstellen
       const modalHtml = `
         <div style="max-width: 1200px; width: 100%; max-height: 90vh; overflow-y: auto;">
           <h3 style="margin: 0 0 20px 0; font-size: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
@@ -639,7 +1772,6 @@
         </div>
       `;
       
-      // Erstelle ein einfaches Modal
       const modal = document.createElement('div');
       modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
       modal.innerHTML = `
@@ -700,4 +1832,3 @@
 
 </body>
 </html>
-

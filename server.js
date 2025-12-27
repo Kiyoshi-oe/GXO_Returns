@@ -5644,8 +5644,51 @@ app.get("/api/search/global", (req, res) => {
       });
     }
     
-    const searchTerm = `%${q.trim()}%`;
+    // Mehrfachsuche: Unterstützt Komma, Semikolon oder Leerzeichen als Trennzeichen
+    // Alle Begriffe müssen gefunden werden (AND-Logik)
+    const searchTerms = q.trim()
+      .split(/[,;]/)
+      .map(term => term.trim())
+      .filter(term => term.length > 0);
+    
+    if (searchTerms.length === 0) {
+      return res.json({ 
+        ok: true, 
+        results: {
+          inbound: [],
+          locations: [],
+          movements: [],
+          archives: [],
+          audit: [],
+          carriers: []
+        },
+        total: 0
+      });
+    }
+    
     const searchLimit = Math.min(parseInt(limit) || 50, 100);
+    
+    // Hilfsfunktion: Erstellt WHERE-Bedingung für mehrere Suchbegriffe (AND)
+    // Jeder Suchbegriff muss in mindestens einem Feld gefunden werden
+    const buildWhereClause = (fields) => {
+      const conditions = searchTerms.map(() => {
+        const fieldConditions = fields.map(() => '?').join(' OR ');
+        return `(${fieldConditions})`;
+      });
+      return conditions.join(' AND ');
+    };
+    
+    // Parameter-Array für alle Suchbegriffe erstellen
+    const buildParams = (fields) => {
+      const params = [];
+      for (const term of searchTerms) {
+        const searchTerm = `%${term}%`;
+        for (const field of fields) {
+          params.push(searchTerm);
+        }
+      }
+      return params;
+    };
     
     const results = {
       inbound: [],
@@ -5658,6 +5701,15 @@ app.get("/api/search/global", (req, res) => {
     
     // 1. Wareneingänge durchsuchen
     try {
+      const inboundFields = [
+        'i.cw', 'i.olpn', 'i.carrier_tracking_nr', 'i.carrier_name',
+        'i.customer_name', 'i.asn_ra_no', 'i.customer_id', 'i.land',
+        'i.area', 'i.kommentar', 'l.code', 'l.description'
+      ];
+      const inboundWhere = buildWhereClause(inboundFields);
+      const inboundParams = buildParams(inboundFields);
+      inboundParams.push(searchLimit);
+      
       const inboundResults = db.prepare(`
         SELECT 
           i.id,
@@ -5677,27 +5729,10 @@ app.get("/api/search/global", (req, res) => {
         FROM inbound_simple i
         LEFT JOIN location l ON i.location_id = l.id
         WHERE i.ignore_flag = 0
-          AND (
-            i.cw LIKE ? OR
-            i.olpn LIKE ? OR
-            i.carrier_tracking_nr LIKE ? OR
-            i.carrier_name LIKE ? OR
-            i.customer_name LIKE ? OR
-            i.asn_ra_no LIKE ? OR
-            i.customer_id LIKE ? OR
-            i.land LIKE ? OR
-            i.area LIKE ? OR
-            i.kommentar LIKE ? OR
-            l.code LIKE ? OR
-            l.description LIKE ?
-          )
+          AND (${inboundWhere})
         ORDER BY i.created_at DESC
         LIMIT ?
-      `).all(
-        searchTerm, searchTerm, searchTerm, searchTerm, searchTerm,
-        searchTerm, searchTerm, searchTerm, searchTerm, searchTerm,
-        searchTerm, searchTerm, searchLimit
-      );
+      `).all(...inboundParams);
       
       results.inbound = inboundResults.map(row => ({
         type: 'wareneingang',
@@ -5723,6 +5758,11 @@ app.get("/api/search/global", (req, res) => {
     
     // 2. Stellplätze durchsuchen
     try {
+      const locationFields = ['l.code', 'l.description', 'l.area'];
+      const locationWhere = buildWhereClause(locationFields);
+      const locationParams = buildParams(locationFields);
+      locationParams.push(searchLimit);
+      
       const locationResults = db.prepare(`
         SELECT 
           l.id,
@@ -5734,15 +5774,11 @@ app.get("/api/search/global", (req, res) => {
           SUM(i.actual_carton) as total_cartons
         FROM location l
         LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
-        WHERE (
-          l.code LIKE ? OR
-          l.description LIKE ? OR
-          l.area LIKE ?
-        )
+        WHERE (${locationWhere})
         GROUP BY l.id, l.code, l.description, l.area, l.is_active
         ORDER BY l.code
         LIMIT ?
-      `).all(searchTerm, searchTerm, searchTerm, searchLimit);
+      `).all(...locationParams);
       
       results.locations = locationResults.map(row => ({
         type: 'stellplatz',
@@ -5765,6 +5801,14 @@ app.get("/api/search/global", (req, res) => {
     
     // 3. Umlagerungen durchsuchen
     try {
+      const movementFields = [
+        'l_from.code', 'l_to.code', 'i.olpn', 'i.carrier_tracking_nr',
+        'i.cw', 'm.moved_by', 'm.reason'
+      ];
+      const movementWhere = buildWhereClause(movementFields);
+      const movementParams = buildParams(movementFields);
+      movementParams.push(searchLimit);
+      
       const movementResults = db.prepare(`
         SELECT 
           m.id,
@@ -5782,21 +5826,10 @@ app.get("/api/search/global", (req, res) => {
         LEFT JOIN location l_from ON m.from_location_id = l_from.id
         LEFT JOIN location l_to ON m.to_location_id = l_to.id
         LEFT JOIN inbound_simple i ON m.inbound_id = i.id
-        WHERE (
-          l_from.code LIKE ? OR
-          l_to.code LIKE ? OR
-          i.olpn LIKE ? OR
-          i.carrier_tracking_nr LIKE ? OR
-          i.cw LIKE ? OR
-          m.moved_by LIKE ? OR
-          m.reason LIKE ?
-        )
+        WHERE (${movementWhere})
         ORDER BY m.moved_at DESC
         LIMIT ?
-      `).all(
-        searchTerm, searchTerm, searchTerm, searchTerm,
-        searchTerm, searchTerm, searchTerm, searchLimit
-      );
+      `).all(...movementParams);
       
       results.movements = movementResults.map(row => ({
         type: 'umlagerung',
@@ -5819,6 +5852,14 @@ app.get("/api/search/global", (req, res) => {
     
     // 4. Archiv durchsuchen
     try {
+      const archiveFields = [
+        'i.olpn', 'i.carrier_tracking_nr', 'i.cw', 'i.carrier_name',
+        'i.customer_name', 'l.code', 'a.archived_by', 'a.reason'
+      ];
+      const archiveWhere = buildWhereClause(archiveFields);
+      const archiveParams = buildParams(archiveFields);
+      archiveParams.push(searchLimit);
+      
       const archiveResults = db.prepare(`
         SELECT 
           a.id,
@@ -5835,22 +5876,10 @@ app.get("/api/search/global", (req, res) => {
         FROM archive a
         LEFT JOIN inbound_simple i ON a.inbound_id = i.id
         LEFT JOIN location l ON a.location_id = l.id
-        WHERE (
-          i.olpn LIKE ? OR
-          i.carrier_tracking_nr LIKE ? OR
-          i.cw LIKE ? OR
-          i.carrier_name LIKE ? OR
-          i.customer_name LIKE ? OR
-          l.code LIKE ? OR
-          a.archived_by LIKE ? OR
-          a.reason LIKE ?
-        )
+        WHERE (${archiveWhere})
         ORDER BY a.archived_at DESC
         LIMIT ?
-      `).all(
-        searchTerm, searchTerm, searchTerm, searchTerm,
-        searchTerm, searchTerm, searchTerm, searchTerm, searchLimit
-      );
+      `).all(...archiveParams);
       
       results.archives = archiveResults.map(row => ({
         type: 'archiv',
@@ -5872,6 +5901,14 @@ app.get("/api/search/global", (req, res) => {
     
     // 5. Audit-Logs durchsuchen
     try {
+      const auditFields = [
+        'i.olpn', 'i.carrier_tracking_nr', 'i.cw', 'a.field_name',
+        'a.old_value', 'a.new_value', 'a.changed_by', 'a.change_reason'
+      ];
+      const auditWhere = buildWhereClause(auditFields);
+      const auditParams = buildParams(auditFields);
+      auditParams.push(searchLimit);
+      
       const auditResults = db.prepare(`
         SELECT 
           a.id,
@@ -5887,22 +5924,10 @@ app.get("/api/search/global", (req, res) => {
           i.cw
         FROM inbound_audit a
         LEFT JOIN inbound_simple i ON a.inbound_id = i.id
-        WHERE (
-          i.olpn LIKE ? OR
-          i.carrier_tracking_nr LIKE ? OR
-          i.cw LIKE ? OR
-          a.field_name LIKE ? OR
-          a.old_value LIKE ? OR
-          a.new_value LIKE ? OR
-          a.changed_by LIKE ? OR
-          a.change_reason LIKE ?
-        )
+        WHERE (${auditWhere})
         ORDER BY a.changed_at DESC
         LIMIT ?
-      `).all(
-        searchTerm, searchTerm, searchTerm, searchTerm,
-        searchTerm, searchTerm, searchTerm, searchTerm, searchLimit
-      );
+      `).all(...auditParams);
       
       results.audit = auditResults.map(row => ({
         type: 'audit',
@@ -5926,6 +5951,11 @@ app.get("/api/search/global", (req, res) => {
     
     // 6. Carrier durchsuchen
     try {
+      const carrierFields = ['name', 'display_name', 'country'];
+      const carrierWhere = buildWhereClause(carrierFields);
+      const carrierParams = buildParams(carrierFields);
+      carrierParams.push(searchLimit);
+      
       const carrierResults = db.prepare(`
         SELECT 
           id,
@@ -5934,14 +5964,10 @@ app.get("/api/search/global", (req, res) => {
           country,
           is_active
         FROM carrier
-        WHERE (
-          name LIKE ? OR
-          display_name LIKE ? OR
-          country LIKE ?
-        )
+        WHERE (${carrierWhere})
         ORDER BY display_name
         LIMIT ?
-      `).all(searchTerm, searchTerm, searchTerm, searchLimit);
+      `).all(...carrierParams);
       
       results.carriers = carrierResults.map(row => ({
         type: 'carrier',
@@ -5971,6 +5997,7 @@ app.get("/api/search/global", (req, res) => {
     res.json({
       ok: true,
       query: q.trim(),
+      searchTerms: searchTerms, // Array der einzelnen Suchbegriffe
       results,
       total,
       counts: {
@@ -6013,7 +6040,7 @@ const pageRoutes = {
   '/performance': 'performance.html',
   '/einstellungen': 'einstellungen.html',
   '/import': 'import.html',
-  '/export': 'export.html',
+  '/export': 'import.html', // Umleitung zu Import-Seite
   '/suche': 'suche.html'
 };
 
@@ -6022,6 +6049,11 @@ app.get(['/', '/dashboard', '/lagerbestand', '/wareneingang', '/umlagerung', '/a
   // API-Routen nicht abfangen
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  
+  // /export auf /import umleiten (mit Tab-Parameter)
+  if (req.path === '/export') {
+    return res.redirect('/import?tab=export');
   }
   
   const pageFile = pageRoutes[req.path] || pageRoutes['/'];
