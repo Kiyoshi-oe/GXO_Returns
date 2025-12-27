@@ -247,6 +247,16 @@ function initDb() {
     `);
   }
   
+  // Prüfe ob operator_fields_config Spalte existiert
+  try {
+    db.prepare("select operator_fields_config from carrier limit 1").get();
+  } catch (e) {
+    console.log("Füge operator_fields_config Spalte hinzu...");
+    db.exec(`
+      alter table carrier add column operator_fields_config text;
+    `);
+  }
+  
   // Prüfe ob location area Spalte existiert
   try {
     db.prepare("select area from location limit 1").get();
@@ -550,7 +560,8 @@ function initPreparedStatements() {
       SELECT id, name, display_name, country, is_active, default_area, default_stage, 
              default_last_stage, default_ship_status, label_image, label_help_text,
              visible_fields, field_placeholders, olpn_validation, tracking_validation,
-             bulk_fixed_fields, bulk_variable_fields, field_requirements, show_labels_1to1
+             bulk_fixed_fields, bulk_variable_fields, field_requirements, show_labels_1to1,
+             operator_fields_config
       FROM carrier 
       WHERE is_active = 1 
       ORDER BY display_name
@@ -1135,7 +1146,8 @@ app.put("/api/carriers/:id", (req, res) => {
         bulk_fixed_fields = ?,
         bulk_variable_fields = ?,
         field_requirements = ?,
-        show_labels_1to1 = ?
+        show_labels_1to1 = ?,
+        operator_fields_config = ?
       where id = ?
     `);
 
@@ -1156,6 +1168,7 @@ app.put("/api/carriers/:id", (req, res) => {
       payload.bulk_variable_fields || "[]",
       payload.field_requirements || "{}",
       payload.show_labels_1to1 || 0,
+      payload.operator_fields_config || "{}",
       id
     );
 
@@ -1353,37 +1366,25 @@ app.post("/api/inbound-simple", (req, res) => {
 
     console.log("Erfolgreich gespeichert mit ID:", info.lastInsertRowid);
     
-    // Audit-Log für Erstellung erstellen
+    // Audit-Log für Erstellung erstellen - nur wichtige Felder
     const currentUser = payload.addedBy || req.headers['x-user'] || 'System';
     const insertAudit = db.prepare(`
       insert into inbound_audit (inbound_id, field_name, old_value, new_value, changed_by, change_reason, changed_at)
       values (?, ?, ?, ?, ?, ?, ?)
     `);
     
-    // Alle wichtigen Felder als "erstellt" loggen
-    const fieldsToLog = {
+    // Nur die wichtigsten Felder loggen (reduziert Traffic)
+    const importantFieldsToLog = {
       'carrier_name': payload.carrierName,
       'location_id': locationId,
       'olpn': payload.olpn,
-      'dn': payload.dn,
       'carrier_tracking_nr': payload.carrierTrackingNr,
       'actual_carton': actualCarton,
-      'planned_carton': plannedCarton,
-      'cw': payload.cw,
-      'aufgenommen_am': payload.aufgenommenAm,
-      'area': payload.area,
-      'land': payload.land,
-      'ship_status': payload.shipStatus,
-      'stage': payload.stage,
-      'last_stage': payload.lastStage,
-      'asn_ra_no': payload.asnRaNo,
-      'customer_id': payload.customerId,
-      'customer_name': payload.customerName,
-      'kommentar': payload.kommentar
+      'stage': payload.stage
     };
     
-    Object.keys(fieldsToLog).forEach(field => {
-      const value = fieldsToLog[field];
+    Object.keys(importantFieldsToLog).forEach(field => {
+      const value = importantFieldsToLog[field];
       if (value !== null && value !== undefined && value !== '') {
         insertAudit.run(
           info.lastInsertRowid,
@@ -1547,10 +1548,14 @@ app.put("/api/inbound-simple/:id", (req, res) => {
       ignore_flag: payload.ignore_flag
     };
     
-    // Audit-Log erstellen für geänderte Felder
+    // Audit-Log erstellen für geänderte Felder - nur wichtige Felder
     const auditLogs = [];
+    // Nur diese wichtigen Felder werden geloggt (reduziert Traffic)
+    const importantFields = ['carrier_name', 'location_id', 'olpn', 'carrier_tracking_nr', 'actual_carton', 'stage'];
+    
     Object.keys(updatableFields).forEach(field => {
-      if (payload[field] !== undefined) {
+      // Nur wichtige Felder loggen
+      if (importantFields.includes(field) && payload[field] !== undefined) {
         const oldValue = existing[field];
         const newValue = updatableFields[field];
         
@@ -5362,11 +5367,13 @@ app.get("/api/backup/list", (req, res) => {
           size: stats.size,
           sizeMB: (stats.size / 1024 / 1024).toFixed(2),
           createdAt: stats.birthtime.toISOString(),
-          modifiedAt: stats.mtime.toISOString()
+          modifiedAt: stats.mtime.toISOString(),
+          isAuto: file.startsWith('auto_')
         };
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Neueste zuerst
     
+    // Keine Begrenzung - alle Backups werden zurückgegeben
     res.json({ ok: true, backups: files });
   } catch (err) {
     console.error("Fehler beim Abrufen der Backup-Liste:", err);
@@ -5500,29 +5507,38 @@ app.post("/api/backup/settings", (req, res) => {
 });
 
 // Alte Backups löschen (wenn maxBackups überschritten)
+// Löscht nur automatische Backups, nicht manuelle
 function cleanupOldBackups() {
   try {
     const settings = loadBackupSettings();
     if (!settings.maxBackups) return;
     
-    const files = fs.readdirSync(backupsDir)
+    // Trenne automatische und manuelle Backups
+    const allFiles = fs.readdirSync(backupsDir)
       .filter(file => file.endsWith('.db'))
       .map(file => {
         const filePath = path.join(backupsDir, file);
         const stats = fs.statSync(filePath);
         return {
           filename: file,
-          createdAt: stats.birthtime
+          createdAt: stats.birthtime,
+          isAuto: file.startsWith('auto_')
         };
-      })
+      });
+    
+    // Nur automatische Backups sortieren und löschen
+    const autoBackups = allFiles
+      .filter(file => file.isAuto)
       .sort((a, b) => b.createdAt - a.createdAt);
     
-    if (files.length > settings.maxBackups) {
-      const toDelete = files.slice(settings.maxBackups);
+    // Nur automatische Backups löschen, wenn maxBackups überschritten
+    // Manuelle Backups werden nie automatisch gelöscht
+    if (autoBackups.length > settings.maxBackups) {
+      const toDelete = autoBackups.slice(settings.maxBackups);
       toDelete.forEach(file => {
         try {
           fs.unlinkSync(path.join(backupsDir, file.filename));
-          console.log(`Altes Backup gelöscht: ${file.filename}`);
+          console.log(`Altes automatisches Backup gelöscht: ${file.filename}`);
         } catch (err) {
           console.error(`Fehler beim Löschen von ${file.filename}:`, err);
         }

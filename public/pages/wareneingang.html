@@ -175,23 +175,6 @@
         
         <!-- Operator Wizard View -->
         <div id="operatorView" style="display: none; max-width: 100%;">
-          <!-- Modus-Wechsel (Einzel vs. Bulk) -->
-          <div class="card" style="margin-bottom: 20px; max-width: 100%;">
-            <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-              <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">
-                Erfassungsmodus
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <button id="operatorModeSingle" class="btn btn-primary" onclick="switchOperatorMode('single')" style="padding: 8px 16px; font-size: 13px;">
-                  📝 Einzel
-                </button>
-                <button id="operatorModeBulk" class="btn btn-secondary" onclick="switchOperatorMode('bulk')" style="padding: 8px 16px; font-size: 13px;">
-                  ⚡ Bulk
-                </button>
-              </div>
-            </div>
-          </div>
-
           <!-- Einzel-Erfassung -->
           <div id="operatorSingleMode" style="display: block;">
             <!-- Fortschrittsanzeige -->
@@ -213,18 +196,51 @@
                 </div>
               </div>
             </div>
+            
 
-          <!-- Schritt 1: Carrier Auswahl -->
+          <!-- Schritt 1: Carrier Auswahl mit Modus-Auswahl -->
           <div id="operatorStep1" class="operator-step active">
             <div class="card" style="max-width: 100%; width: 100%; margin: 0 auto;">
               <div class="card-header">
                 <div>
-                  <div class="card-title" style="font-size: 24px;">Schritt 1: Carrier auswählen</div>
-                  <div class="card-subtitle">Wählen Sie den Versanddienstleister</div>
+                  <div class="card-title" style="font-size: 18px; margin-bottom: 4px;">Schritt 1: Carrier und Modus auswählen</div>
+                  <div class="card-subtitle" style="font-size: 12px;">Wählen Sie den Versanddienstleister und den Erfassungsmodus</div>
                 </div>
               </div>
-              <div id="operatorCarrierGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px;">
-                <!-- Große Carrier-Buttons werden hier geladen -->
+              
+              <!-- Modus-Auswahl -->
+              <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-soft);">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                  <button id="operatorModeSingle" class="btn btn-primary" onclick="switchOperatorMode('single')" style="padding: 8px 16px; font-size: 14px; min-height: 36px; line-height: 1.2; border-radius: 6px; font-weight: 600;">
+                    📝 Einzel
+                  </button>
+                  <button id="operatorModeBulk" class="btn btn-secondary" onclick="switchOperatorMode('bulk')" style="padding: 8px 16px; font-size: 14px; min-height: 36px; line-height: 1.2; border-radius: 6px; font-weight: 600;">
+                    ⚡ Bulk
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Carrier-Auswahl -->
+              <div style="padding: 20px;">
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-main);">
+                  Carrier auswählen
+                </div>
+                <div id="operatorCarrierGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                  <!-- Große Carrier-Buttons werden hier geladen -->
+                </div>
+                <!-- Ausgewählter Carrier Anzeige -->
+                <div id="operatorSelectedCarrierDisplay" style="display: none; margin-top: 20px; padding: 16px; background: var(--bg-soft); border-radius: 10px; border: 2px solid var(--gxo-orange);">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 32px;" id="operatorSelectedCarrierIcon">🚚</div>
+                    <div style="flex: 1;">
+                      <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 4px;">Ausgewählter Carrier:</div>
+                      <div style="font-size: 18px; font-weight: 600; color: var(--text-main);" id="operatorSelectedCarrierName">-</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="operatorBackToCarrierSelection()" style="padding: 6px 12px; font-size: 12px;">
+                      Ändern
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -234,47 +250,47 @@
             <div class="card" style="max-width: 900px; width: 100%; margin: 0 auto;">
               <div class="card-header">
                 <div>
-                  <div class="card-title" style="font-size: 24px;">Schritt 2: Basis-Informationen</div>
-                  <div class="card-subtitle">Erfassen Sie die grundlegenden Daten</div>
+                  <div class="card-title" style="font-size: 18px; margin-bottom: 4px;">Schritt 2: Basis-Informationen</div>
+                  <div class="card-subtitle" style="font-size: 12px;">Erfassen Sie die grundlegenden Daten</div>
                 </div>
               </div>
-              <div style="display: grid; gap: 24px; padding: 24px;">
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
-                    📅 Datum <span style="color: var(--text-muted); font-size: 14px;">(automatisch: heute)</span>
+              <div style="display: grid; gap: 12px; padding: 16px;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
+                    📅 Datum <span style="color: var(--text-muted); font-size: 11px;">(automatisch: heute)</span>
                   </label>
                   <input type="date" id="operatorDateInput" 
-                         style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
                          lang="de-DE">
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
-                    📦 CW (Kalenderwoche) <span style="color: var(--text-muted); font-size: 14px;">(automatisch berechnet)</span>
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
+                    📦 CW (Kalenderwoche) <span style="color: var(--text-muted); font-size: 11px;">(automatisch berechnet)</span>
                   </label>
-                  <input type="text" id="operatorCwInput" 
-                         style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                  <input type="text" id="operatorCwInput" autocorrect="on" spellcheck="true" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
                          placeholder="z.B. CW 47">
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     📍 Stellplatz <span style="color: var(--error);">*</span>
                   </label>
                   <div class="searchable-dropdown" id="operatorLocationDropdown">
-                    <input type="text" id="operatorLocationInput" 
+                    <input type="text" id="operatorLocationInput" autocorrect="on" spellcheck="true" 
                            class="operator-required-field"
-                           style="font-size: 18px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--gxo-orange); background: var(--bg-card); color: var(--text-main); box-shadow: 0 0 0 2px rgba(255, 58, 0, 0.1);" 
+                           style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--gxo-orange); background: var(--bg-card); color: var(--text-main); box-shadow: 0 0 0 2px rgba(255, 58, 0, 0.1);" 
                            placeholder="Stellplatz suchen..." 
                            autocomplete="off" required>
                     <div class="searchable-dropdown-list" id="operatorLocationDropdownList" style="max-height: 300px; overflow-y: auto;"></div>
                   </div>
-                  <div id="operatorLocationValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                  <div id="operatorLocationValidation" style="margin-top: 4px; font-size: 11px;"></div>
                 </div>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
-                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+              <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 14px; padding: 10px 20px; min-height: 36px;">
                   ← Zurück
                 </button>
-                <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+                <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 14px; padding: 10px 20px; min-height: 36px;">
                   Weiter →
                 </button>
               </div>
@@ -284,70 +300,75 @@
           <!-- Schritt 3: Tracking-Nummern -->
           <div id="operatorStep3" class="operator-step" style="display: none;">
             <div class="card" style="max-width: 900px; width: 100%; margin: 0 auto;">
-              <div class="card-header">
+              <div class="card-header" style="padding: 12px 16px;">
                 <div>
-                  <div class="card-title" style="font-size: 24px;">Schritt 3: Tracking-Nummern</div>
-                  <div class="card-subtitle">Scannen Sie die Nummern vom Label</div>
+                  <div class="card-title" style="font-size: 18px; margin-bottom: 4px;">Schritt 3: Tracking-Nummern</div>
+                  <div class="card-subtitle" style="font-size: 12px;">Scannen Sie die Nummern vom Label</div>
                 </div>
               </div>
-              <div style="display: grid; gap: 24px; padding: 24px;">
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+              <div style="display: grid; gap: 12px; padding: 16px;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     📋 RA-Nummer
                   </label>
-                  <input type="text" id="operatorRaInput" 
-                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
+                  <input type="text" id="operatorRaInput" autocorrect="on" spellcheck="true" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
                          placeholder="RA-Nummer eingeben (optional)">
-                  <div id="operatorRaValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                  <div id="operatorRaValidation" style="margin-top: 4px; font-size: 11px;"></div>
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     📦 DN (Delivery Note)
                   </label>
-                  <input type="text" id="operatorDnInput" 
+                  <input type="text" id="operatorDnInput" autocorrect="on" spellcheck="true" 
                          class="operator-required-field"
-                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--gxo-orange); background: var(--bg-card); color: var(--text-main); font-family: monospace; box-shadow: 0 0 0 2px rgba(255, 58, 0, 0.1);" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--gxo-orange); background: var(--bg-card); color: var(--text-main); font-family: monospace; box-shadow: 0 0 0 2px rgba(255, 58, 0, 0.1);" 
                          placeholder="DN eingeben..." 
                          required>
-                  <div id="operatorDnValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                  <div id="operatorDnValidation" style="margin-top: 4px; font-size: 11px;"></div>
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     📦 OLPN (Barcode scannen)
                   </label>
-                  <input type="text" id="operatorOlpnInput" 
-                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
+                  <input type="text" id="operatorOlpnInput" autocorrect="on" spellcheck="true" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
                          placeholder="Barcode scannen oder eingeben...">
-                  <div id="operatorOlpnValidation" style="margin-top: 8px; font-size: 13px;"></div>
-                  <div style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">
+                  <div id="operatorOlpnValidation" style="margin-top: 4px; font-size: 11px;"></div>
+                  <div style="margin-top: 4px; font-size: 11px; color: var(--text-muted);">
                     💡 Tipp: Scannen Sie den Barcode vom Label
                   </div>
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     🚚 Carrier Tracking Number
                   </label>
-                  <input type="text" id="operatorTrackingInput" 
-                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
+                  <input type="text" id="operatorTrackingInput" autocorrect="on" spellcheck="true" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;" 
                          placeholder="Tracking-Nummer eingeben...">
-                  <div id="operatorTrackingValidation" style="margin-top: 8px; font-size: 13px;"></div>
+                  <div id="operatorTrackingValidation" style="margin-top: 4px; font-size: 11px;"></div>
                 </div>
-                <div class="form-group" style="font-size: 16px;">
-                  <label style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: block;">
+                <div class="form-group" style="font-size: 14px;">
+                  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px; display: block;">
                     📦 Anzahl Kartons
                   </label>
                   <input type="number" id="operatorCartonInput" 
-                         style="font-size: 20px; padding: 16px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
+                         style="font-size: 16px; padding: 10px 12px; border-radius: 6px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main);" 
                          placeholder="z.B. 2" min="1">
                 </div>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
-                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+              <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 14px; padding: 10px 20px; min-height: 36px;">
                   ← Zurück
                 </button>
-                <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
-                  Weiter →
-                </button>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary" onclick="operatorClearStep3()" style="font-size: 14px; padding: 10px 20px; min-height: 36px; background: var(--bg-soft); border-color: var(--border-soft);">
+                    🗑️ Leer
+                  </button>
+                  <button class="btn btn-primary" onclick="operatorNextStep()" style="font-size: 14px; padding: 10px 20px; min-height: 36px;">
+                    Weiter →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -357,18 +378,18 @@
             <div class="card" style="max-width: 900px; width: 100%; margin: 0 auto;">
               <div class="card-header">
                 <div>
-                  <div class="card-title" style="font-size: 24px;">Schritt 4: Bestätigung</div>
-                  <div class="card-subtitle">Bitte überprüfen Sie die Daten</div>
+                  <div class="card-title" style="font-size: 18px; margin-bottom: 4px;">Schritt 4: Bestätigung</div>
+                  <div class="card-subtitle" style="font-size: 12px;">Bitte überprüfen Sie die Daten</div>
                 </div>
               </div>
-              <div id="operatorReviewData" style="padding: 24px;">
+              <div id="operatorReviewData" style="padding: 16px;">
                 <!-- Zusammenfassung wird hier angezeigt -->
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 24px; border-top: 1px solid var(--border-soft);">
-                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 16px; padding: 14px 28px; min-height: 48px;">
+              <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border-soft);">
+                <button class="btn btn-secondary" onclick="operatorPreviousStep()" style="font-size: 14px; padding: 10px 20px; min-height: 36px;">
                   ← Zurück
                 </button>
-                <button class="btn btn-primary" onclick="operatorSaveEntry()" id="operatorSaveBtn" style="font-size: 18px; padding: 16px 32px; font-weight: 600; min-height: 48px;">
+                <button class="btn btn-primary" onclick="operatorSaveEntry()" id="operatorSaveBtn" style="font-size: 14px; padding: 10px 20px; font-weight: 600; min-height: 36px;">
                   ✓ Speichern
                 </button>
               </div>
@@ -450,7 +471,7 @@
                       📍 Stellplatz <span style="color: var(--error);">*</span>
                     </label>
                     <div class="searchable-dropdown" id="operatorBulkLocationDropdown">
-                      <input type="text" id="operatorBulkLocation" 
+                      <input type="text" id="operatorBulkLocation" autocorrect="on" spellcheck="true" 
                              class="operator-required-field"
                              style="font-size: 16px; padding: 12px; border-radius: 8px; width: 100%; border: 2px solid var(--gxo-orange); background: var(--bg-card); color: var(--text-main); box-shadow: 0 0 0 2px rgba(255, 58, 0, 0.1);"
                              placeholder="Stellplatz suchen..." 
@@ -471,7 +492,7 @@
                     <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block;">
                       📋 RA-Nummer
                     </label>
-                    <input type="text" id="operatorBulkRa" 
+                    <input type="text" id="operatorBulkRa" autocorrect="on" spellcheck="true" 
                            style="font-size: 16px; padding: 12px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;"
                            placeholder="RA-Nummer (optional)">
                   </div>
@@ -479,7 +500,7 @@
                     <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block;">
                       📦 DN
                     </label>
-                    <input type="text" id="operatorBulkDn" 
+                    <input type="text" id="operatorBulkDn" autocorrect="on" spellcheck="true" 
                            style="font-size: 16px; padding: 12px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;"
                            placeholder="DN eingeben...">
                   </div>
@@ -487,7 +508,7 @@
                     <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block;">
                       📦 OLPN
                     </label>
-                    <input type="text" id="operatorBulkOlpn" 
+                    <input type="text" id="operatorBulkOlpn" autocorrect="on" spellcheck="true" 
                            style="font-size: 16px; padding: 12px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;"
                            placeholder="OLPN scannen..."
                            autofocus>
@@ -496,7 +517,7 @@
                     <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block;">
                       🚚 Tracking
                     </label>
-                    <input type="text" id="operatorBulkTracking" 
+                    <input type="text" id="operatorBulkTracking" autocorrect="on" spellcheck="true" 
                            style="font-size: 16px; padding: 12px; border-radius: 8px; width: 100%; border: 2px solid var(--border-soft); background: var(--bg-card); color: var(--text-main); font-family: monospace;"
                            placeholder="Tracking-Nummer">
                   </div>
@@ -3410,10 +3431,27 @@
   let bulkDefaults = {};
   let bulkSavedCount = 0;
   
+  // Debounce für loadCarriers um Flackern zu vermeiden
+  let loadCarriersTimeout = null;
+  let isCarriersLoading = false;
+  
   async function loadCarriers() {
+    // Wenn bereits geladen wird, warte
+    if (isCarriersLoading) {
+      console.log('⏳ loadCarriers bereits am Laden, überspringe...');
+      return;
+    }
+    
+    // Clear existing timeout
+    if (loadCarriersTimeout) {
+      clearTimeout(loadCarriersTimeout);
+      loadCarriersTimeout = null;
+    }
+    
     const container = document.getElementById("carrierButtonsGrid");
     if (!container) return;
 
+    isCarriersLoading = true;
     container.innerHTML = '<span class="muted">Carrier werden geladen...</span>';
 
     try {
@@ -3473,13 +3511,15 @@
           selectCarrier(car);
         });
 
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Fehler beim Laden der Carrier", err);
-      container.innerHTML = '<span class="muted">Fehler beim Laden der Carrier Stammdaten</span>';
-    }
+      container.appendChild(card);
+    });
+    isCarriersLoading = false;
+  } catch (err) {
+    console.error("Fehler beim Laden der Carrier", err);
+    container.innerHTML = '<span class="muted">Fehler beim Laden der Carrier Stammdaten</span>';
+    isCarriersLoading = false;
   }
+}
 
   async function selectCarrier(carrier) {
     currentCarrier = carrier;
@@ -5229,7 +5269,15 @@
       }
 
       const result = await response.json();
-      showCustomModal("✓ Wareneingang erfolgreich gespeichert!\nID: " + result.id, "success");
+      
+      // Prüfe ob wir im Operator-Modus sind
+      const operatorView = document.getElementById('operatorView');
+      const isOperatorMode = operatorView && operatorView.style.display !== 'none';
+      
+      if (!isOperatorMode) {
+        // Nur in Advanced-Modus das Modal anzeigen
+        showCustomModal("✓ Wareneingang erfolgreich gespeichert!\nID: " + result.id, "success");
+      }
       clearInboundForm();
       backToCarrierSelection();
       loadInboundList();
@@ -9777,6 +9825,12 @@
     
     // Wenn Schritt 3 angezeigt wird, Field Requirements aktualisieren
     if (step === 3) {
+      // Operator-Felder basierend auf Carrier-Konfiguration einrichten
+      // (blendet deaktivierte Felder aus)
+      if (operatorData.carrier && typeof configureOperatorFields === 'function') {
+        configureOperatorFields(operatorData.carrier);
+      }
+      
       if (typeof updateOperatorFieldRequirements === 'function') {
         updateOperatorFieldRequirements();
       }
@@ -9813,12 +9867,27 @@
       currentStepEl.style.display = 'block';
       currentStepEl.classList.add('active');
       operatorCurrentStep = step;
-      console.log(`  ✅ Schritt ${step} angezeigt`);
+      console.log(`  ✅ Schritt ${step} angezeigt, operatorCurrentStep = ${operatorCurrentStep}`);
       
-      // Fortschrittsanzeige aktualisieren
-      if (typeof updateOperatorProgress === 'function') {
-        updateOperatorProgress(step);
-      }
+      // Fortschrittsanzeige SOFORT aktualisieren
+      setTimeout(() => {
+        if (typeof updateOperatorProgress === 'function') {
+          updateOperatorProgress(step);
+        } else {
+          // Fallback: Direkt aktualisieren
+          const progressBar = document.getElementById('operatorProgressBar');
+          const stepDisplay = document.getElementById('operatorCurrentStepDisplay');
+          if (progressBar) {
+            const progress = step >= 5 ? 100 : (step / 4) * 100;
+            progressBar.style.width = progress + '%';
+            console.log(`  ✅ Progress Bar auf ${progress}% gesetzt (Schritt ${step})`);
+          }
+          if (stepDisplay) {
+            stepDisplay.textContent = step >= 5 ? '✓' : step;
+            console.log(`  ✅ Schritt-Anzeige aktualisiert: ${stepDisplay.textContent}`);
+          }
+        }
+      }, 10);
       
       // Auto-Focus auf erstes Input-Feld
       setTimeout(() => {
@@ -9890,11 +9959,29 @@
     console.log('🔄 operatorNextStep aufgerufen, aktueller Schritt:', operatorCurrentStep);
     // Validierung je nach Schritt
     if (operatorCurrentStep === 1) {
+      // Prüfe Modus-Auswahl
+      if (!operatorCurrentMode || (operatorCurrentMode !== 'single' && operatorCurrentMode !== 'bulk')) {
+        if (typeof showValidationError === 'function') {
+          showValidationError('operatorCarrierGrid', 'Bitte wählen Sie einen Erfassungsmodus aus');
+        }
+        return;
+      }
+      
+      // Prüfe Carrier-Auswahl
       if (!operatorData.carrier) {
         if (typeof showValidationError === 'function') {
           showValidationError('operatorCarrierGrid', 'Bitte wählen Sie einen Carrier aus');
         }
         return;
+      }
+      
+      // Wenn Bulk-Modus, direkt zu Bulk-Ansicht wechseln
+      if (operatorCurrentMode === 'bulk') {
+        const singleMode = document.getElementById('operatorSingleMode');
+        const bulkMode = document.getElementById('operatorBulkMode');
+        if (singleMode) singleMode.style.display = 'none';
+        if (bulkMode) bulkMode.style.display = 'block';
+        return; // Nicht zu Schritt 2 wechseln, sondern Bulk-Ansicht zeigen
       }
     } else if (operatorCurrentStep === 2) {
       const locationInput = document.getElementById('operatorLocationInput');
@@ -10082,6 +10169,22 @@
       }
       grid.style.display = 'grid';
       
+      // Carrier Icons Mapping (gleiche wie in Advanced-View)
+      const carrierIcons = {
+        "DPD": "📦",
+        "Geodis": "🚚",
+        "DHL": "📮",
+        "BRT": "🚛",
+        "FedEx": "✈️",
+        "Zalando Ware": "🛍️",
+        "Postnord": "📬",
+        "Lost and Found": "🔍",
+        "Lost & Found": "🔍",
+        "Dachser": "🏭",
+        "DACHSER": "🏭",
+        "Duwensee": "🚢"
+      };
+      
       console.log('✅ Rendere', activeCarriers.length, 'Carrier-Buttons');
       grid.innerHTML = activeCarriers.map(carrier => {
         const carrierJson = JSON.stringify(carrier).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -10090,12 +10193,15 @@
           const images = carrier.label_image.split(',').map(img => img.trim()).filter(img => img);
           if (images.length > 0) {
             const imagePath = images[0].startsWith('/') ? images[0] : `/images/CarrierLabels/${images[0]}`;
-            carrierImage = `<img src="${imagePath}" alt="${carrier.display_name || carrier.name}" style="max-width: 120px; max-height: 80px; object-fit: contain; margin-bottom: 12px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><div style="display: none; font-size: 64px; margin-bottom: 12px;">🚚</div>`;
+            const fallbackIcon = carrierIcons[carrier.name] || "📋";
+            carrierImage = `<img src="${imagePath}" alt="${carrier.display_name || carrier.name}" style="max-width: 120px; max-height: 80px; object-fit: contain; margin-bottom: 12px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><div style="display: none; font-size: 64px; margin-bottom: 12px;">${fallbackIcon}</div>`;
           } else {
-            carrierImage = '<div style="font-size: 64px; margin-bottom: 12px;">🚚</div>';
+            const icon = carrierIcons[carrier.name] || "📋";
+            carrierImage = `<div style="font-size: 64px; margin-bottom: 12px;">${icon}</div>`;
           }
         } else {
-          carrierImage = '<div style="font-size: 64px; margin-bottom: 12px;">🚚</div>';
+          const icon = carrierIcons[carrier.name] || "📋";
+          carrierImage = `<div style="font-size: 64px; margin-bottom: 12px;">${icon}</div>`;
         }
         return `
           <button class="operator-carrier-btn" 
@@ -10169,6 +10275,12 @@
     
     operatorCurrentStep = 1;
     operatorData = {};
+    
+    // Ausgewählten Carrier-Anzeige zurücksetzen
+    const selectedCarrierDisplay = document.getElementById('operatorSelectedCarrierDisplay');
+    const carrierGrid = document.getElementById('operatorCarrierGrid');
+    if (selectedCarrierDisplay) selectedCarrierDisplay.style.display = 'none';
+    if (carrierGrid) carrierGrid.style.display = 'grid';
     
     // Modus initialisieren
     if (typeof switchOperatorMode === 'function') {
@@ -10321,66 +10433,8 @@
     handleViewSwitch: typeof window.handleViewSwitch
   });
   
-  // Navigation-Funktionen werden später definiert, aber hier als Platzhalter verfügbar machen
-  // Diese werden überschrieben, sobald die echten Funktionen definiert sind
-  window.operatorNextStep = function() {
-    console.warn('operatorNextStep noch nicht initialisiert - verwende Fallback');
-    // Fallback: Versuche trotzdem zum nächsten Schritt zu wechseln
-    if (operatorCurrentStep < 4) {
-      const nextStep = operatorCurrentStep + 1;
-      const stepEl = document.getElementById(`operatorStep${nextStep}`);
-      if (stepEl) {
-        // Alle Schritte ausblenden
-        for (let i = 1; i <= 4; i++) {
-          const el = document.getElementById(`operatorStep${i}`);
-          if (el) el.style.display = 'none';
-        }
-        // Nächsten Schritt anzeigen
-        stepEl.style.display = 'block';
-        operatorCurrentStep = nextStep;
-      }
-    }
-  };
-  window.operatorPreviousStep = function() {
-    console.warn('operatorPreviousStep noch nicht initialisiert - verwende Fallback');
-    // Fallback: Versuche trotzdem zum vorherigen Schritt zu wechseln
-    if (operatorCurrentStep > 1) {
-      const prevStep = operatorCurrentStep - 1;
-      const stepEl = document.getElementById(`operatorStep${prevStep}`);
-      if (stepEl) {
-        // Alle Schritte ausblenden
-        for (let i = 1; i <= 4; i++) {
-          const el = document.getElementById(`operatorStep${i}`);
-          if (el) el.style.display = 'none';
-        }
-        // Vorherigen Schritt anzeigen
-        stepEl.style.display = 'block';
-        operatorCurrentStep = prevStep;
-      }
-    }
-  };
-  window.showOperatorStep = function(step) {
-    console.warn('showOperatorStep noch nicht initialisiert, Schritt:', step, '- verwende Fallback');
-    // Fallback: Versuche trotzdem den Schritt anzuzeigen
-    const stepEl = document.getElementById(`operatorStep${step}`);
-    if (stepEl) {
-      // Alle Schritte ausblenden
-      for (let i = 1; i <= 4; i++) {
-        const el = document.getElementById(`operatorStep${i}`);
-        if (el) {
-          el.style.display = 'none';
-          el.classList.remove('active');
-        }
-      }
-      // Aktuellen Schritt anzeigen
-      stepEl.style.display = 'block';
-      stepEl.classList.add('active');
-      operatorCurrentStep = step;
-      console.log('✅ Fallback: Schritt', step, 'angezeigt');
-    } else {
-      console.error('❌ Fallback: operatorStep' + step + ' nicht gefunden!');
-    }
-  };
+  // Navigation-Funktionen werden bereits früher definiert und sind verfügbar
+  // Keine Platzhalter mehr nötig
   // DOPPELTE DEFINITION ENTFERNT - switchToOperatorView wird bereits oben bei Zeile 9832 definiert
   
   function switchToAdminView() {
@@ -10405,9 +10459,13 @@
       toggleOperator.style.color = 'var(--text-muted)';
     }
     
-    // Carrier-Buttons laden
+    // Carrier-Buttons laden (mit Debounce)
     if (typeof loadCarriers === 'function') {
-      setTimeout(() => loadCarriers(), 100);
+      if (loadCarriersTimeout) clearTimeout(loadCarriersTimeout);
+      loadCarriersTimeout = setTimeout(() => {
+        loadCarriers();
+        loadCarriersTimeout = null;
+      }, 100);
     }
     
     // Liste laden wenn sichtbar
@@ -10469,6 +10527,12 @@
     
     // Wenn Schritt 3 angezeigt wird, Field Requirements aktualisieren
     if (step === 3) {
+      // Operator-Felder basierend auf Carrier-Konfiguration einrichten
+      // (blendet deaktivierte Felder aus)
+      if (operatorData.carrier && typeof configureOperatorFields === 'function') {
+        configureOperatorFields(operatorData.carrier);
+      }
+      
       if (typeof updateOperatorFieldRequirements === 'function') {
         updateOperatorFieldRequirements();
       }
@@ -10505,12 +10569,27 @@
       currentStepEl.style.display = 'block';
       currentStepEl.classList.add('active');
       operatorCurrentStep = step;
-      console.log(`  ✅ Schritt ${step} angezeigt`);
+      console.log(`  ✅ Schritt ${step} angezeigt, operatorCurrentStep = ${operatorCurrentStep}`);
       
-      // Fortschrittsanzeige aktualisieren
-      if (typeof updateOperatorProgress === 'function') {
-        updateOperatorProgress(step);
-      }
+      // Fortschrittsanzeige SOFORT aktualisieren
+      setTimeout(() => {
+        if (typeof updateOperatorProgress === 'function') {
+          updateOperatorProgress(step);
+        } else {
+          // Fallback: Direkt aktualisieren
+          const progressBar = document.getElementById('operatorProgressBar');
+          const stepDisplay = document.getElementById('operatorCurrentStepDisplay');
+          if (progressBar) {
+            const progress = step >= 5 ? 100 : (step / 4) * 100;
+            progressBar.style.width = progress + '%';
+            console.log(`  ✅ Progress Bar auf ${progress}% gesetzt (Schritt ${step})`);
+          }
+          if (stepDisplay) {
+            stepDisplay.textContent = step >= 5 ? '✓' : step;
+            console.log(`  ✅ Schritt-Anzeige aktualisiert: ${stepDisplay.textContent}`);
+          }
+        }
+      }, 10);
       
       // Auto-Focus auf erstes Input-Feld
       setTimeout(() => {
@@ -10534,8 +10613,18 @@
   function operatorPreviousStep() {
     console.log('🔄 operatorPreviousStep aufgerufen, aktueller Schritt:', operatorCurrentStep);
     if (operatorCurrentStep > 1) {
-      console.log('  ← Wechsle zu Schritt', operatorCurrentStep - 1);
-      showOperatorStep(operatorCurrentStep - 1);
+      const nextStep = operatorCurrentStep - 1;
+      console.log('  ← Wechsle zu Schritt', nextStep);
+      
+      // Wenn zurück zu Schritt 1, ausgewählten Carrier anzeigen
+      if (nextStep === 1 && operatorData.carrier) {
+        const selectedCarrierDisplay = document.getElementById('operatorSelectedCarrierDisplay');
+        const carrierGrid = document.getElementById('operatorCarrierGrid');
+        if (selectedCarrierDisplay) selectedCarrierDisplay.style.display = 'block';
+        if (carrierGrid) carrierGrid.style.display = 'none';
+      }
+      
+      showOperatorStep(nextStep);
     } else {
       console.log('  ← Bereits im ersten Schritt');
     }
@@ -10553,9 +10642,167 @@
   function operatorSelectCarrier(carrier) {
     operatorData.carrier = carrier;
     operatorLastCarrier = carrier;
+    
+    // Ausgewählten Carrier anzeigen
+    const selectedCarrierDisplay = document.getElementById('operatorSelectedCarrierDisplay');
+    const selectedCarrierName = document.getElementById('operatorSelectedCarrierName');
+    const selectedCarrierIcon = document.getElementById('operatorSelectedCarrierIcon');
+    const carrierGrid = document.getElementById('operatorCarrierGrid');
+    
+    if (selectedCarrierDisplay && selectedCarrierName) {
+      selectedCarrierName.textContent = carrier.display_name || carrier.name || 'Unbekannt';
+      
+      // Icon setzen
+      const carrierIcons = {
+        "DPD": "🚚", "Geodis": "📦", "DHL": "✈️", "BRT": "🚛", "FedEx": "📮",
+        "Zalando Ware": "📦", "Postnord": "📮", "Lost & Found": "🔍",
+        "Dachser": "🏭", "DACHSER": "🏭", "Duwensee": "🚢"
+      };
+      if (selectedCarrierIcon) {
+        selectedCarrierIcon.textContent = carrierIcons[carrier.name] || "🚚";
+      }
+      
+      selectedCarrierDisplay.style.display = 'block';
+      if (carrierGrid) carrierGrid.style.display = 'none';
+    }
+    
+    // Operator-Felder basierend auf Carrier-Konfiguration einrichten
+    configureOperatorFields(carrier);
     // Field Requirements für diesen Carrier laden
     updateOperatorFieldRequirements();
     operatorNextStep();
+  }
+  
+  // Zurück zur Carrier-Auswahl
+  function operatorBackToCarrierSelection() {
+    operatorData.carrier = null;
+    operatorLastCarrier = null;
+    
+    const selectedCarrierDisplay = document.getElementById('operatorSelectedCarrierDisplay');
+    const carrierGrid = document.getElementById('operatorCarrierGrid');
+    
+    if (selectedCarrierDisplay) selectedCarrierDisplay.style.display = 'none';
+    if (carrierGrid) carrierGrid.style.display = 'grid';
+    
+    // Zurück zu Schritt 1
+    showOperatorStep(1);
+  }
+  
+  // Global verfügbar machen
+  window.operatorBackToCarrierSelection = operatorBackToCarrierSelection;
+  
+  // Operator-Felder basierend auf Carrier-Konfiguration konfigurieren
+  function configureOperatorFields(carrier) {
+    if (!carrier) return;
+    
+    // Operator Fields Config laden
+    let operatorFieldsConfig = {};
+    if (carrier.operator_fields_config) {
+      try {
+        operatorFieldsConfig = JSON.parse(carrier.operator_fields_config);
+      } catch (e) {
+        console.warn('Fehler beim Parsen der Operator-Feld-Konfiguration:', e);
+      }
+    }
+    
+    // RA Feld konfigurieren
+    const raConfig = operatorFieldsConfig.ra || { visible: true, numbersOnly: true };
+    const raInput = document.getElementById('operatorRaInput');
+    const raGroup = raInput?.closest('.form-group');
+    if (raGroup) {
+      raGroup.style.display = raConfig.visible !== false ? 'block' : 'none';
+    }
+    if (raInput) {
+      // Prefix hinzufügen
+      if (raConfig.prefix) {
+        raInput.setAttribute('data-prefix', raConfig.prefix);
+        if (!raInput.value.startsWith(raConfig.prefix)) {
+          raInput.placeholder = `${raConfig.prefix}...`;
+        }
+      }
+      // Nur Zahlen erlauben
+      if (raConfig.numbersOnly) {
+        raInput.setAttribute('data-numbers-only', 'true');
+        // Event-Listener nur einmal hinzufügen
+        if (!raInput.hasAttribute('data-numbers-listener')) {
+          raInput.setAttribute('data-numbers-listener', 'true');
+          raInput.addEventListener('input', function(e) {
+            const prefix = e.target.getAttribute('data-prefix') || '';
+            let value = e.target.value.replace(/\D/g, '');
+            if (prefix && !value.startsWith(prefix)) {
+              value = prefix + value;
+            }
+            e.target.value = value;
+          });
+        }
+      }
+    }
+    
+    // OLPN Feld konfigurieren
+    const olpnConfig = operatorFieldsConfig.olpn || { visible: true, numbersOnly: true };
+    const olpnInput = document.getElementById('operatorOlpnInput');
+    const olpnGroup = olpnInput?.closest('.form-group');
+    if (olpnGroup) {
+      olpnGroup.style.display = olpnConfig.visible !== false ? 'block' : 'none';
+    }
+    if (olpnInput) {
+      // Prefix hinzufügen
+      if (olpnConfig.prefix) {
+        olpnInput.setAttribute('data-prefix', olpnConfig.prefix);
+        if (!olpnInput.value.startsWith(olpnConfig.prefix)) {
+          olpnInput.placeholder = `${olpnConfig.prefix}...`;
+        }
+      }
+      // Nur Zahlen erlauben
+      if (olpnConfig.numbersOnly) {
+        olpnInput.setAttribute('data-numbers-only', 'true');
+        // Event-Listener nur einmal hinzufügen
+        if (!olpnInput.hasAttribute('data-numbers-listener')) {
+          olpnInput.setAttribute('data-numbers-listener', 'true');
+          olpnInput.addEventListener('input', function(e) {
+            const prefix = e.target.getAttribute('data-prefix') || '';
+            let value = e.target.value.replace(/\D/g, '');
+            if (prefix && !value.startsWith(prefix)) {
+              value = prefix + value;
+            }
+            e.target.value = value;
+          });
+        }
+      }
+    }
+    
+    // Tracking Feld konfigurieren
+    const trackingConfig = operatorFieldsConfig.tracking || { visible: true, numbersOnly: true };
+    const trackingInput = document.getElementById('operatorTrackingInput');
+    const trackingGroup = trackingInput?.closest('.form-group');
+    if (trackingGroup) {
+      trackingGroup.style.display = trackingConfig.visible !== false ? 'block' : 'none';
+    }
+    if (trackingInput) {
+      // Prefix hinzufügen
+      if (trackingConfig.prefix) {
+        trackingInput.setAttribute('data-prefix', trackingConfig.prefix);
+        if (!trackingInput.value.startsWith(trackingConfig.prefix)) {
+          trackingInput.placeholder = `${trackingConfig.prefix}...`;
+        }
+      }
+      // Nur Zahlen erlauben
+      if (trackingConfig.numbersOnly) {
+        trackingInput.setAttribute('data-numbers-only', 'true');
+        // Event-Listener nur einmal hinzufügen
+        if (!trackingInput.hasAttribute('data-numbers-listener')) {
+          trackingInput.setAttribute('data-numbers-listener', 'true');
+          trackingInput.addEventListener('input', function(e) {
+            const prefix = e.target.getAttribute('data-prefix') || '';
+            let value = e.target.value.replace(/\D/g, '');
+            if (prefix && !value.startsWith(prefix)) {
+              value = prefix + value;
+            }
+            e.target.value = value;
+          });
+        }
+      }
+    }
   }
   
   // Field Requirements basierend auf Carrier und eingegebenen Werten aktualisieren
@@ -10779,8 +11026,26 @@
       }
     }
     
+    // Operator Fields Config prüfen
+    let operatorFieldsConfig = {};
+    if (carrier.operator_fields_config) {
+      try {
+        operatorFieldsConfig = JSON.parse(carrier.operator_fields_config);
+      } catch (e) {
+        console.warn('Fehler beim Parsen der Operator-Feld-Konfiguration:', e);
+      }
+    }
+    const olpnConfig = operatorFieldsConfig.olpn || { numbersOnly: true };
+    
     // Format-Validierung (mindestens 10 Zeichen, nur Zahlen) - nur wenn Validierung aktiviert
     if (olpnValidation.enabled !== false) {
+      // Nur Zahlen prüfen, wenn numbersOnly aktiviert ist
+      if (olpnConfig.numbersOnly !== false && !/^\d+$/.test(olpn)) {
+        operatorData.olpnValid = false;
+        showValidationError('operatorOlpnInput', 'OLPN darf nur Zahlen enthalten');
+        return;
+      }
+      
       if (!/^\d{10,}$/.test(olpn)) {
         operatorData.olpnValid = false;
         showValidationError('operatorOlpnInput', 'OLPN muss mindestens 10 Ziffern enthalten');
@@ -10829,7 +11094,7 @@
     
     operatorData.olpnValid = true;
     operatorData.olpnDuplicate = null;
-    showValidationSuccess('operatorOlpnInput', '✓ OLPN gültig');
+    showValidationSuccess('operatorOlpnInput', 'OLPN gültig');
   }
   
   // Validierungs-Feedback - SOFORT definieren und global verfügbar machen
@@ -10954,6 +11219,16 @@
       saveBtn.textContent = '⏳ Speichere...';
     }
     
+    // Stelle sicher, dass wir wirklich in Schritt 4 sind
+    if (operatorCurrentStep !== 4) {
+      console.warn('⚠️ operatorSaveEntry aufgerufen, aber nicht in Schritt 4. Aktueller Schritt:', operatorCurrentStep);
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✓ Speichern';
+      }
+      return;
+    }
+    
     // Duplikat-Warnung prüfen
     if (operatorData.olpnDuplicate) {
       const duplicate = operatorData.olpnDuplicate;
@@ -11064,26 +11339,47 @@
       const result = await response.json();
       
       // Erfolgsanzeige
-      document.getElementById('operatorStep4').style.display = 'none';
+      const step4 = document.getElementById('operatorStep4');
+      if (step4) {
+        step4.style.display = 'none';
+        step4.classList.remove('active');
+      }
+      
+      // Save-Button wieder aktivieren (für nächsten Eintrag)
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✓ Speichern';
+      }
+      
       const successView = document.getElementById('operatorSuccessView');
       if (successView) {
         successView.style.display = 'block';
         const savedId = result.id || result.lastInsertRowid || '?';
         const savedIdEl = document.getElementById('operatorSavedId');
         if (savedIdEl) savedIdEl.textContent = savedId;
+        
+        // Erfolgsanimation
+        const successIcon = document.getElementById('operatorSuccessIcon');
+        if (successIcon) {
+          successIcon.style.animation = 'none';
+          setTimeout(() => {
+            successIcon.style.animation = 'successPulse 0.6s ease-out';
+          }, 10);
+        }
+        
+        // Fortschrittsanzeige auf 100% setzen
+        updateOperatorProgress(5);
+        
+        // Stelle sicher, dass das Custom Modal geschlossen ist (falls es offen ist)
+        const customModal = document.getElementById('customModal');
+        if (customModal && customModal.style.display !== 'none') {
+          customModal.style.display = 'none';
+        }
       }
       
-      // Erfolgsanimation
-      const successIcon = document.getElementById('operatorSuccessIcon');
-      if (successIcon) {
-        successIcon.style.animation = 'none';
-        setTimeout(() => {
-          successIcon.style.animation = 'successPulse 0.6s ease-out';
-        }, 10);
-      }
-      
-      // Fortschrittsanzeige auf 100% setzen
-      updateOperatorProgress(5);
+      // Operator-Daten für nächsten Eintrag vorbereiten (Carrier und Location behalten)
+      operatorLastCarrier = operatorData.carrier;
+      operatorLastLocation = operatorData.location;
       
     } catch (err) {
       console.error('Fehler beim Speichern:', err);
@@ -11097,31 +11393,160 @@
   
   // Neuen Eintrag starten
   function operatorNewEntry() {
+    console.log('🔄 operatorNewEntry aufgerufen');
+    
+    // Success View ausblenden
+    const successView = document.getElementById('operatorSuccessView');
+    if (successView) {
+      successView.style.display = 'none';
+      console.log('✅ Success View ausgeblendet');
+    }
+    
+    // Schritt 4 ausblenden (falls noch sichtbar)
+    const step4 = document.getElementById('operatorStep4');
+    if (step4) {
+      step4.style.display = 'none';
+      step4.classList.remove('active');
+      console.log('✅ Schritt 4 ausgeblendet');
+    }
+    
+    // Save-Button zurücksetzen (falls noch disabled)
+    const saveBtn = document.getElementById('operatorSaveBtn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '✓ Speichern';
+      console.log('✅ Save-Button zurückgesetzt');
+    }
+    
+    // Custom Modal schließen falls offen
+    const customModal = document.getElementById('customModal');
+    if (customModal && customModal.style.display !== 'none') {
+      customModal.style.display = 'none';
+    }
+    
+    // Alle Felder in Schritt 3 leeren
+    const step3Fields = [
+      'operatorRaInput',
+      'operatorDnInput',
+      'operatorOlpnInput',
+      'operatorTrackingInput',
+      'operatorCartonInput'
+    ];
+    
+    step3Fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.value = '';
+        const validationEl = document.getElementById(fieldId.replace('Input', 'Validation'));
+        if (validationEl) {
+          validationEl.textContent = '';
+          validationEl.className = '';
+        }
+        field.classList.remove('operator-required-field');
+        field.style.borderColor = '';
+        field.style.boxShadow = '';
+      }
+    });
+    
+    // Operator-Daten zurücksetzen (behalte Carrier und Location)
     operatorData = {
       carrier: operatorLastCarrier,
       location: operatorLastLocation,
       date: new Date().toISOString().split('T')[0],
-      cw: `CW ${getCurrentWeek()}`
+      cw: `CW ${getCurrentWeek()}`,
+      ra: '',
+      dn: '',
+      olpn: '',
+      tracking: '',
+      cartons: '',
+      olpnValid: false
     };
     
+    // Zurück zu Schritt 1
+    console.log('🔄 Wechsle zu Schritt 1');
     showOperatorStep(1);
     setOperatorDefaults();
     
     // Wenn Carrier bereits ausgewählt war, direkt zu Schritt 2
     if (operatorLastCarrier) {
       operatorData.carrier = operatorLastCarrier;
+      console.log('🔄 Carrier bereits ausgewählt, wechsle zu Schritt 2');
       showOperatorStep(2);
+    } else {
+      // Carrier-Buttons neu laden
+      if (typeof loadOperatorCarriers === 'function') {
+        loadOperatorCarriers();
+      }
     }
+    
+    console.log('✅ Neuer Eintrag gestartet');
   }
   
   function operatorBackToStart() {
     operatorData = {};
     operatorLastCarrier = null;
     operatorLastLocation = null;
+    
+    // Success View ausblenden
+    const successView = document.getElementById('operatorSuccessView');
+    if (successView) successView.style.display = 'none';
+    
+    // Custom Modal schließen falls offen
+    const customModal = document.getElementById('customModal');
+    if (customModal && customModal.style.display !== 'none') {
+      customModal.style.display = 'none';
+    }
+    
     showOperatorStep(1);
     loadOperatorCarriers();
     setOperatorDefaults();
   }
+  
+  // Schritt 3 Felder leeren
+  function operatorClearStep3() {
+    // Alle Felder in Schritt 3 leeren
+    const fields = [
+      'operatorRaInput',
+      'operatorDnInput',
+      'operatorOlpnInput',
+      'operatorTrackingInput',
+      'operatorCartonInput'
+    ];
+    
+    fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.value = '';
+        // Validierung zurücksetzen
+        const validationEl = document.getElementById(fieldId.replace('Input', 'Validation'));
+        if (validationEl) {
+          validationEl.textContent = '';
+          validationEl.className = '';
+        }
+        // CSS-Klassen zurücksetzen
+        field.classList.remove('operator-required-field');
+        field.style.borderColor = '';
+        field.style.boxShadow = '';
+      }
+    });
+    
+    // Operator-Daten zurücksetzen
+    operatorData.ra = '';
+    operatorData.dn = '';
+    operatorData.olpn = '';
+    operatorData.tracking = '';
+    operatorData.cartons = '';
+    operatorData.olpnValid = false;
+    
+    // Focus auf erstes Feld
+    const firstField = document.getElementById('operatorRaInput');
+    if (firstField) {
+      firstField.focus();
+    }
+  }
+  
+  // Global verfügbar machen
+  window.operatorClearStep3 = operatorClearStep3;
   
   // Hilfsfunktion: Kalenderwoche aus Datum berechnen
   function getWeekFromDate(date) {
@@ -11132,8 +11557,48 @@
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
   
-  // Event-Listener für OLPN-Validierung
-  document.addEventListener('DOMContentLoaded', () => {
+  // Autokorrektur für alle Textfelder aktivieren
+  function enableAutocorrectForAllTextFields() {
+    const textInputs = document.querySelectorAll('input[type="text"]:not([readonly]):not([autocomplete="off"])');
+    textInputs.forEach(input => {
+      if (!input.hasAttribute('autocorrect')) {
+        input.setAttribute('autocorrect', 'on');
+        input.setAttribute('spellcheck', 'true');
+      }
+    });
+  }
+  
+  // Konsolidierte Initialisierung - nur einmal ausführen
+  let wareneingangInitialized = false;
+  
+  function initializeWareneingangPage() {
+    if (wareneingangInitialized) {
+      console.log('⚠️ Wareneingang bereits initialisiert, überspringe...');
+      return;
+    }
+    
+    // Prüfe ob wir auf der Wareneingang-Seite sind
+    const isWareneingangPage = window.location.pathname === '/wareneingang' || 
+                                window.location.pathname.includes('wareneingang') ||
+                                document.getElementById('view-inbound');
+    
+    if (!isWareneingangPage) {
+      return;
+    }
+    
+    console.log('🔄 Initialisiere Wareneingang-Seite...');
+    wareneingangInitialized = true;
+    
+    // Autokorrektur für alle Textfelder aktivieren
+    enableAutocorrectForAllTextFields();
+    
+    // Auch nach dynamischen Updates aktivieren
+    const observer = new MutationObserver(() => {
+      enableAutocorrectForAllTextFields();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // OLPN-Validierung Event-Listener
     const olpnInput = document.getElementById('operatorOlpnInput');
     if (olpnInput) {
       let timeout;
@@ -11196,7 +11661,19 @@
         }
       }
     }, 100);
-  });
+  }
+  
+  // Event-Listener für Initialisierung - nur einmal registrieren
+  // Prüfe ob bereits ein Listener registriert wurde
+  if (!window.wareneingangInitListenerRegistered) {
+    window.wareneingangInitListenerRegistered = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeWareneingangPage);
+    } else {
+      // DOM ist bereits geladen
+      setTimeout(initializeWareneingangPage, 10);
+    }
+  }
   
   // CSS für Erfolgsanimation
   const style = document.createElement('style');
@@ -11275,11 +11752,17 @@
       }
       
       try {
-        const response = await fetch(`/api/locations?search=${encodeURIComponent(query)}`);
-        const locations = await response.json();
+        const response = await fetch(`/api/warehouse/locations?search=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Prüfe ob es ein Array ist oder ein Objekt mit Array
+        const locations = Array.isArray(data) ? data : (data.locations || data.data || []);
         
         list.innerHTML = '';
-        if (locations.length === 0) {
+        if (!locations || locations.length === 0) {
           list.classList.remove('active');
           return;
         }
@@ -11461,39 +11944,36 @@
     if (cartonsField) cartonsField.value = '1';
   }
   
-  // Enter-Taste für Bulk-Felder
-  document.addEventListener('DOMContentLoaded', () => {
+  // Enter-Taste für Bulk-Felder - wird in initializeWareneingangPage integriert
+  function setupBulkFieldEnterHandlers() {
     const bulkFields = ['operatorBulkRa', 'operatorBulkDn', 'operatorBulkOlpn', 'operatorBulkTracking', 'operatorBulkCartons'];
     bulkFields.forEach(fieldId => {
       const field = document.getElementById(fieldId);
       if (field) {
-        field.addEventListener('keydown', (e) => {
+        // Entferne alte Listener falls vorhanden
+        const newField = field.cloneNode(true);
+        field.parentNode.replaceChild(newField, field);
+        
+        newField.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            operatorBulkSaveEntry();
+            if (typeof operatorBulkSaveEntry === 'function') {
+              operatorBulkSaveEntry();
+            }
           }
         });
       }
     });
-    
-    // Stelle sicher, dass view-inbound beim direkten Laden aktiv ist
-    if (window.location.pathname === '/wareneingang' || window.location.pathname.includes('wareneingang')) {
-      const inboundView = document.getElementById('view-inbound');
-      if (inboundView && !inboundView.classList.contains('active')) {
-        // Entferne active von allen Views
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        // Aktiviere view-inbound
-        inboundView.classList.add('active');
-        
-        // Operator-View anzeigen
-        setTimeout(() => {
-          if (typeof switchToOperatorView === 'function') {
-            switchToOperatorView();
-          }
-        }, 50);
-      }
-    }
-  });
+  }
+  
+  // Integriere in Initialisierung
+  if (typeof initializeWareneingangPage !== 'undefined') {
+    const originalInit = initializeWareneingangPage;
+    initializeWareneingangPage = function() {
+      originalInit();
+      setupBulkFieldEnterHandlers();
+    };
+  }
   
   // Globale Funktionen verfügbar machen - SOFORT nach Definition
   if (typeof switchToOperatorView !== 'undefined') {
@@ -11787,18 +12267,11 @@
       .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
   }, 200);
   
-  // Sofortige Initialisierung beim Laden der Wareneingang-Seite
+  // ENTFERNT - Initialisierung wird jetzt zentral in initializeWareneingangPage() gehandhabt
+  // Doppelte Initialisierung verhindert Race Conditions
   (function() {
-    // Prüfe ob wir auf der Wareneingang-Seite sind
-    if (window.location.pathname === '/wareneingang' || window.location.pathname.includes('wareneingang')) {
-      // Warte bis DOM bereit ist
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initWareneingangView);
-      } else {
-        // DOM ist bereits geladen
-        setTimeout(initWareneingangView, 10);
-      }
-    }
+    // Diese Funktion wurde entfernt, da initializeWareneingangPage() bereits alles übernimmt
+    return;
     
     function initWareneingangView() {
       console.log('🔄 initWareneingangView aufgerufen');

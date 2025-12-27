@@ -231,6 +231,7 @@ body[data-theme="light"] .app {
   flex-direction: column;
   margin-left: 260px;
   overflow-x: hidden;
+  overflow-y: visible !important;
   max-width: calc(100vw - 260px);
   min-width: 0;
 }
@@ -735,13 +736,90 @@ textarea:focus {
   right: 0;
   max-height: 280px;
   overflow-y: auto;
+  overflow-x: visible;
   background: #282828;
   border: 1px solid var(--border-soft);
   border-radius: 9px;
-  z-index: 999999;
+  z-index: 9999999 !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: none;
   padding: 4px 0;
+  /* Stelle sicher, dass Dropdown nicht abgeschnitten wird */
+  margin: 0;
+  min-width: 100%;
+}
+
+/* Stelle sicher, dass Cards das Dropdown nicht abschneiden */
+.card {
+  overflow-y: visible !important;
+  overflow-x: visible !important;
+}
+
+.card > * {
+  overflow: visible;
+}
+
+/* Form-Gruppen sollen auch overflow visible haben */
+.form-group {
+  overflow: visible !important;
+}
+
+/* Alle Container, die Dropdowns enthalten könnten */
+.settings-tab-content,
+.card-body,
+.card-content,
+.container,
+.wrapper,
+.filter-container,
+.mode-toggle-container,
+.label-toggle-container,
+.label-images-container,
+.label-help-container,
+.main-content,
+.content,
+.page-content,
+.view,
+[class*="container"],
+[class*="wrapper"],
+[class*="content"] {
+  overflow: visible !important;
+}
+
+/* Spezielle Container für Settings */
+#settingsContent,
+#carrierSettingsForm,
+#carrierSelectionHint {
+  overflow: visible !important;
+}
+
+/* Parent-Container von Dropdowns */
+.searchable-dropdown,
+.searchable-dropdown * {
+  overflow: visible !important;
+}
+
+/* Stelle sicher, dass Dropdown-Listen über allem angezeigt werden */
+.searchable-dropdown-list {
+  position: absolute !important;
+  z-index: 9999999 !important;
+}
+
+/* Wenn Dropdown in einem Container mit overflow hidden, verwende fixed positioning */
+.searchable-dropdown-list.active {
+  position: absolute !important;
+  z-index: 9999999 !important;
+}
+
+/* Stelle sicher, dass alle Parent-Elemente overflow visible haben */
+.searchable-dropdown,
+.searchable-dropdown * {
+  overflow: visible !important;
+}
+
+/* Nur die Scrollbar innerhalb der Liste sollte scrollbar haben */
+.searchable-dropdown-list {
+  overflow-y: auto !important;
+  overflow-x: visible !important;
 }
 
 /* Dropdowns innerhalb von Modals haben höheren z-index */
