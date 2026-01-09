@@ -71,6 +71,12 @@
       <span class="nav-icon">📥</span>
       <span>Datenverwaltung</span>
     </a>
+
+    <div class="nav-section-title">Tools</div>
+    <a href="/barcode" class="nav-item ">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
+    </a>
     </nav>
   </aside>
 
@@ -455,18 +461,27 @@
       const response = await fetch('/api/performance/health');
       const health = await response.json();
       
+      // Prüfe Datenbank-Status (neue API-Struktur: health.database.status === 'healthy')
+      const dbOnline = health.database && health.database.status === 'healthy';
+      const memoryInfo = health.memory ? `${health.memory.heapUsed}MB / ${health.memory.heapTotal}MB` : 'N/A';
+      const uptimeInfo = health.uptimeFormatted || health.uptime || 'N/A';
+      
       let html = '<div style="display: grid; gap: 8px;">';
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Datenbank</div>
-        <div style="font-size: 16px; font-weight: bold; color: ${health.database === 'ok' ? '#4CAF50' : '#F44336'};">${health.database === 'ok' ? '✅ Online' : '❌ Offline'}</div>
+        <div style="font-size: 16px; font-weight: bold; color: ${dbOnline ? '#4CAF50' : '#F44336'};">${dbOnline ? '✅ Online' : '❌ Offline'}</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Speicher</div>
-        <div style="font-size: 16px; font-weight: bold;">${health.memory || 'N/A'}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Speicher (Heap)</div>
+        <div style="font-size: 16px; font-weight: bold;">${memoryInfo}</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Uptime</div>
-        <div style="font-size: 16px; font-weight: bold;">${health.uptime || 'N/A'}</div>
+        <div style="font-size: 16px; font-weight: bold;">${uptimeInfo}</div>
+      </div>`;
+      html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">System-Status</div>
+        <div style="font-size: 16px; font-weight: bold; color: ${health.status === 'healthy' ? '#4CAF50' : '#FF9800'};">${health.status === 'healthy' ? '✅ Healthy' : '⚠️ ' + health.status}</div>
       </div>`;
       html += '</div>';
       
@@ -483,30 +498,43 @@
       const response = await fetch('/api/performance/metrics');
       const metrics = await response.json();
       
+      // Neue API-Struktur verwenden
+      const memPercent = metrics.memory ? metrics.memory.percentUsed : 0;
+      const heapUsed = metrics.memory ? metrics.memory.heapUsed : 0;
+      const heapTotal = metrics.memory ? metrics.memory.heapTotal : 0;
+      const cpuUser = metrics.cpu ? metrics.cpu.user : 0;
+      const cpuSystem = metrics.cpu ? metrics.cpu.system : 0;
+      const processUptime = metrics.process ? metrics.process.uptime : 0;
+      const cpuCount = metrics.system ? metrics.system.cpus : 0;
+      const freeMemory = metrics.system ? metrics.system.freeMemory : 0;
+      const totalMemory = metrics.system ? metrics.system.totalMemory : 0;
+      
       let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">';
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Requests heute</div>
-        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.requestsToday || 0}</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Heap-Speicher</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${heapUsed}MB / ${heapTotal}MB</div>
+        <div style="font-size: 10px; color: var(--text-muted);">${memPercent}% verwendet</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Ø Response-Zeit</div>
-        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.avgResponseTime || 0}ms</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">System-Speicher</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${freeMemory}MB frei</div>
+        <div style="font-size: 10px; color: var(--text-muted);">von ${totalMemory}MB gesamt</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">P95 Response-Zeit</div>
-        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.p95ResponseTime || 0}ms</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">CPU-Zeit (User)</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${cpuUser}ms</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">P99 Response-Zeit</div>
-        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.p99ResponseTime || 0}ms</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">CPU-Zeit (System)</div>
+        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${cpuSystem}ms</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Fehlerrate</div>
-        <div style="font-size: 18px; font-weight: bold; color: ${(metrics.errorRate || 0) > 5 ? '#F44336' : '#4CAF50'};">${(metrics.errorRate || 0).toFixed(2)}%</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">CPU-Kerne</div>
+        <div style="font-size: 18px; font-weight: bold; color: #4CAF50;">${cpuCount}</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">DB Query-Zeit</div>
-        <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${metrics.dbQueryTime || 0}ms</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Prozess-Uptime</div>
+        <div style="font-size: 18px; font-weight: bold; color: #4CAF50;">${formatSeconds(processUptime)}</div>
       </div>`;
       html += '</div>';
       
@@ -515,6 +543,14 @@
       console.error('Fehler:', err);
     }
   }
+  
+  function formatSeconds(seconds) {
+    if (seconds < 60) return seconds + 's';
+    if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return h + 'h ' + m + 'm';
+  }
 
   // Datenbank-Statistiken
   async function loadDatabaseStats() {
@@ -522,18 +558,23 @@
       const response = await fetch('/api/performance/database/stats');
       const stats = await response.json();
       
+      // Neue API-Struktur verwenden
+      const dbSizeKB = stats.databaseSizeKB || 0;
+      const dbSizeMB = (dbSizeKB / 1024).toFixed(2);
+      const tableCount = stats.totalTables || 0;
+      
       let html = '<div style="display: grid; gap: 8px;">';
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Datenbank-Größe</div>
-        <div style="font-size: 16px; font-weight: bold;">${stats.dbSizeMB || 0} MB</div>
+        <div style="font-size: 16px; font-weight: bold;">${dbSizeKB > 1024 ? dbSizeMB + ' MB' : dbSizeKB + ' KB'}</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Tabellen</div>
-        <div style="font-size: 16px; font-weight: bold;">${stats.tableCount || 0}</div>
+        <div style="font-size: 16px; font-weight: bold;">${tableCount}</div>
       </div>`;
       html += `<div style="padding: 10px; background: var(--bg-soft); border-radius: 6px;">
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Indizes</div>
-        <div style="font-size: 16px; font-weight: bold;">${stats.indexCount || 0}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Letztes Update</div>
+        <div style="font-size: 14px; font-weight: bold;">${stats.timestamp ? new Date(stats.timestamp).toLocaleTimeString('de-DE') : 'N/A'}</div>
       </div>`;
       html += '</div>';
       
@@ -1164,59 +1205,141 @@
     }
   }
 
+  // Hilfsfunktion: Chart als Base64-Bild erfassen
+  function captureChartAsImage(chartId) {
+    try {
+      const canvas = document.getElementById(chartId);
+      if (!canvas) {
+        console.warn(`Chart ${chartId} nicht gefunden`);
+        return null;
+      }
+      
+      // Canvas als Base64-String
+      return canvas.toDataURL('image/png');
+    } catch (err) {
+      console.error(`Fehler beim Erfassen von ${chartId}:`, err);
+      return null;
+    }
+  }
+  
   // Export-Funktionen
   async function exportPerformance(type) {
     try {
       const comparePeriod = document.getElementById('comparePeriod')?.value || 'none';
-      const url = `/api/performance/export?type=${type}&period=current&compare=${comparePeriod}`;
       
-      // Download starten
+      console.log('🔄 Starte Performance-Export:', type);
+      
+      // Charts als Bilder erfassen
+      const charts = {};
+      
+      if (type === 'software') {
+        // Software-Performance Charts
+        charts.responseTimeChart = captureChartAsImage('responseTimeChart');
+      } else if (type === 'warehouse') {
+        // Lager-Performance Charts
+        charts.inboundChart = captureChartAsImage('inboundChart');
+        charts.movementChart = captureChartAsImage('movementChart');
+        charts.archiveChart = captureChartAsImage('archiveChart');
+        charts.carrierChart = captureChartAsImage('carrierChart');
+        charts.timelineChart = captureChartAsImage('timelineChart');
+        charts.weeklyChart = captureChartAsImage('weeklyChart');
+      }
+      
+      // Entferne null-Werte
+      Object.keys(charts).forEach(key => {
+        if (!charts[key]) delete charts[key];
+      });
+      
+      console.log(`📊 ${Object.keys(charts).length} Charts erfasst`);
+      
+      // POST-Request mit Charts als JSON
+      const response = await fetch('/api/performance/export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type,
+          period: 'current',
+          compare: comparePeriod,
+          charts
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      // Blob aus Response erstellen
+      const blob = await response.blob();
+      
+      // Download-Link erstellen
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = `Performance_${type}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // URL freigeben
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('✅ Performance-Export erfolgreich');
     } catch (err) {
-      console.error('Fehler beim Export:', err);
-      alert('Fehler beim Export der Performance-Daten');
+      console.error('❌ Fehler beim Export:', err);
+      alert('Fehler beim Export der Performance-Daten: ' + err.message);
     }
   }
 
-  // Initialisierung
-  document.addEventListener('DOMContentLoaded', () => {
-    loadSoftwarePerformance();
-    
+  // Event-Listener registrieren
+  function setupEventListeners() {
     // Export-Buttons
     const exportSoftwareBtn = document.getElementById('exportSoftwareBtn');
     const exportWarehouseBtn = document.getElementById('exportWarehouseBtn');
     const comparePeriod = document.getElementById('comparePeriod');
     
-    if (exportSoftwareBtn) {
+    if (exportSoftwareBtn && !exportSoftwareBtn.dataset.listenerAttached) {
       exportSoftwareBtn.addEventListener('click', () => exportPerformance('software'));
+      exportSoftwareBtn.dataset.listenerAttached = 'true';
+      console.log('✅ Export Software Button registriert');
     }
     
-    if (exportWarehouseBtn) {
+    if (exportWarehouseBtn && !exportWarehouseBtn.dataset.listenerAttached) {
       exportWarehouseBtn.addEventListener('click', () => exportPerformance('warehouse'));
+      exportWarehouseBtn.dataset.listenerAttached = 'true';
+      console.log('✅ Export Warehouse Button registriert');
     }
     
     // Vergleichszeitraum-Änderung
-    if (comparePeriod) {
+    if (comparePeriod && !comparePeriod.dataset.listenerAttached) {
       comparePeriod.addEventListener('change', () => {
         if (currentTab === 'warehouse') {
           loadActivityMetrics();
         }
       });
+      comparePeriod.dataset.listenerAttached = 'true';
     }
+  }
+  
+  // Initialisierung
+  function initPerformancePage() {
+    console.log('🔄 Initialisiere Performance-Seite...');
+    
+    loadSoftwarePerformance();
+    setupEventListeners();
     
     // Auto-Refresh alle 60 Sekunden
-    setInterval(() => {
-      if (currentTab === 'software') {
-        loadSoftwarePerformance();
-      } else if (currentTab === 'warehouse') {
-        loadWarehousePerformance();
-      }
-    }, 60000);
+    if (!window.performanceRefreshInterval) {
+      window.performanceRefreshInterval = setInterval(() => {
+        if (currentTab === 'software') {
+          loadSoftwarePerformance();
+        } else if (currentTab === 'warehouse') {
+          loadWarehousePerformance();
+        }
+      }, 60000);
+    }
     
     // Loading Screen ausblenden
     setTimeout(() => {
@@ -1226,7 +1349,17 @@
         setTimeout(() => loadingScreen.style.display = 'none', 600);
       }
     }, 1000);
-  });
+    
+    console.log('✅ Performance-Seite initialisiert');
+  }
+  
+  // Initialisierung beim Laden
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPerformancePage);
+  } else {
+    // DOM bereits geladen
+    initPerformancePage();
+  }
 </script>
 
 </body>

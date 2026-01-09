@@ -115,6 +115,12 @@
       <span>Datenverwaltung</span>
     </a>
 
+    <div class="nav-section-title">Tools</div>
+    <a href="/barcode" class="nav-item ">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
+    </a>
+
     <div class="sidebar-footer">
       <div style="font-size: 11px; color: var(--text-soft);">
         LVS Returns System<br>
@@ -4906,31 +4912,13 @@
       return;
     }
     
+    // Navigation-Links sollen normal funktionieren (href)
     navItems.forEach((item) => {
-      // Entferne alte Event-Handler (falls vorhanden)
-      const newItem = item.cloneNode(true);
-      item.parentNode.replaceChild(newItem, item);
-      
-      // Füge Event-Handler hinzu
-      newItem.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const viewName = this.getAttribute("data-view");
-        console.log("🖱️ Navigation-Item geklickt:", viewName);
-        if (viewName) {
-          handleNavigationClick(viewName);
-        } else {
-          console.warn("⚠️ Kein data-view Attribut gefunden");
-        }
-      });
-      
-      // Mache Element klickbar (Cursor)
-      newItem.style.cursor = "pointer";
-      newItem.style.userSelect = "none";
+      item.style.cursor = "pointer";
+      item.style.userSelect = "none";
     });
     
-    console.log("✅ Navigation initialisiert");
+    console.log("✅ Navigation initialisiert - Links funktionieren normal");
   }
   
   // Routing und Navigation initialisieren - mehrfach versuchen falls nötig
@@ -4979,40 +4967,12 @@
   
   setupNavigation();
   
-  // Event-Delegation Fallback für Navigation (funktioniert immer, auch wenn direkte Handler fehlschlagen)
+  // Event-Delegation - Navigation-Links sollen normal funktionieren
   function setupEventDelegation() {
-    const navElement = document.querySelector('.nav');
-    if (navElement) {
-      // Entferne alte Handler falls vorhanden
-      const newNavElement = navElement.cloneNode(true);
-      navElement.parentNode.replaceChild(newNavElement, navElement);
-      
-      newNavElement.addEventListener('click', function(e) {
-        const navItem = e.target.closest('.nav-item');
-        if (navItem && navItem.hasAttribute('data-view')) {
-          e.preventDefault();
-          e.stopPropagation();
-          const viewName = navItem.getAttribute('data-view');
-          console.log("🧭 Event-Delegation: Navigation zu View:", viewName);
-          if (viewName) {
-            handleNavigationClick(viewName);
-          }
-        }
-      });
-      console.log("✅ Event-Delegation Handler für Navigation hinzugefügt");
-    } else {
-      console.warn("⚠️ .nav Element nicht gefunden für Event-Delegation");
-      // Versuche später erneut
-      setTimeout(setupEventDelegation, 200);
-    }
+    console.log("✅ Navigation verwendet normale href-Links");
   }
   
-  // Event-Delegation sofort einrichten
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupEventDelegation);
-  } else {
-    setupEventDelegation();
-  }
+  // Event-Delegation NICHT einrichten - Links sollen normal funktionieren
 
   document.querySelectorAll("[data-jump]").forEach(btn => {
     btn.addEventListener("click", () => {

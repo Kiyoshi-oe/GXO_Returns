@@ -178,7 +178,6 @@ const pageRoutes = {
   '/archive': 'archive.html',
   '/ra-import': 'ra-import.html',
   '/performance': 'performance.html',
-  '/barcode': 'barcode.html',
   '/einstellungen': 'einstellungen.html',
   '/import': 'import.html',
   '/export': 'import.html',
@@ -187,6 +186,11 @@ const pageRoutes = {
 
 // Seiten servieren
 app.get(Object.keys(pageRoutes), (req, res) => {
+  // API-Routen nicht abfangen
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
+  }
+  
   // /export auf /import umleiten
   if (req.path === '/export') {
     return res.redirect('/import?tab=export');
@@ -209,11 +213,10 @@ app.get(Object.keys(pageRoutes), (req, res) => {
 // 404 Handler für API-Routes
 app.use(notFoundHandler);
 
-// Catch-All: Redirect zu Dashboard (aber nicht für API-Routes)
+// Catch-All: Redirect zu Dashboard
 app.use((req, res, next) => {
-  // API-Routes werden bereits vom notFoundHandler behandelt
   if (req.path.startsWith('/api/')) {
-    return next();
+    return res.status(404).json({ ok: false, error: 'API-Endpunkt nicht gefunden' });
   }
   res.redirect('/dashboard');
 });

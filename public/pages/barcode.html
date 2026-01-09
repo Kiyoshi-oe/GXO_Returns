@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode Generator - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- JsBarcode Bibliothek für Barcode-Generierung -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+  <div class="loading-subtitle">
+    <span class="loading-dots"></span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/wareneingang" class="nav-item">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/umlagerung" class="nav-item">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/suche" class="nav-item">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
+    <a href="/einstellungen" class="nav-item">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item">
+      <span class="nav-icon">📥</span>
+      <span>Datenverwaltung</span>
+    </a>
+
+    <div class="nav-section-title">Tools</div>
+    <a href="/barcode" class="nav-item active">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title">Barcode Generator</h1>
+        <p class="topbar-subtitle">Erstellen Sie eigene Barcodes für Ihre Produkte</p>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <span class="user-name" id="userName">Benutzer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+      <div class="container">
+        
+        <!-- Barcode Eingabe Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Barcode Konfiguration</h2>
+            <p class="card-subtitle">Geben Sie die Daten für Ihren Barcode ein</p>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <!-- Barcode Typ -->
+              <div class="form-group">
+                <label for="barcodeType" class="form-label">Barcode-Typ</label>
+                <select id="barcodeType" class="form-select">
+                  <option value="CODE128">CODE 128 (Standard)</option>
+                  <option value="CODE39">CODE 39</option>
+                  <option value="EAN13">EAN-13</option>
+                  <option value="EAN8">EAN-8</option>
+                  <option value="UPC">UPC</option>
+                  <option value="ITF14">ITF-14</option>
+                  <option value="MSI">MSI</option>
+                  <option value="pharmacode">Pharmacode</option>
+                  <option value="codabar">Codabar</option>
+                </select>
+              </div>
+
+              <!-- Barcode Wert -->
+              <div class="form-group">
+                <label for="barcodeValue" class="form-label">Barcode-Wert</label>
+                <input 
+                  type="text" 
+                  id="barcodeValue" 
+                  class="form-input" 
+                  placeholder="z.B. 123456789012"
+                  value="123456789012"
+                >
+                <small class="form-hint">Der Wert, der im Barcode kodiert werden soll</small>
+              </div>
+
+              <!-- Anzeige Text -->
+              <div class="form-group">
+                <label for="displayText" class="form-label">Anzeige-Text</label>
+                <input 
+                  type="text" 
+                  id="displayText" 
+                  class="form-input" 
+                  placeholder="Text unter dem Barcode (optional)"
+                >
+                <small class="form-hint">Leer lassen, um den Barcode-Wert anzuzeigen</small>
+              </div>
+
+              <!-- Breite -->
+              <div class="form-group">
+                <label for="barcodeWidth" class="form-label">Strichbreite</label>
+                <input 
+                  type="number" 
+                  id="barcodeWidth" 
+                  class="form-input" 
+                  value="2"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                >
+                <small class="form-hint">Breite der einzelnen Striche (1-5)</small>
+              </div>
+
+              <!-- Höhe -->
+              <div class="form-group">
+                <label for="barcodeHeight" class="form-label">Höhe</label>
+                <input 
+                  type="number" 
+                  id="barcodeHeight" 
+                  class="form-input" 
+                  value="100"
+                  min="20"
+                  max="300"
+                  step="10"
+                >
+                <small class="form-hint">Höhe des Barcodes in Pixeln (20-300)</small>
+              </div>
+
+              <!-- Text anzeigen -->
+              <div class="form-group">
+                <label class="form-label">
+                  <input 
+                    type="checkbox" 
+                    id="showText" 
+                    checked
+                    style="margin-right: 8px;"
+                  >
+                  Text unter Barcode anzeigen
+                </label>
+              </div>
+            </div>
+
+            <div class="card-actions" style="margin-top: 24px;">
+              <button id="generateBtn" class="btn btn-primary">
+                <span>📊</span>
+                Barcode Generieren
+              </button>
+              <button id="clearBtn" class="btn btn-secondary">
+                <span>🗑️</span>
+                Zurücksetzen
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barcode Vorschau Card -->
+        <div class="card" id="previewCard" style="display: none;">
+          <div class="card-header">
+            <h2 class="card-title">Barcode Vorschau</h2>
+            <p class="card-subtitle">Ihr generierter Barcode</p>
+          </div>
+          <div class="card-body">
+            <div style="text-align: center; padding: 32px; background: white; border-radius: 8px;">
+              <svg id="barcode"></svg>
+            </div>
+            
+            <div class="card-actions" style="margin-top: 24px; justify-content: center;">
+              <button id="downloadPngBtn" class="btn btn-primary">
+                <span>💾</span>
+                Als PNG herunterladen
+              </button>
+              <button id="downloadSvgBtn" class="btn btn-secondary">
+                <span>💾</span>
+                Als SVG herunterladen
+              </button>
+              <button id="printBtn" class="btn btn-secondary">
+                <span>🖨️</span>
+                Drucken
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batch Generierung Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Batch-Generierung</h2>
+            <p class="card-subtitle">Mehrere Barcodes auf einmal erstellen</p>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="batchInput" class="form-label">Barcode-Werte (einer pro Zeile)</label>
+              <textarea 
+                id="batchInput" 
+                class="form-input" 
+                rows="6"
+                placeholder="123456789012&#10;234567890123&#10;345678901234"
+              ></textarea>
+              <small class="form-hint">Geben Sie jeden Barcode-Wert in einer neuen Zeile ein</small>
+            </div>
+
+            <div class="card-actions" style="margin-top: 24px;">
+              <button id="generateBatchBtn" class="btn btn-primary">
+                <span>📊</span>
+                Batch Generieren
+              </button>
+              <button id="downloadAllBtn" class="btn btn-secondary" style="display: none;">
+                <span>💾</span>
+                Alle herunterladen (ZIP)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batch Vorschau -->
+        <div id="batchPreview" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Batch Vorschau</h2>
+              <p class="card-subtitle" id="batchCount">0 Barcodes generiert</p>
+            </div>
+            <div class="card-body">
+              <div id="batchGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                <!-- Barcodes werden hier eingefügt -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">ℹ️ Barcode-Typen Übersicht</h2>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; gap: 16px;">
+              <div>
+                <strong>CODE 128:</strong> Universeller Barcode, unterstützt alle ASCII-Zeichen. Ideal für allgemeine Anwendungen.
+              </div>
+              <div>
+                <strong>CODE 39:</strong> Alphanumerischer Barcode, unterstützt Zahlen, Großbuchstaben und einige Sonderzeichen.
+              </div>
+              <div>
+                <strong>EAN-13:</strong> Europäischer Artikel-Nummern-Code mit 13 Ziffern. Standard für Einzelhandel.
+              </div>
+              <div>
+                <strong>EAN-8:</strong> Kompakte Version von EAN mit 8 Ziffern für kleine Produkte.
+              </div>
+              <div>
+                <strong>UPC:</strong> Universal Product Code, hauptsächlich in Nordamerika verwendet.
+              </div>
+              <div>
+                <strong>ITF-14:</strong> Interleaved 2 of 5, verwendet für Versandkartons (14 Ziffern).
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+  // Loading Screen Management
+  (function() {
+    setTimeout(() => {
+      const loadingScreen = document.getElementById("loadingScreen");
+      if (loadingScreen) {
+        loadingScreen.style.transition = "opacity 0.6s ease, visibility 0.6s ease";
+        loadingScreen.style.opacity = "0";
+        loadingScreen.style.visibility = "hidden";
+        setTimeout(() => {
+          loadingScreen.style.display = "none";
+        }, 600);
+      }
+    }, 500);
+  })();
+
+  // Windows Benutzername abrufen
+  fetch('/api/system/user')
+    .then(res => res.json())
+    .then(data => {
+      const userNameEl = document.getElementById('userName');
+      if (userNameEl && data.username) {
+        userNameEl.textContent = data.username;
+      }
+    })
+    .catch(err => console.warn('Benutzername konnte nicht geladen werden:', err));
+
+  // Barcode Generator Logik
+  const barcodeType = document.getElementById('barcodeType');
+  const barcodeValue = document.getElementById('barcodeValue');
+  const displayText = document.getElementById('displayText');
+  const barcodeWidth = document.getElementById('barcodeWidth');
+  const barcodeHeight = document.getElementById('barcodeHeight');
+  const showText = document.getElementById('showText');
+  const generateBtn = document.getElementById('generateBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const previewCard = document.getElementById('previewCard');
+  const barcodeSvg = document.getElementById('barcode');
+
+  // Batch Elemente
+  const batchInput = document.getElementById('batchInput');
+  const generateBatchBtn = document.getElementById('generateBatchBtn');
+  const batchPreview = document.getElementById('batchPreview');
+  const batchGrid = document.getElementById('batchGrid');
+  const batchCount = document.getElementById('batchCount');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+  // Einzelnen Barcode generieren
+  function generateBarcode() {
+    const value = barcodeValue.value.trim();
+    
+    if (!value) {
+      showNotification('Bitte geben Sie einen Barcode-Wert ein', 'error');
+      return;
+    }
+
+    try {
+      const options = {
+        format: barcodeType.value,
+        width: parseFloat(barcodeWidth.value),
+        height: parseInt(barcodeHeight.value),
+        displayValue: showText.checked,
+        text: displayText.value || undefined,
+        margin: 10,
+        fontSize: 14,
+        textMargin: 5
+      };
+
+      JsBarcode(barcodeSvg, value, options);
+      previewCard.style.display = 'block';
+      
+      // Smooth scroll zur Vorschau
+      setTimeout(() => {
+        previewCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+      
+      showNotification('Barcode erfolgreich generiert!', 'success');
+    } catch (error) {
+      console.error('Barcode Generierungsfehler:', error);
+      showNotification('Fehler: ' + error.message, 'error');
+    }
+  }
+
+  // Batch Barcodes generieren
+  function generateBatchBarcodes() {
+    const values = batchInput.value.trim().split('\n').filter(v => v.trim());
+    
+    if (values.length === 0) {
+      showNotification('Bitte geben Sie mindestens einen Barcode-Wert ein', 'error');
+      return;
+    }
+
+    batchGrid.innerHTML = '';
+    let successCount = 0;
+
+    values.forEach((value, index) => {
+      value = value.trim();
+      if (!value) return;
+
+      try {
+        const container = document.createElement('div');
+        container.style.cssText = 'background: white; padding: 16px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+        
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('id', 'batch-barcode-' + index);
+        
+        const options = {
+          format: barcodeType.value,
+          width: 2,
+          height: 80,
+          displayValue: true,
+          margin: 5,
+          fontSize: 12
+        };
+
+        JsBarcode(svg, value, options);
+        container.appendChild(svg);
+        
+        // Download Button für jeden Barcode
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn btn-sm btn-secondary';
+        downloadBtn.style.marginTop = '8px';
+        downloadBtn.innerHTML = '💾 Download';
+        downloadBtn.onclick = () => downloadBarcodePng(svg, 'barcode-' + value + '.png');
+        container.appendChild(downloadBtn);
+        
+        batchGrid.appendChild(container);
+        successCount++;
+      } catch (error) {
+        console.error('Fehler bei Barcode ' + value + ':', error);
+      }
+    });
+
+    if (successCount > 0) {
+      batchPreview.style.display = 'block';
+      batchCount.textContent = successCount + ' Barcode(s) generiert';
+      downloadAllBtn.style.display = 'inline-flex';
+      
+      setTimeout(() => {
+        batchPreview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+      
+      showNotification(successCount + ' Barcode(s) erfolgreich generiert!', 'success');
+    } else {
+      showNotification('Keine Barcodes konnten generiert werden', 'error');
+    }
+  }
+
+  // Als PNG herunterladen
+  function downloadBarcodePng(svgElement, filename) {
+    const svg = svgElement || barcodeSvg;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = function() {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'barcode.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        showNotification('Barcode als PNG heruntergeladen', 'success');
+      });
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }
+
+  // Als SVG herunterladen
+  function downloadBarcodeSvg() {
+    const svgData = new XMLSerializer().serializeToString(barcodeSvg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'barcode.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification('Barcode als SVG heruntergeladen', 'success');
+  }
+
+  // Drucken
+  function printBarcode() {
+    const svgData = new XMLSerializer().serializeToString(barcodeSvg);
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Barcode Drucken</title>
+          <style>
+            body { 
+              margin: 0; 
+              padding: 20px; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              min-height: 100vh;
+            }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${svgData}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  }
+
+  // Zurücksetzen
+  function clearForm() {
+    barcodeValue.value = '123456789012';
+    displayText.value = '';
+    barcodeWidth.value = '2';
+    barcodeHeight.value = '100';
+    barcodeType.value = 'CODE128';
+    showText.checked = true;
+    previewCard.style.display = 'none';
+    batchInput.value = '';
+    batchPreview.style.display = 'none';
+    downloadAllBtn.style.display = 'none';
+    showNotification('Formular zurückgesetzt', 'info');
+  }
+
+  // Notification anzeigen
+  function showNotification(message, type = 'info') {
+    // Einfache Notification - kann später mit dem bestehenden System integriert werden
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+
+  // Event Listeners
+  generateBtn.addEventListener('click', generateBarcode);
+  clearBtn.addEventListener('click', clearForm);
+  document.getElementById('downloadPngBtn').addEventListener('click', () => downloadBarcodePng(barcodeSvg, 'barcode.png'));
+  document.getElementById('downloadSvgBtn').addEventListener('click', downloadBarcodeSvg);
+  document.getElementById('printBtn').addEventListener('click', printBarcode);
+  generateBatchBtn.addEventListener('click', generateBatchBarcodes);
+
+  // Enter-Taste zum Generieren
+  barcodeValue.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') generateBarcode();
+  });
+
+  // Initial Barcode generieren
+  generateBarcode();
+
+  // CSS Animationen
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+
+</body>
+</html>

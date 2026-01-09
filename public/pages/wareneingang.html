@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="de">
-<!DOCTYPE html>
-<html lang="de">
 <head>
   <meta charset="UTF-8">
   <title>LVS Returns</title>
@@ -113,6 +111,12 @@
     <a href="/import" class="nav-item" data-view="import">
       <span class="nav-icon">📥</span>
       <span>Datenverwaltung</span>
+    </a>
+
+    <div class="nav-section-title">Tools</div>
+    <a href="/barcode" class="nav-item">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
     </a>
 
     <div class="sidebar-footer">
@@ -295,6 +299,87 @@
 
           <!-- Schritt 3: Tracking-Nummern -->
           <div id="operatorStep3" class="operator-step" style="display: none;">
+            <!-- Label Beispiele Toggle für Operator -->
+            <div class="label-toggle-container" style="margin-bottom: 20px;">
+              <div class="label-toggle-simple" id="toggleLabelExamplesOperator">
+                <span class="label-toggle-icon">🏷️</span>
+                <span class="label-toggle-text">
+                  <span>Label-Beispiel anzeigen</span>
+                  <span class="label-toggle-badge">Hilfe für Mitarbeiter</span>
+                </span>
+                <span class="label-toggle-arrow">▼</span>
+              </div>
+              
+              <div id="labelExamplesContentOperator" class="label-examples-content" style="display:none;">
+                <!-- Hilfetext -->
+                <div id="labelHelpTextOperator" class="label-help-container">
+                  <div class="label-help-title">
+                    <span class="label-help-icon">📋</span>
+                    <span>Label-Informationen finden</span>
+                  </div>
+                  
+                  <div class="label-help-grid">
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">📦</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">OLPN</div>
+                        <div class="label-help-item-desc">Lange Nummer meist als Barcode</div>
+                        <div class="label-help-item-example">z.B. 00050197980027746580</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">🚚</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">Carrier Tracking</div>
+                        <div class="label-help-item-desc">Sendungsnummer des Frachtführers</div>
+                        <div class="label-help-item-example">z.B. 885733208991</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">📄</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">DN</div>
+                        <div class="label-help-item-desc">Delivery Note Nummer</div>
+                        <div class="label-help-item-example">Falls vorhanden, sonst 0</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">👤</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">Customer ID</div>
+                        <div class="label-help-item-desc">Kundennummer</div>
+                        <div class="label-help-item-example">z.B. 20062673</div>
+                      </div>
+                    </div>
+                    
+                    <div class="label-help-item">
+                      <div class="label-help-item-icon">🔄</div>
+                      <div class="label-help-item-content">
+                        <div class="label-help-item-title">ASN/RA Nummer</div>
+                        <div class="label-help-item-desc">Return Authorization Nummer</div>
+                        <div class="label-help-item-example">z.B. 70378154</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Label Bilder (nach den Informationen) -->
+                <div id="labelImagesContainerOperator" class="label-images-container" style="display: none;">
+                  <div class="label-image-header">
+                    <span class="label-image-icon">🖼️</span>
+                    <span>Label-Beispiele</span>
+                    <span class="label-image-hint">Klicken für Vollansicht</span>
+                  </div>
+                  <div id="labelImagesGridOperator" class="label-images-grid">
+                    <!-- Bilder werden hier dynamisch eingefügt -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="card" style="max-width: 900px; width: 100%; margin: 0 auto;">
               <div class="card-header" style="padding: 12px 16px;">
                 <div>
@@ -3430,11 +3515,18 @@
   // Debounce für loadCarriers um Flackern zu vermeiden
   let loadCarriersTimeout = null;
   let isCarriersLoading = false;
+  let carriersAlreadyLoaded = false;
   
-  async function loadCarriers() {
+  async function loadCarriers(forceReload = false) {
     // Wenn bereits geladen wird, warte
     if (isCarriersLoading) {
       console.log('⏳ loadCarriers bereits am Laden, überspringe...');
+      return;
+    }
+    
+    // Wenn bereits erfolgreich geladen und kein Force-Reload
+    if (carriersAlreadyLoaded && !forceReload) {
+      console.log('✅ Carrier bereits geladen, überspringe...');
       return;
     }
     
@@ -3509,10 +3601,12 @@
 
       container.appendChild(card);
     });
-    isCarriersLoading = false;
+    carriersAlreadyLoaded = true;
+    console.log('✅ Carrier erfolgreich geladen');
   } catch (err) {
     console.error("Fehler beim Laden der Carrier", err);
     container.innerHTML = '<span class="muted">Fehler beim Laden der Carrier Stammdaten</span>';
+  } finally {
     isCarriersLoading = false;
   }
 }
@@ -3582,50 +3676,93 @@
       addedByInput.readOnly = true;
     }
     
-    // Label-Bilder und Hilfetext setzen
+    // Label-Bilder und Hilfetext setzen (Advanced-Ansicht)
     const labelImagesContainer = document.getElementById("labelImagesContainer");
     const labelImagesGrid = document.getElementById("labelImagesGrid");
     const labelHelpText = document.getElementById("labelHelpText");
     
-    if (carrier.label_image && labelImagesGrid && labelImagesContainer) {
+    // Label-Bilder und Hilfetext setzen (Operator-Ansicht)
+    const labelImagesContainerOperator = document.getElementById("labelImagesContainerOperator");
+    const labelImagesGridOperator = document.getElementById("labelImagesGridOperator");
+    const labelHelpTextOperator = document.getElementById("labelHelpTextOperator");
+    
+    if (carrier.label_image) {
       // Unterstützt mehrere Bilder (komma-separiert)
       const images = carrier.label_image.split(',').map(img => img.trim()).filter(img => img);
       
       if (images.length > 0) {
-        labelImagesGrid.innerHTML = '';
+        // Advanced-Ansicht
+        if (labelImagesGrid && labelImagesContainer) {
+          labelImagesGrid.innerHTML = '';
+          
+          images.forEach((imagePath, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'label-image-wrapper';
+            
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.alt = `Label Beispiel ${index + 1}`;
+            img.className = 'label-image-thumbnail';
+            
+            // Fehlerbehandlung
+            img.onerror = () => {
+              wrapper.remove();
+              if (labelImagesGrid.children.length === 0) {
+                labelImagesContainer.style.display = "none";
+              }
+            };
+            
+            wrapper.appendChild(img);
+            labelImagesGrid.appendChild(wrapper);
+          });
+          
+          labelImagesContainer.style.display = "block";
+        }
         
-        images.forEach((imagePath, index) => {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'label-image-wrapper';
+        // Operator-Ansicht
+        if (labelImagesGridOperator && labelImagesContainerOperator) {
+          labelImagesGridOperator.innerHTML = '';
           
-          const img = document.createElement('img');
-          img.src = imagePath;
-          img.alt = `Label Beispiel ${index + 1}`;
-          img.className = 'label-image-thumbnail';
+          images.forEach((imagePath, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'label-image-wrapper';
+            
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.alt = `Label Beispiel ${index + 1}`;
+            img.className = 'label-image-thumbnail';
+            
+            // Fehlerbehandlung
+            img.onerror = () => {
+              wrapper.remove();
+              if (labelImagesGridOperator.children.length === 0) {
+                labelImagesContainerOperator.style.display = "none";
+              }
+            };
+            
+            wrapper.appendChild(img);
+            labelImagesGridOperator.appendChild(wrapper);
+          });
           
-          // Fehlerbehandlung
-          img.onerror = () => {
-            wrapper.remove();
-            if (labelImagesGrid.children.length === 0) {
-              labelImagesContainer.style.display = "none";
-            }
-          };
-          
-          wrapper.appendChild(img);
-          labelImagesGrid.appendChild(wrapper);
-        });
-        
-        labelImagesContainer.style.display = "block";
+          labelImagesContainerOperator.style.display = "block";
+        }
       } else {
-        labelImagesContainer.style.display = "none";
+        if (labelImagesContainer) labelImagesContainer.style.display = "none";
+        if (labelImagesContainerOperator) labelImagesContainerOperator.style.display = "none";
       }
-    } else if (labelImagesContainer) {
-      labelImagesContainer.style.display = "none";
+    } else {
+      if (labelImagesContainer) labelImagesContainer.style.display = "none";
+      if (labelImagesContainerOperator) labelImagesContainerOperator.style.display = "none";
     }
     
     // Label Help Text nur überschreiben, wenn vorhanden und nicht leer
-    if (carrier.label_help_text && carrier.label_help_text.trim() !== "" && labelHelpText) {
-      labelHelpText.innerHTML = carrier.label_help_text.replace(/\n/g, '<br>');
+    if (carrier.label_help_text && carrier.label_help_text.trim() !== "") {
+      if (labelHelpText) {
+        labelHelpText.innerHTML = carrier.label_help_text.replace(/\n/g, '<br>');
+      }
+      if (labelHelpTextOperator) {
+        labelHelpTextOperator.innerHTML = carrier.label_help_text.replace(/\n/g, '<br>');
+      }
     }
     // Sonst bleiben die Standard-Informationen aus dem HTML erhalten
     
@@ -5304,7 +5441,17 @@
     }
   }
 
+  // Flag um mehrfaches gleichzeitiges Laden zu verhindern
+  let isLoadingInboundList = false;
+  
   async function loadInboundList() {
+    // Verhindere mehrfaches gleichzeitiges Laden
+    if (isLoadingInboundList) {
+      console.log('⚠️ loadInboundList bereits aktiv, überspringe...');
+      return;
+    }
+    isLoadingInboundList = true;
+    
     const body = document.getElementById("inboundListBody");
     const dashboardBody = document.getElementById("dashboardInboundListBody");
     
@@ -5312,6 +5459,7 @@
     const listSection = document.getElementById("inboundListSection");
     if (listSection && listSection.style.display === 'none') {
       // Liste ist ausgeblendet, nicht laden
+      isLoadingInboundList = false;
       return;
     }
     
@@ -5380,6 +5528,8 @@
       console.error("Fehler inbound liste", err);
       if (body) body.innerHTML = '<tr><td colspan="12" class="muted">Fehler beim Laden der Einträge</td></tr>';
       if (dashboardBody) dashboardBody.innerHTML = '<tr><td colspan="12" class="muted">Fehler beim Laden der Einträge</td></tr>';
+    } finally {
+      isLoadingInboundList = false;
     }
   }
 
@@ -5672,31 +5822,13 @@
       return;
     }
     
+    // Navigation-Links sollen normal funktionieren (href)
     navItems.forEach((item) => {
-      // Entferne alte Event-Handler (falls vorhanden)
-      const newItem = item.cloneNode(true);
-      item.parentNode.replaceChild(newItem, item);
-      
-      // Füge Event-Handler hinzu
-      newItem.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const viewName = this.getAttribute("data-view");
-        console.log("🖱️ Navigation-Item geklickt:", viewName);
-        if (viewName) {
-          handleNavigationClick(viewName);
-        } else {
-          console.warn("⚠️ Kein data-view Attribut gefunden");
-        }
-      });
-      
-      // Mache Element klickbar (Cursor)
-      newItem.style.cursor = "pointer";
-      newItem.style.userSelect = "none";
+      item.style.cursor = "pointer";
+      item.style.userSelect = "none";
     });
     
-    console.log("✅ Navigation initialisiert");
+    console.log("✅ Navigation initialisiert - Links funktionieren normal");
   }
   
   // Routing und Navigation initialisieren - mehrfach versuchen falls nötig
@@ -5745,40 +5877,12 @@
   
   setupNavigation();
   
-  // Event-Delegation Fallback für Navigation (funktioniert immer, auch wenn direkte Handler fehlschlagen)
+  // Event-Delegation - Navigation-Links sollen normal funktionieren
   function setupEventDelegation() {
-    const navElement = document.querySelector('.nav');
-    if (navElement) {
-      // Entferne alte Handler falls vorhanden
-      const newNavElement = navElement.cloneNode(true);
-      navElement.parentNode.replaceChild(newNavElement, navElement);
-      
-      newNavElement.addEventListener('click', function(e) {
-        const navItem = e.target.closest('.nav-item');
-        if (navItem && navItem.hasAttribute('data-view')) {
-          e.preventDefault();
-          e.stopPropagation();
-          const viewName = navItem.getAttribute('data-view');
-          console.log("🧭 Event-Delegation: Navigation zu View:", viewName);
-          if (viewName) {
-            handleNavigationClick(viewName);
-          }
-        }
-      });
-      console.log("✅ Event-Delegation Handler für Navigation hinzugefügt");
-    } else {
-      console.warn("⚠️ .nav Element nicht gefunden für Event-Delegation");
-      // Versuche später erneut
-      setTimeout(setupEventDelegation, 200);
-    }
+    console.log("✅ Navigation verwendet normale href-Links");
   }
   
-  // Event-Delegation sofort einrichten
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupEventDelegation);
-  } else {
-    setupEventDelegation();
-  }
+  // Event-Delegation NICHT einrichten - Links sollen normal funktionieren
 
   document.querySelectorAll("[data-jump]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -9668,6 +9772,19 @@
         }
       });
         }
+    
+    // Label-Beispiele Toggle für Operator-Ansicht
+    const toggleExamplesOperator = document.getElementById("toggleLabelExamplesOperator");
+    if (toggleExamplesOperator) {
+      toggleExamplesOperator.addEventListener("click", () => {
+        const content = document.getElementById("labelExamplesContentOperator");
+        if (content) {
+          const isVisible = content.style.display === "block";
+          content.style.display = isVisible ? "none" : "block";
+          toggleExamplesOperator.classList.toggle("active", !isVisible);
+        }
+      });
+    }
       } catch (err) {
         console.error("Fehler beim Setup der Buttons:", err);
     }
@@ -10127,22 +10244,32 @@
   // SOFORT global verfügbar machen - überschreibt Platzhalter
   window.operatorNextStep = operatorNextStep;
   
+  // Flag um mehrfaches gleichzeitiges Laden der Operator-Carrier zu verhindern
+  let isLoadingOperatorCarriers = false;
+  let operatorCarriersLoaded = false;
+  
   // Carrier-Buttons für Operator-Ansicht laden - SOFORT definieren
   async function loadOperatorCarriers() {
+    // Verhindere mehrfaches gleichzeitiges Laden
+    if (isLoadingOperatorCarriers) {
+      console.log('⏳ loadOperatorCarriers bereits aktiv, überspringe...');
+      return;
+    }
+    
+    // Wenn bereits erfolgreich geladen, nicht erneut laden
+    if (operatorCarriersLoaded) {
+      console.log('✅ Operator-Carrier bereits geladen, überspringe...');
+      return;
+    }
+    
     console.log('🔄 loadOperatorCarriers aufgerufen (echte Funktion)');
     const grid = document.getElementById('operatorCarrierGrid');
     if (!grid) {
       console.error('❌ operatorCarrierGrid nicht gefunden!');
-      setTimeout(() => {
-        const retryGrid = document.getElementById('operatorCarrierGrid');
-        if (retryGrid) {
-          console.log('✅ operatorCarrierGrid gefunden beim Retry');
-          loadOperatorCarriers();
-        }
-      }, 500);
       return;
     }
     
+    isLoadingOperatorCarriers = true;
     console.log('✅ operatorCarrierGrid gefunden, lade Carrier...');
     grid.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">⏳ Carrier werden geladen...</div>';
     
@@ -10241,6 +10368,8 @@
           </button>
         `;
       }).join('');
+      operatorCarriersLoaded = true;
+      console.log('✅ Operator-Carrier erfolgreich geladen');
     } catch (err) {
       console.error('Fehler beim Laden der Carrier:', err);
       grid.innerHTML = `
@@ -10248,11 +10377,13 @@
           <div style="font-size: 48px; margin-bottom: 12px;">❌</div>
           <div style="font-weight: 600; margin-bottom: 8px;">Fehler beim Laden der Carrier</div>
           <div style="font-size: 13px; color: var(--text-muted);">${err.message}</div>
-          <button onclick="loadOperatorCarriers()" class="btn btn-primary" style="margin-top: 12px; min-height: 48px;">
+          <button onclick="operatorCarriersLoaded = false; loadOperatorCarriers()" class="btn btn-primary" style="margin-top: 12px; min-height: 48px;">
             🔄 Erneut versuchen
           </button>
         </div>
       `;
+    } finally {
+      isLoadingOperatorCarriers = false;
     }
   }
   
