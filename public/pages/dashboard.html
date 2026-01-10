@@ -116,6 +116,10 @@
     </a>
 
     <div class="nav-section-title">Tools</div>
+    <a href="/warehouse-map" class="nav-item ">
+      <span class="nav-icon">🗺️</span>
+      <span>Lager-Visualisierung</span>
+    </a>
     <a href="/barcode" class="nav-item ">
       <span class="nav-icon">📊</span>
       <span>Barcode Generator</span>
@@ -3527,13 +3531,7 @@
     }
   }
   
-  // Benutzer-Menü ein/ausblenden
-  function toggleUserMenu() {
-    // Kann später erweitert werden mit einem Dropdown-Menü
-    console.log("Benutzer-Menü geklickt");
-  }
-  
-  window.toggleUserMenu = toggleUserMenu;
+  // Benutzer-Menü wird in index.html definiert (global)
 
   function getCurrentWeek() {
     const now = new Date();
@@ -9136,6 +9134,7 @@
 <script src="/js/features/search.js"></script>
 <script src="/js/features/import.js"></script>
 <script src="/js/features/export.js"></script>
+<script src="/js/init-all-features.js"></script>
 
 
 

@@ -188,6 +188,9 @@
           <button class="settings-tab-btn" data-tab="backup" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             💾 Backup
           </button>
+          <button class="settings-tab-btn" data-tab="users" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            👥 Benutzerverwaltung
+          </button>
           <button class="settings-tab-btn" data-tab="system" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             ⚙️ System Info
           </button>
@@ -958,6 +961,69 @@
             <div style="text-align: center; padding: 40px; color: var(--text-muted);">
               <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
               <div>Lade Backups...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benutzerverwaltung Tab -->
+      <div class="settings-tab-content" id="tab-users" style="display:none;">
+        
+        <!-- Benutzer Liste -->
+        <div class="card">
+          <div class="card-header">
+            <h2>👥 Benutzerverwaltung</h2>
+            <button class="btn btn-primary" onclick="openAddUserModal()">
+              <span>➕</span> Neuer Benutzer
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="usersTableContainer">
+              <!-- Wird dynamisch gefüllt -->
+              <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+                <p>Lade Benutzer...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rollen & Berechtigungen -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2>🔐 Rollen & Berechtigungen</h2>
+            <button class="btn btn-ghost" onclick="loadRolePermissions()" style="display: flex; align-items: center; gap: 8px;">
+              <span>🔄</span> Aktualisieren
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="rolesPermissionsContainer">
+              <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+                <p>Lade Rollen...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Zugriffs-Anfragen (ganz unten, zuklappbar) -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header" style="cursor: pointer;" onclick="toggleAccessRequests()">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="accessRequestsToggleIcon" style="transition: transform 0.3s ease; font-size: 14px;">▶</span>
+              <h2>📩 Zugriffs-Anfragen</h2>
+            </div>
+            <button class="btn btn-ghost" onclick="event.stopPropagation(); loadAccessRequests();" style="display: flex; align-items: center; gap: 8px;">
+              <span>🔄</span> Aktualisieren
+            </button>
+          </div>
+          <div class="card-body" id="accessRequestsSection" style="display: none;">
+            <div id="accessRequestsContainer">
+              <!-- Wird dynamisch gefüllt -->
+              <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div style="font-size: 48px; margin-bottom: 16px;">📩</div>
+                <p>Lade Anfragen...</p>
+              </div>
             </div>
           </div>
         </div>
@@ -10048,6 +10114,9 @@
           } else if (tabName === 'backup') {
             loadBackupList();
             loadBackupSettings();
+          } else if (tabName === 'users') {
+            if (typeof initUserManagement === 'function') initUserManagement();
+            if (typeof loadRolePermissions === 'function') loadRolePermissions();
           }
         }
       });
@@ -10325,6 +10394,8 @@
 <script src="/js/features/search.js"></script>
 <script src="/js/features/import.js"></script>
 <script src="/js/features/export.js"></script>
+<script src="/js/features/user-management.js"></script>
+<script src="/js/init-all-features.js"></script>
 
 
 
@@ -10356,6 +10427,37 @@
       }
     })
     .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+</script>
+
+<!-- Toggle-Funktion für Zugriffs-Anfragen -->
+<script>
+  // Toggle-Funktion für Zugriffs-Anfragen (muss global verfügbar sein)
+  window.toggleAccessRequests = function() {
+    const section = document.getElementById('accessRequestsSection');
+    const icon = document.getElementById('accessRequestsToggleIcon');
+    
+    console.log('toggleAccessRequests called', { section, icon });
+    
+    if (!section || !icon) {
+      console.error('Section or Icon not found!', { section, icon });
+      return;
+    }
+    
+    if (section.style.display === 'none' || section.style.display === '') {
+      section.style.display = 'block';
+      icon.textContent = '▼';
+      // Lade Anfragen beim ersten Öffnen
+      if (!section.dataset.loaded) {
+        if (typeof loadAccessRequests === 'function') {
+          loadAccessRequests();
+        }
+        section.dataset.loaded = 'true';
+      }
+    } else {
+      section.style.display = 'none';
+      icon.textContent = '▶';
+    }
+  };
 </script>
 
 </body>

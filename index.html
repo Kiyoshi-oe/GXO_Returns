@@ -181,6 +181,10 @@
     </div>
 
     <div class="nav-section-title">Tools</div>
+      <a href="/warehouse-map" class="nav-item">
+        <span class="nav-icon">🗺️</span>
+        <span>Lager-Visualisierung</span>
+      </a>
       <a href="/barcode" class="nav-item">
         <span class="nav-icon">📊</span>
         <span>Barcode Generator</span>
@@ -5530,11 +5534,141 @@
   
   // Benutzer-Menü ein/ausblenden
   function toggleUserMenu() {
-    // Kann später erweitert werden mit einem Dropdown-Menü
-    console.log("Benutzer-Menü geklickt");
+    // Prüfe ob Menü bereits existiert
+    let menu = document.getElementById('userMenuDropdown');
+    
+    if (menu) {
+      // Toggle visibility
+      menu.classList.toggle('active');
+      return;
+    }
+    
+    // Erstelle Menü
+    menu = document.createElement('div');
+    menu.id = 'userMenuDropdown';
+    menu.style.cssText = `
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      min-width: 250px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    `;
+    
+    const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
+    const username = currentUser?.username || localStorage.getItem('wms_current_user') || 'Unknown';
+    const role = currentUser?.role_display_name || currentUser?.role || 'Unknown';
+    
+    menu.innerHTML = `
+      <style>
+        #userMenuDropdown.active {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+          pointer-events: all !important;
+        }
+        
+        .user-menu-header {
+          padding: 16px;
+          background: var(--bg-soft);
+          border-bottom: 1px solid var(--border-soft);
+        }
+        
+        .user-menu-item {
+          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          color: var(--text-main);
+          font-size: 14px;
+        }
+        
+        .user-menu-item:hover {
+          background: var(--bg-soft);
+        }
+        
+        .user-menu-icon {
+          font-size: 18px;
+          width: 24px;
+          text-align: center;
+        }
+        
+        .user-menu-divider {
+          height: 1px;
+          background: var(--border-soft);
+          margin: 4px 0;
+        }
+      </style>
+      
+      <div class="user-menu-header">
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">${username}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${role}</div>
+      </div>
+      
+      <div class="user-menu-item" onclick="switchUser()">
+        <span class="user-menu-icon">🔄</span>
+        <span>Switch User</span>
+      </div>
+      
+      <div class="user-menu-divider"></div>
+      
+      <div class="user-menu-item" onclick="logoutUser()">
+        <span class="user-menu-icon">🚪</span>
+        <span>Logout</span>
+      </div>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // Schließe Menü bei Klick außerhalb
+    setTimeout(() => {
+      menu.classList.add('active');
+      
+      const closeMenu = (e) => {
+        if (!menu.contains(e.target) && e.target.id !== 'currentUserDisplay') {
+          menu.classList.remove('active');
+          setTimeout(() => {
+            if (menu.parentNode) {
+              menu.parentNode.removeChild(menu);
+            }
+          }, 300);
+          document.removeEventListener('click', closeMenu);
+        }
+      };
+      
+      setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+      }, 100);
+    }, 10);
+  }
+  
+  function switchUser() {
+    localStorage.removeItem('wms_current_user');
+    window.location.href = '/login';
+  }
+  
+  function logoutUser() {
+    if (confirm('Do you really want to logout?')) {
+      localStorage.removeItem('wms_current_user');
+      localStorage.removeItem('wms_simulated_role');
+      localStorage.removeItem('wms_simulated_role_permissions');
+      localStorage.removeItem('wms_simulated_role_display');
+      window.location.href = '/login';
+    }
   }
   
   window.toggleUserMenu = toggleUserMenu;
+  window.switchUser = switchUser;
+  window.logoutUser = logoutUser;
 
   function getCurrentWeek() {
     const now = new Date();
@@ -11178,6 +11312,7 @@
 <script src="/js/features/search.js"></script>
 <script src="js/import.js"></script>
 <script src="js/export.js"></script>
+<script src="/js/core/keyboard-shortcuts.js"></script>
 
 </body>
 </html>

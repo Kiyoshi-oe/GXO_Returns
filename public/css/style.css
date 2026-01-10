@@ -354,6 +354,12 @@ body[data-theme="light"] .card {
   overflow: visible;
 }
 
+.card-header h2 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
+
 .card-title {
   font-size: 15px;
   font-weight: 500;

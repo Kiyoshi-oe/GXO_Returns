@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Lagerplatz-Visualisierung - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Three.js für 3D-Visualisierung -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+  <div class="loading-subtitle">
+    <span class="loading-dots"></span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/wareneingang" class="nav-item">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/umlagerung" class="nav-item">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/suche" class="nav-item">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
+    <a href="/einstellungen" class="nav-item">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item">
+      <span class="nav-icon">📥</span>
+      <span>Datenverwaltung</span>
+    </a>
+
+    <div class="nav-section-title">Tools</div>
+    <a href="/warehouse-map" class="nav-item active">
+      <span class="nav-icon">🗺️</span>
+      <span>Lager-Visualisierung</span>
+    </a>
+    <a href="/barcode" class="nav-item">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title">Lagerplatz-Visualisierung</h1>
+        <p class="topbar-subtitle">Interaktive Heatmap mit Echtzeit-Auslastung</p>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <span class="user-name" id="userName">Benutzer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+      <div class="container">
+        
+        <!-- Filter & Controls -->
+        <div class="card">
+          <div class="card-body">
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <!-- Area Filter -->
+              <div class="form-group">
+                <label for="areaFilter" class="form-label">Bereich</label>
+                <select id="areaFilter" class="form-select">
+                  <option value="all">Alle Bereiche</option>
+                </select>
+              </div>
+
+              <!-- View Mode -->
+              <div class="form-group">
+                <label for="viewMode" class="form-label">Ansicht</label>
+                <select id="viewMode" class="form-select">
+                  <option value="heatmap">2D Heatmap (Auslastung)</option>
+                  <option value="3d">3D Visualisierung</option>
+                  <option value="grid">Grid (Übersicht)</option>
+                  <option value="list">Liste</option>
+                </select>
+              </div>
+
+              <!-- Show Empty -->
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" id="showEmpty" checked style="margin-right: 8px;">
+                  Leere Plätze anzeigen
+                </label>
+              </div>
+
+              <!-- Refresh -->
+              <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button id="refreshBtn" class="btn btn-secondary" style="width: 100%;">
+                  <span>🔄</span>
+                  Aktualisieren
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotalLocations">0</div>
+            <div class="stat-label">Gesamt Stellplätze</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statOccupied">0</div>
+            <div class="stat-label">Belegt</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statFree">0</div>
+            <div class="stat-label">Frei</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statUtilization">0%</div>
+            <div class="stat-label">Auslastung</div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-body">
+            <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+              <strong>Legende:</strong>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; background: #10b981; border-radius: 4px;"></div>
+                <span>Leer (0%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; background: #fbbf24; border-radius: 4px;"></div>
+                <span>Mittel (1-50%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; background: #f97316; border-radius: 4px;"></div>
+                <span>Hoch (51-80%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; background: #ef4444; border-radius: 4px;"></div>
+                <span>Voll (>80%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; background: #6b7280; border-radius: 4px;"></div>
+                <span>Inaktiv</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warehouse Map Container -->
+        <div class="card">
+          <div class="card-body" style="padding: 0;">
+            <!-- Heatmap View -->
+            <div id="heatmapView" class="warehouse-view">
+              <div id="warehouseGrid" style="padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px;">
+                <!-- Stellplätze werden hier eingefügt -->
+              </div>
+            </div>
+
+            <!-- 3D View -->
+            <div id="view3d" class="warehouse-view" style="display: none;">
+              <div id="warehouse3DContainer" style="width: 100%; height: 600px; background: var(--bg-soft); border-radius: 8px; position: relative;">
+                <!-- 3D Canvas wird hier eingefügt -->
+              </div>
+              <div style="padding: 16px; background: var(--bg-card); border-top: 1px solid var(--border-soft);">
+                <div style="display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                  <span style="font-size: 13px; color: var(--text-muted);">🖱️ Linke Maustaste: Drehen</span>
+                  <span style="font-size: 13px; color: var(--text-muted);">|</span>
+                  <span style="font-size: 13px; color: var(--text-muted);">Mausrad: Zoom</span>
+                  <span style="font-size: 13px; color: var(--text-muted);">|</span>
+                  <span style="font-size: 13px; color: var(--text-muted);">Rechte Maustaste: Verschieben</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grid View -->
+            <div id="gridView" class="warehouse-view" style="display: none;">
+              <div id="warehouseGridCompact" style="padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
+                <!-- Kompakte Grid-Ansicht -->
+              </div>
+            </div>
+
+            <!-- List View -->
+            <div id="listView" class="warehouse-view" style="display: none;">
+              <div style="overflow-x: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Stellplatz</th>
+                      <th>Bereich</th>
+                      <th>Kartons</th>
+                      <th>Auslastung</th>
+                      <th>Status</th>
+                      <th>Letzte Buchung</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="warehouseList">
+                    <!-- Liste wird hier eingefügt -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Location Detail Modal -->
+<div id="locationModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 800px;">
+    <div class="custom-modal-header">
+      <span class="custom-modal-icon">📍</span>
+      <span class="custom-modal-title" id="modalLocationTitle">Stellplatz Details</span>
+      <span class="custom-modal-close" id="modalClose">&times;</span>
+    </div>
+    <div class="custom-modal-body" id="modalLocationBody">
+      <!-- Details werden hier eingefügt -->
+    </div>
+  </div>
+</div>
+
+<!-- Styles -->
+<style>
+  .warehouse-location {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--text-main);
+  }
+
+  .warehouse-location:hover {
+    transform: translateY(-2px);
+    border-color: var(--gxo-orange);
+    box-shadow: 0 4px 12px rgba(255, 58, 0, 0.2);
+  }
+
+  .warehouse-location.empty {
+    background: #10b981;
+    border-color: #059669;
+    color: white;
+  }
+
+  .warehouse-location.low {
+    background: #fbbf24;
+    border-color: #f59e0b;
+    color: #78350f;
+  }
+
+  .warehouse-location.medium {
+    background: #f97316;
+    border-color: #ea580c;
+    color: white;
+  }
+
+  .warehouse-location.high {
+    background: #ef4444;
+    border-color: #dc2626;
+    color: white;
+  }
+
+  .warehouse-location.inactive {
+    background: #6b7280;
+    border-color: #4b5563;
+    color: white;
+    opacity: 0.6;
+  }
+
+  .location-code {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .location-area {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-bottom: 8px;
+  }
+
+  .location-stats {
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .location-utilization {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .warehouse-location-compact {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+
+  .stat-card:hover {
+    border-color: var(--gxo-orange);
+    transform: translateY(-2px);
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gxo-orange);
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .custom-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.2s;
+  }
+
+  .custom-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .custom-modal-content {
+    background-color: var(--bg-card);
+    margin: auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideIn 0.3s;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+    border: 1px solid var(--border-soft);
+    color: var(--text-main);
+  }
+
+  .custom-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-soft);
+  }
+
+  .custom-modal-icon {
+    font-size: 24px;
+  }
+
+  .custom-modal-title {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .custom-modal-close {
+    cursor: pointer;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  .custom-modal-close:hover {
+    color: var(--gxo-orange);
+  }
+
+  .custom-modal-body {
+    padding: 24px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(-50px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>
+
+<!-- JavaScript -->
+<script src="/js/init-all-features.js"></script>
+<script src="/js/features/warehouse-map.js"></script>
+
+<script>
+  // Loading Screen Management
+  (function() {
+    setTimeout(() => {
+      const loadingScreen = document.getElementById("loadingScreen");
+      if (loadingScreen) {
+        loadingScreen.style.transition = "opacity 0.6s ease, visibility 0.6s ease";
+        loadingScreen.style.opacity = "0";
+        loadingScreen.style.visibility = "hidden";
+        setTimeout(() => {
+          loadingScreen.style.display = "none";
+        }, 600);
+      }
+    }, 500);
+  })();
+
+  // Windows Benutzername abrufen
+  fetch('/api/system/user')
+    .then(res => res.json())
+    .then(data => {
+      const userNameEl = document.getElementById('userName');
+      if (userNameEl && data.username) {
+        userNameEl.textContent = data.username;
+      }
+    })
+    .catch(err => console.warn('Benutzername konnte nicht geladen werden:', err));
+</script>
+
+</body>
+</html>

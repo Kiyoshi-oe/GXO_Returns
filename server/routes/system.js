@@ -12,6 +12,36 @@ const { getCached } = require('../utils/cache');
 
 const execAsync = promisify(exec);
 
+// GET /api/current-user/windows-username - Nur Windows Username zurückgeben (für Auto-Login)
+router.get('/current-user/windows-username', async (req, res) => {
+  try {
+    let username = process.env.USERNAME || process.env.USER || process.env.LOGNAME;
+    
+    // Bereinige Username (lowercase, trim)
+    if (username) {
+      username = username.toLowerCase().trim();
+    }
+    
+    if (username) {
+      res.json({ 
+        ok: true, 
+        username: username
+      });
+    } else {
+      res.status(404).json({ 
+        ok: false, 
+        error: 'Could not detect Windows username' 
+      });
+    }
+  } catch (err) {
+    console.error('Error getting Windows username:', err);
+    res.status(500).json({ 
+      ok: false, 
+      error: err.message 
+    });
+  }
+});
+
 // GET /api/current-user - Windows-Benutzer abrufen
 router.get('/current-user', async (req, res) => {
   try {

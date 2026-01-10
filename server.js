@@ -178,11 +178,14 @@ const pageRoutes = {
   '/archive': 'archive.html',
   '/ra-import': 'ra-import.html',
   '/performance': 'performance.html',
+  '/warehouse-map': 'warehouse-map.html',
   '/barcode': 'barcode.html',
   '/einstellungen': 'einstellungen.html',
   '/import': 'import.html',
   '/export': 'import.html',
-  '/suche': 'suche.html'
+  '/suche': 'suche.html',
+  '/login': 'login.html', // Login Seite
+  '/access-request': 'access-request.html' // Zugriffs-Anfrage Seite (öffentlich)
 };
 
 // Seiten servieren

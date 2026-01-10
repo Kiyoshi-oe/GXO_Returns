@@ -5,6 +5,7 @@ const { initConnection, getDb, closeConnection, setDb } = require('./connection'
 const { createTables, runMigrations } = require('./schema');
 const { runAllSeeds } = require('./seeds');
 const { initStatements, getStatements, reinitStatements } = require('./statements');
+const { createUserTables, seedRoles, seedDefaultUser } = require('./user-schema');
 
 /**
  * Initialisiert die gesamte Datenbank
@@ -16,11 +17,18 @@ function initDatabase() {
   // Schema erstellen
   createTables();
   
+  // Benutzer-Tabellen erstellen
+  createUserTables();
+  
   // Migrationen ausführen
   runMigrations();
   
   // Seeds ausführen
   runAllSeeds();
+  
+  // Benutzer-Seeds
+  seedRoles();
+  seedDefaultUser();
   
   // Prepared Statements initialisieren
   initStatements();

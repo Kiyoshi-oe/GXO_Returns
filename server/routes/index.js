@@ -13,6 +13,8 @@ const systemRoutes = require('./system');
 const performanceRoutes = require('./performance');
 const archiveRoutes = require('./archive');
 const exportRoutes = require('./export');
+const usersRoutes = require('./users');
+const accessRequestsRoutes = require('./access-requests');
 
 /**
  * Registriert alle API-Routes
@@ -53,6 +55,12 @@ function registerRoutes(app) {
   // Export API
   app.use('/api/export', exportRoutes);
   
+  // Users API
+  app.use('/api/users', usersRoutes);
+  
+  // Access Requests API
+  app.use('/api/access-requests', accessRequestsRoutes);
+  
   // System API (current-user, init, etc.)
   app.use('/api', systemRoutes);
   
@@ -72,5 +80,6 @@ module.exports = {
   systemRoutes,
   performanceRoutes,
   archiveRoutes,
-  exportRoutes
+  exportRoutes,
+  usersRoutes
 };

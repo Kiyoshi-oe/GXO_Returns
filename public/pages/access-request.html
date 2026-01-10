@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Request Access - GXO Returns WMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Animated background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: backgroundMove 20s linear infinite;
+    }
+    
+    @keyframes backgroundMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+    
+    /* GXO Orange accent circles */
+    body::after {
+      content: '';
+      position: absolute;
+      top: -10%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255, 109, 0, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float 8s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-30px, -30px) scale(1.1); }
+    }
+    
+    .access-container {
+      background: rgba(30, 30, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 109, 0, 0.2);
+      position: relative;
+      z-index: 1;
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .logo-section {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .logo-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      animation: float2 3s ease-in-out infinite;
+    }
+    
+    @keyframes float2 {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .logo-wrapper img {
+      width: auto;
+      height: 120px;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 30px rgba(255, 109, 0, 0.3));
+    }
+    
+    .header-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+    
+    .header-subtitle {
+      font-size: 16px;
+      color: #FF6D00;
+      margin: 0 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .header-description {
+      font-size: 14px;
+      color: #a0a0a0;
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    .alert {
+      padding: 16px 20px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      display: none;
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .alert.error {
+      background: rgba(220, 38, 38, 0.15);
+      border: 2px solid rgba(220, 38, 38, 0.4);
+      color: #ff6b6b;
+    }
+    
+    .alert.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 10px;
+    }
+    
+    .form-label .icon {
+      font-size: 16px;
+    }
+    
+    .required {
+      color: #FF6D00;
+      margin-left: 2px;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 14px 18px;
+      font-size: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: #FF6D00;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 4px rgba(255, 109, 0, 0.15);
+      transform: translateY(-1px);
+    }
+    
+    .form-input::placeholder {
+      color: #707070;
+    }
+    
+    .form-textarea {
+      resize: vertical;
+      min-height: 110px;
+      line-height: 1.6;
+    }
+    
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FF6D00' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 45px;
+    }
+    
+    .form-select option {
+      background: #2d2d2d;
+      color: #ffffff;
+    }
+    
+    .role-description {
+      font-size: 12px;
+      color: #a0a0a0;
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      line-height: 1.5;
+      border-left: 3px solid #FF6D00;
+    }
+    
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #FF6D00 0%, #FF8C00 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(255, 109, 0, 0.4);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(255, 109, 0, 0.5);
+      background: linear-gradient(135deg, #FF8C00 0%, #FFA500 100%);
+    }
+    
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    .success-screen.active {
+      display: block;
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    .success-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      animation: scaleIn 0.5s ease-out;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+    }
+    
+    @keyframes scaleIn {
+      from {
+        transform: scale(0);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    .success-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 12px 0;
+    }
+    
+    .success-message {
+      font-size: 15px;
+      color: #a0a0a0;
+      line-height: 1.8;
+      margin: 0;
+    }
+    
+    .footer-note {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .footer-note p {
+      font-size: 13px;
+      color: #707070;
+      margin: 0;
+    }
+    
+    .footer-note a {
+      color: #FF6D00;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .footer-note a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Loading state */
+    .btn-submit .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .btn-submit.loading .spinner {
+      display: block;
+    }
+    
+    .btn-submit.loading .btn-text {
+      display: none;
+    }
+    
+    /* GXO Branding */
+    .gxo-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255, 109, 0, 0.15);
+      border: 1px solid rgba(255, 109, 0, 0.3);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FF6D00;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div class="access-container">
+  <div class="gxo-badge">GXO WMS</div>
+  
+  <div class="logo-section">
+    <div class="logo-wrapper">
+      <img src="/images/GXO_logo.png" alt="GXO">
+    </div>
+    <h1 class="header-title">Request Access</h1>
+    <p class="header-subtitle">GXO Returns Warehouse Management System</p>
+    <p class="header-description">Submit your access request to get started</p>
+  </div>
+  
+  <div id="errorAlert" class="alert error"></div>
+  
+  <form id="accessRequestForm">
+    <div class="form-group">
+      <label class="form-label" for="username">
+        <span class="icon">👤</span>
+        <span>Username<span class="required">*</span></span>
+      </label>
+      <input 
+        type="text" 
+        id="username" 
+        class="form-input" 
+        required 
+        placeholder="e.g. john.doe"
+        autocomplete="off"
+      >
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="fullName">
+        <span class="icon">✏️</span>
+        <span>Full Name<span class="required">*</span></span>
+      </label>
+      <input 
+        type="text" 
+        id="fullName" 
+        class="form-input" 
+        required 
+        placeholder="e.g. John Doe"
+      >
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="requestedRole">
+        <span class="icon">🎯</span>
+        <span>Requested Role</span>
+      </label>
+      <select id="requestedRole" class="form-select">
+        <option value="operator">Operator - Daily Operations</option>
+        <option value="process_assistant">Process Assistant - Process Support</option>
+        <option value="trainer">Trainer - Training & Guidance</option>
+        <option value="teamlead">Team Lead - Team Management</option>
+        <option value="manager">Manager - Extended Rights</option>
+      </select>
+      <div class="role-description" id="roleDescription">
+        Basic access for daily warehouse operations
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="reason">
+        <span class="icon">💬</span>
+        <span>Reason for Access</span>
+      </label>
+      <textarea 
+        id="reason" 
+        class="form-textarea" 
+        placeholder="Why do you need access to the system? (Optional)"
+      ></textarea>
+    </div>
+    
+    <button type="submit" class="btn-submit" id="submitBtn">
+      <span class="btn-text">Submit Request</span>
+      <div class="spinner"></div>
+    </button>
+  </form>
+  
+  <div id="successScreen" class="success-screen">
+    <div class="success-icon">✓</div>
+    <h2 class="success-title">Request Submitted!</h2>
+    <p class="success-message">
+      Your access request has been successfully submitted.<br>
+      An administrator or manager will review it shortly.<br><br>
+      You will be notified once your request is processed.
+    </p>
+  </div>
+  
+  <div class="footer-note">
+    <p>Already have access? Please contact your system administrator.</p>
+  </div>
+</div>
+
+<script>
+  const roleDescriptions = {
+    operator: 'Basic access for daily warehouse operations',
+    process_assistant: 'Process support with data entry capabilities',
+    trainer: 'Training and guidance with read access to all modules',
+    teamlead: 'Team management and monitoring capabilities',
+    manager: 'Extended rights with approval permissions'
+  };
+  
+  // Update role description on change
+  document.getElementById('requestedRole').addEventListener('change', function() {
+    const description = roleDescriptions[this.value] || '';
+    document.getElementById('roleDescription').textContent = description;
+  });
+  
+  const form = document.getElementById('accessRequestForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const errorAlert = document.getElementById('errorAlert');
+  const successScreen = document.getElementById('successScreen');
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Hide previous messages
+    errorAlert.classList.remove('active');
+    errorAlert.textContent = '';
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    
+    try {
+      const response = await fetch('/api/access-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: document.getElementById('username').value.trim(),
+          full_name: document.getElementById('fullName').value.trim(),
+          email: null,
+          requested_role: document.getElementById('requestedRole').value,
+          reason: document.getElementById('reason').value.trim() || null
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.ok) {
+        // Show success screen
+        form.style.display = 'none';
+        successScreen.classList.add('active');
+      } else {
+        // Show error
+        errorAlert.textContent = data.error || 'An error occurred. Please try again.';
+        errorAlert.classList.add('active');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      errorAlert.textContent = 'Connection error. Please try again later.';
+      errorAlert.classList.add('active');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+    }
+  });
+</script>
+
+</body>
+</html>
