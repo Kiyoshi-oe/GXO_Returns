@@ -230,7 +230,50 @@ function runMigrations() {
   console.log('✅ Migrationen abgeschlossen');
 }
 
+/**
+ * Erstellt Performance-Indizes für häufig abgefragte Spalten
+ */
+function createIndexes() {
+  const db = getDb();
+  
+  try {
+    db.exec(`
+      -- Häufig gefilterte Spalten indizieren
+      CREATE INDEX IF NOT EXISTS idx_location_area ON location(area);
+      CREATE INDEX IF NOT EXISTS idx_location_is_active ON location(is_active);
+      CREATE INDEX IF NOT EXISTS idx_inbound_carrier_name ON inbound_simple(carrier_name);
+      CREATE INDEX IF NOT EXISTS idx_inbound_date ON inbound_simple(aufgenommen_am);
+      CREATE INDEX IF NOT EXISTS idx_inbound_created ON inbound_simple(created_at);
+      CREATE INDEX IF NOT EXISTS idx_movement_date ON movement(moved_at);
+      CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+      CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+      CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
+      CREATE INDEX IF NOT EXISTS idx_access_requests_status ON access_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_carrier_is_active ON carrier(is_active);
+      
+      -- Zusammengesetzte Indizes für häufige Kombinationen
+      CREATE INDEX IF NOT EXISTS idx_location_area_active ON location(area, is_active);
+      CREATE INDEX IF NOT EXISTS idx_inbound_carrier_date ON inbound_simple(carrier_name, aufgenommen_am);
+      CREATE INDEX IF NOT EXISTS idx_inbound_area_date ON inbound_simple(area, aufgenommen_am);
+      CREATE INDEX IF NOT EXISTS idx_movement_from_to ON movement(from_location_id, to_location_id);
+      
+      -- Foreign Key Indizes
+      CREATE INDEX IF NOT EXISTS idx_inbound_location_id ON inbound_simple(location_id);
+      CREATE INDEX IF NOT EXISTS idx_movement_from_location ON movement(from_location_id);
+      CREATE INDEX IF NOT EXISTS idx_movement_to_location ON movement(to_location_id);
+      CREATE INDEX IF NOT EXISTS idx_movement_inbound_id ON movement(inbound_id);
+      CREATE INDEX IF NOT EXISTS idx_warehouse_stock_inbound ON warehouse_stock(inbound_id);
+      CREATE INDEX IF NOT EXISTS idx_warehouse_stock_location ON warehouse_stock(location_id);
+    `);
+    
+    console.log('✅ Performance-Indizes erstellt');
+  } catch (err) {
+    console.error('⚠️  Fehler beim Erstellen der Indizes:', err.message);
+  }
+}
+
 module.exports = {
   createTables,
-  runMigrations
+  runMigrations,
+  createIndexes
 };

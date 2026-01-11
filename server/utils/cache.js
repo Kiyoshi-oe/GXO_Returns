@@ -57,11 +57,14 @@ function getCacheStats() {
   };
 }
 
+const { logAudit } = require('./audit');
+
 module.exports = {
   getCached,
   invalidateCache,
   clearCache,
-  getCacheStats
+  getCacheStats,
+  logAudit
 };
 
 

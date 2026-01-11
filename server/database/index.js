@@ -2,7 +2,7 @@
 // ============================================
 
 const { initConnection, getDb, closeConnection, setDb } = require('./connection');
-const { createTables, runMigrations } = require('./schema');
+const { createTables, runMigrations, createIndexes } = require('./schema');
 const { runAllSeeds } = require('./seeds');
 const { initStatements, getStatements, reinitStatements } = require('./statements');
 const { createUserTables, seedRoles, seedDefaultUser } = require('./user-schema');
@@ -22,6 +22,9 @@ function initDatabase() {
   
   // Migrationen ausführen
   runMigrations();
+  
+  // Performance-Indizes erstellen
+  createIndexes();
   
   // Seeds ausführen
   runAllSeeds();
@@ -46,6 +49,7 @@ module.exports = {
   // Schema & Seeds
   createTables,
   runMigrations,
+  createIndexes,
   runAllSeeds,
   
   // Statements

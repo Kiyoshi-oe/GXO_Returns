@@ -7,11 +7,16 @@ const { getDb } = require('../database');
 const { getStatements } = require('../database/statements');
 const { getCached } = require('../utils/cache');
 
-// GET /api/warehouse/locations - Alle Stellplätze mit Statistiken
+// GET /api/warehouse/locations - Alle Stellplätze mit Statistiken (mit Pagination)
 router.get('/locations', (req, res) => {
   try {
     const db = getDb();
-    const { area, active_only, search } = req.query;
+    const { area, active_only, search, page, limit } = req.query;
+    
+    // Pagination Parameter
+    const currentPage = parseInt(page) || 1;
+    const pageLimit = parseInt(limit) || 50;
+    const offset = (currentPage - 1) * pageLimit;
     
     let sql = `
       SELECT
@@ -51,8 +56,53 @@ router.get('/locations', (req, res) => {
       ORDER BY l.area, l.code
     `;
     
+    // Zähle Gesamt-Einträge für Pagination
+    let countSql = `
+      SELECT COUNT(DISTINCT l.id) as total
+      FROM location l
+      WHERE 1=1
+    `;
+    
+    const countParams = [];
+    if (active_only === 'true') {
+      countSql += ` AND l.is_active = 1`;
+    }
+    if (area && area !== 'all') {
+      countSql += ` AND l.area = ?`;
+      countParams.push(area);
+    }
+    if (search && search.trim() !== '') {
+      countSql += ` AND (l.code LIKE ? OR l.description LIKE ?)`;
+      const searchPattern = `%${search.trim()}%`;
+      countParams.push(searchPattern, searchPattern);
+    }
+    
+    const { total } = db.prepare(countSql).get(...countParams);
+    
+    // Nur paginieren wenn page parameter gesetzt ist
+    if (page) {
+      sql += ` LIMIT ? OFFSET ?`;
+      params.push(pageLimit, offset);
+    }
+    
     const rows = db.prepare(sql).all(...params);
-    res.json(rows);
+    
+    // Mit Pagination-Info antworten wenn page parameter gesetzt
+    if (page) {
+      res.json({
+        data: rows,
+        pagination: {
+          page: currentPage,
+          limit: pageLimit,
+          total,
+          totalPages: Math.ceil(total / pageLimit),
+          hasMore: offset + rows.length < total
+        }
+      });
+    } else {
+      // Alte API-Kompatibilität: Ohne Pagination alle Einträge zurückgeben
+      res.json(rows);
+    }
   } catch (err) {
     console.error("Fehler beim Abrufen der Stellplätze:", err);
     res.status(500).json({ ok: false, error: err.message });
