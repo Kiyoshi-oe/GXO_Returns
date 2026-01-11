@@ -86,6 +86,99 @@ router.get('/check-tracking', (req, res) => {
   }
 });
 
+// GET /api/inbound/check-duplicate - Duplikat-Prüfung mit Details
+router.get('/check-duplicate', (req, res) => {
+  try {
+    const db = getDb();
+    const { olpn, tracking, carrier, carrier_name } = req.query;
+    
+    let existing = null;
+    let query = '';
+    let params = [];
+    
+    if (olpn) {
+      query = `
+        SELECT 
+          i.id,
+          i.olpn,
+          i.carrier_name,
+          i.carrier_tracking_nr,
+          i.actual_carton,
+          i.created_at,
+          i.added_by,
+          i.location_id,
+          l.code as location_code,
+          l.description as location_description
+        FROM inbound_simple i
+        LEFT JOIN location l ON i.location_id = l.id
+        WHERE i.olpn = ? AND i.ignore_flag = 0
+        LIMIT 1
+      `;
+      params = [olpn.trim()];
+      
+      // Optional: Carrier-Filter
+      if (carrier || carrier_name) {
+        query = query.replace('WHERE', 'WHERE (i.carrier_name = ? OR i.carrier_name = ?) AND');
+        params.unshift(carrier_name || carrier, carrier || carrier_name);
+      }
+    } else if (tracking) {
+      query = `
+        SELECT 
+          i.id,
+          i.olpn,
+          i.carrier_name,
+          i.carrier_tracking_nr,
+          i.actual_carton,
+          i.created_at,
+          i.added_by,
+          i.location_id,
+          l.code as location_code,
+          l.description as location_description
+        FROM inbound_simple i
+        LEFT JOIN location l ON i.location_id = l.id
+        WHERE i.carrier_tracking_nr = ? AND i.ignore_flag = 0
+        LIMIT 1
+      `;
+      params = [tracking.trim()];
+      
+      if (carrier || carrier_name) {
+        query = query.replace('WHERE', 'WHERE (i.carrier_name = ? OR i.carrier_name = ?) AND');
+        params.unshift(carrier_name || carrier, carrier || carrier_name);
+      }
+    }
+    
+    if (query) {
+      existing = db.prepare(query).get(...params);
+    }
+    
+    if (existing) {
+      res.json({
+        exists: true,
+        details: {
+          id: existing.id,
+          olpn: existing.olpn,
+          carrier_name: existing.carrier_name,
+          tracking: existing.carrier_tracking_nr,
+          actual_carton: existing.actual_carton,
+          created_at: existing.created_at,
+          added_by: existing.added_by,
+          location_code: existing.location_code,
+          location: existing.location_description || existing.location_code,
+          user: existing.added_by
+        }
+      });
+    } else {
+      res.json({
+        exists: false,
+        details: null
+      });
+    }
+  } catch (err) {
+    console.error("Fehler bei Duplikat-Check:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // GET /api/inbound-simple/:id - Einzelner Eintrag
 router.get('/:id', (req, res) => {
   try {
