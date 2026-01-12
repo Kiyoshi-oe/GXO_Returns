@@ -360,7 +360,7 @@
     },
     inbound: {
       title: "Wareneingang",
-      subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+      subtitle: "Einfache Erfassung neuer Kartons"
     },
     move: {
       title: "Umlagerung",
@@ -5000,7 +5000,7 @@
         document.getElementById("kpiTotalEntries").textContent = stats.totalEntries || 0;
         document.getElementById("kpiTotalCartons").textContent = stats.totalCartons || 0;
         document.getElementById("kpiOpenRAs").textContent = stats.openRAs || 0;
-        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer Nummer`;
+        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer RA Nummer`;
       }
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Statistiken:", err);

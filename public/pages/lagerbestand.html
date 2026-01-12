@@ -565,6 +565,13 @@
                     </div>
                     <div id="overall-filter-asn_ra_no" class="excel-filter-menu" style="display: none;"></div>
                   </th>
+                  <th style="position: relative; min-width: 120px;">
+                    <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('mh_status')">
+                      <span>MH Status</span>
+                      <button class="excel-filter-btn" title="Filter & Sortieren">🔽</button>
+                    </div>
+                    <div id="overall-filter-mh_status" class="excel-filter-menu" style="display: none;"></div>
+                  </th>
                   <th style="position: relative; min-width: 80px;">
                     <div class="excel-filter-header" onclick="event.stopPropagation(); toggleOverallFilter('area')">
                       <span>Area</span>
@@ -619,7 +626,7 @@
               </thead>
               <tbody id="overallInventoryBody">
                 <tr>
-                  <td colspan="22" class="muted">Lade Einträge...</td>
+                  <td colspan="23" class="muted">Lade Einträge...</td>
                 </tr>
               </tbody>
             </table>
@@ -1100,7 +1107,7 @@
     },
     inbound: {
       title: "Wareneingang",
-      subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+      subtitle: "Einfache Erfassung neuer Kartons"
     },
     move: {
       title: "Umlagerung",
@@ -1811,6 +1818,106 @@
       
       if (!detailsRow) return;
       
+      // RA Status Badge Funktion für Kartons-Tabelle - basierend auf MH Status
+      const getRAStatusBadge = (shipStatus, mhStatus, asnRaNo) => {
+        let status = 'other';
+        let label = '-';
+        let color = '#9ca3af';
+        let bgColor = 'rgba(156, 163, 175, 0.1)';
+        let borderColor = '#9ca3af';
+        
+        // Bestimme Status primär basierend auf mh_status (RA Status = MH Status)
+        if (!asnRaNo || asnRaNo === '' || asnRaNo === 'NULL' || asnRaNo === null) {
+          status = 'notFound';
+          label = '#NV';
+          color = '#9ca3af';
+          bgColor = 'rgba(156, 163, 175, 0.1)';
+          borderColor = '#9ca3af';
+        } else if (mhStatus) {
+          // Primär MH Status verwenden
+          const mhStatusLower = mhStatus.toLowerCase();
+          if (mhStatusLower.includes('in transit') || mhStatusLower === 'in transit') {
+            status = 'inTransit';
+            label = 'In Transit';
+            color = '#3b82f6';
+            bgColor = 'rgba(59, 130, 246, 0.1)';
+            borderColor = '#3b82f6';
+          } else if (mhStatusLower.includes('in receiving') || mhStatusLower.includes('receiving') || mhStatusLower === 'in receiving') {
+            status = 'inReceiving';
+            label = 'In Receiving';
+            color = '#f59e0b';
+            bgColor = 'rgba(245, 158, 11, 0.1)';
+            borderColor = '#f59e0b';
+          } else if (mhStatusLower.includes('cancelled') || mhStatusLower.includes('cancel') || mhStatusLower === 'cancelled') {
+            status = 'cancelled';
+            label = 'Cancelled';
+            color = '#ef4444';
+            bgColor = 'rgba(239, 68, 68, 0.1)';
+            borderColor = '#ef4444';
+          } else if (mhStatusLower.includes('verifiziert') || mhStatusLower === 'verifiziert' || mhStatusLower.includes('verified') || mhStatusLower === 'verified') {
+            status = 'verified';
+            label = 'Verifiziert';
+            color = '#10b981';
+            bgColor = 'rgba(16, 185, 129, 0.1)';
+            borderColor = '#10b981';
+          } else {
+            // Fallback: MH Status direkt anzeigen
+            status = 'other';
+            label = mhStatus;
+            color = '#6b7280';
+            bgColor = 'rgba(107, 114, 128, 0.1)';
+            borderColor = '#6b7280';
+          }
+        } else if (shipStatus) {
+          // Fallback auf ship_status wenn kein mh_status vorhanden
+          const shipStatusLower = shipStatus.toLowerCase();
+          if (shipStatusLower.includes('in transit') || shipStatusLower === 'in transit') {
+            status = 'inTransit';
+            label = 'In Transit';
+            color = '#3b82f6';
+            bgColor = 'rgba(59, 130, 246, 0.1)';
+            borderColor = '#3b82f6';
+          } else if (shipStatusLower.includes('in receiving') || shipStatusLower.includes('receiving') || shipStatusLower === 'in receiving') {
+            status = 'inReceiving';
+            label = 'In Receiving';
+            color = '#f59e0b';
+            bgColor = 'rgba(245, 158, 11, 0.1)';
+            borderColor = '#f59e0b';
+          } else if (shipStatusLower.includes('cancelled') || shipStatusLower.includes('cancel') || shipStatusLower === 'cancelled') {
+            status = 'cancelled';
+            label = 'Cancelled';
+            color = '#ef4444';
+            bgColor = 'rgba(239, 68, 68, 0.1)';
+            borderColor = '#ef4444';
+          } else {
+            status = 'other';
+            label = shipStatus;
+            color = '#6b7280';
+            bgColor = 'rgba(107, 114, 128, 0.1)';
+            borderColor = '#6b7280';
+          }
+        } else {
+          status = 'other';
+          label = 'Unbekannt';
+          color = '#6b7280';
+          bgColor = 'rgba(107, 114, 128, 0.1)';
+          borderColor = '#6b7280';
+        }
+        
+        return `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; background: ${bgColor}; color: ${color}; border: 1px solid ${borderColor};">
+          ${label}
+        </span>`;
+      };
+      
+      const formatDateTime = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          return new Date(dateStr).toLocaleString('de-DE');
+        } catch (e) {
+          return dateStr;
+        }
+      };
+      
       const detailsHtml = `
         <div style="padding: 16px; background: var(--bg-soft);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -1839,6 +1946,7 @@
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">Customer ID</th>
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">Customer Name</th>
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">ASN/RA</th>
+                  <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">MH Status</th>
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">Area</th>
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">Land</th>
                   <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-soft); white-space: nowrap;">Ship Status</th>
@@ -1865,6 +1973,9 @@
                     <td style="padding: 6px 8px; font-family: monospace; font-size: 10px;">${carton.customer_id || '-'}</td>
                     <td style="padding: 6px 8px;">${carton.customer_name || '-'}</td>
                     <td style="padding: 6px 8px; font-family: monospace; font-size: 10px;">${carton.asn_ra_no || '-'}</td>
+                    <td style="padding: 6px 8px;">
+                      ${getRAStatusBadge(carton.ship_status, carton.mh_status, carton.asn_ra_no)}
+                    </td>
                     <td style="padding: 6px 8px;"><span class="pill" style="font-size: 10px;">${carton.area || '-'}</span></td>
                     <td style="padding: 6px 8px;">${carton.land || '-'}</td>
                     <td style="padding: 6px 8px;">${carton.ship_status || '-'}</td>
@@ -2473,37 +2584,139 @@
         }
       };
       
+      const formatValue = (value) => {
+        if (value === null || value === undefined || value === '') return '-';
+        if (typeof value === 'number' && isNaN(value)) return '-';
+        return String(value);
+      };
+      
+      // RA Status Badge Funktion - basierend auf MH Status
+      const getRAStatusBadge = (shipStatus, mhStatus, asnRaNo) => {
+        let status = 'other';
+        let label = '-';
+        let color = '#9ca3af';
+        let bgColor = 'rgba(156, 163, 175, 0.1)';
+        let borderColor = '#9ca3af';
+        
+        // Bestimme Status primär basierend auf mh_status (RA Status = MH Status)
+        if (!asnRaNo || asnRaNo === '' || asnRaNo === 'NULL' || asnRaNo === null) {
+          status = 'notFound';
+          label = '#NV';
+          color = '#9ca3af';
+          bgColor = 'rgba(156, 163, 175, 0.1)';
+          borderColor = '#9ca3af';
+        } else if (mhStatus) {
+          // Primär MH Status verwenden
+          const mhStatusLower = mhStatus.toLowerCase();
+          if (mhStatusLower.includes('in transit') || mhStatusLower === 'in transit') {
+            status = 'inTransit';
+            label = 'In Transit';
+            color = '#3b82f6';
+            bgColor = 'rgba(59, 130, 246, 0.1)';
+            borderColor = '#3b82f6';
+          } else if (mhStatusLower.includes('in receiving') || mhStatusLower.includes('receiving') || mhStatusLower === 'in receiving') {
+            status = 'inReceiving';
+            label = 'In Receiving';
+            color = '#f59e0b';
+            bgColor = 'rgba(245, 158, 11, 0.1)';
+            borderColor = '#f59e0b';
+          } else if (mhStatusLower.includes('cancelled') || mhStatusLower.includes('cancel') || mhStatusLower === 'cancelled') {
+            status = 'cancelled';
+            label = 'Cancelled';
+            color = '#ef4444';
+            bgColor = 'rgba(239, 68, 68, 0.1)';
+            borderColor = '#ef4444';
+          } else if (mhStatusLower.includes('verifiziert') || mhStatusLower === 'verifiziert' || mhStatusLower.includes('verified') || mhStatusLower === 'verified') {
+            status = 'verified';
+            label = 'Verifiziert';
+            color = '#10b981';
+            bgColor = 'rgba(16, 185, 129, 0.1)';
+            borderColor = '#10b981';
+          } else {
+            // Fallback: MH Status direkt anzeigen
+            status = 'other';
+            label = mhStatus;
+            color = '#6b7280';
+            bgColor = 'rgba(107, 114, 128, 0.1)';
+            borderColor = '#6b7280';
+          }
+        } else if (shipStatus) {
+          // Fallback auf ship_status wenn kein mh_status vorhanden
+          const shipStatusLower = shipStatus.toLowerCase();
+          if (shipStatusLower.includes('in transit') || shipStatusLower === 'in transit') {
+            status = 'inTransit';
+            label = 'In Transit';
+            color = '#3b82f6';
+            bgColor = 'rgba(59, 130, 246, 0.1)';
+            borderColor = '#3b82f6';
+          } else if (shipStatusLower.includes('in receiving') || shipStatusLower.includes('receiving') || shipStatusLower === 'in receiving') {
+            status = 'inReceiving';
+            label = 'In Receiving';
+            color = '#f59e0b';
+            bgColor = 'rgba(245, 158, 11, 0.1)';
+            borderColor = '#f59e0b';
+          } else if (shipStatusLower.includes('cancelled') || shipStatusLower.includes('cancel') || shipStatusLower === 'cancelled') {
+            status = 'cancelled';
+            label = 'Cancelled';
+            color = '#ef4444';
+            bgColor = 'rgba(239, 68, 68, 0.1)';
+            borderColor = '#ef4444';
+          } else {
+            status = 'other';
+            label = shipStatus;
+            color = '#6b7280';
+            bgColor = 'rgba(107, 114, 128, 0.1)';
+            borderColor = '#6b7280';
+          }
+        } else {
+          status = 'other';
+          label = 'Unbekannt';
+          color = '#6b7280';
+          bgColor = 'rgba(107, 114, 128, 0.1)';
+          borderColor = '#6b7280';
+        }
+        
+        return `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; background: ${bgColor}; color: ${color}; border: 1px solid ${borderColor};">
+          ${label}
+        </span>`;
+      };
+      
+      const actualCarton = entry.actual_carton != null && entry.actual_carton !== undefined ? entry.actual_carton : null;
+      
       tr.innerHTML = `
         <td style="padding: 6px 8px; font-size: 11px;">
-          <div style="font-weight: 600;">${entry.location_code || '-'}</div>
-          ${entry.location_description ? `<div style="font-size: 10px; color: var(--text-muted);">${entry.location_description}</div>` : ''}
+          <div style="font-weight: 600;">${formatValue(entry.location_code)}</div>
+          ${entry.location_description ? `<div style="font-size: 10px; color: var(--text-muted);">${formatValue(entry.location_description)}</div>` : ''}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">#${entry.id || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.cw || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">#${formatValue(entry.id)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.cw)}</td>
         <td style="padding: 6px 8px; font-size: 11px;">${formatDate(entry.aufgenommen_am)}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.carrier_name || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.carrier_tracking_nr || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.olpn || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.dn || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.shi || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.planned_carton || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; color: ${entry.actual_carton > 0 ? 'var(--gxo-orange)' : 'var(--text-muted)'}; font-weight: ${entry.actual_carton > 0 ? '600' : 'normal'};">
-          ${entry.actual_carton || '-'}
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.carrier_name)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${formatValue(entry.carrier_tracking_nr)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${formatValue(entry.olpn)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.dn)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.shi)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.planned_carton)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: ${actualCarton > 0 ? 'var(--gxo-orange)' : 'var(--text-muted)'}; font-weight: ${actualCarton > 0 ? '600' : 'normal'};">
+          ${formatValue(actualCarton)}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_id || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_name || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.asn_ra_no || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.customer_id)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.customer_name)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.asn_ra_no)}</td>
         <td style="padding: 6px 8px; font-size: 11px;">
-          ${entry.area ? `<span class="pill">${entry.area}</span>` : '-'}
+          ${getRAStatusBadge(entry.ship_status, entry.mh_status, entry.asn_ra_no)}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.land || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.ship_status || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">
+          ${entry.area ? `<span class="pill">${formatValue(entry.area)}</span>` : '-'}
+        </td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.land)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.ship_status)}</td>
         <td style="padding: 6px 8px; font-size: 11px; text-align: center;">
           ${entry.ignore_flag ? '<span style="color: var(--gxo-orange);">✗</span>' : '-'}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.kommentar || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.kommentar)}</td>
         <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatDateTime(entry.created_at)}</td>
-        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${entry.added_by || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatValue(entry.added_by)}</td>
         <td style="padding: 6px 8px; text-align: center;">
           <button class="btn btn-ghost btn-sm" onclick="showInboundEntryDetails(${entry.id})" title="Details anzeigen">
             ✏️
@@ -5783,7 +5996,7 @@
         document.getElementById("kpiTotalEntries").textContent = stats.totalEntries || 0;
         document.getElementById("kpiTotalCartons").textContent = stats.totalCartons || 0;
         document.getElementById("kpiOpenRAs").textContent = stats.openRAs || 0;
-        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer Nummer`;
+        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer RA Nummer`;
       }
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Statistiken:", err);

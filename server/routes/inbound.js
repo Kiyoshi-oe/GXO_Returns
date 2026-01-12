@@ -255,6 +255,166 @@ router.post('/', (req, res) => {
   }
 });
 
+// PUT /api/inbound-simple/:id/ra - RA-Nummer setzen (für Levis-Rolle, ohne change_reason)
+router.put('/:id/ra', (req, res) => {
+  try {
+    const db = getDb();
+    const { id } = req.params;
+    const { asn_ra_no } = req.body;
+    const currentUser = req.headers['x-user'] || 'System';
+    
+    const existing = db.prepare("SELECT * FROM inbound_simple WHERE id = ?").get(id);
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Eintrag nicht gefunden" });
+    }
+    
+    if (!asn_ra_no || asn_ra_no.trim() === "") {
+      return res.status(400).json({ ok: false, error: "RA-Nummer ist erforderlich" });
+    }
+    
+    // Update RA-Nummer ohne change_reason (für Levis-Rolle)
+    db.prepare("UPDATE inbound_simple SET asn_ra_no = ? WHERE id = ?").run(asn_ra_no.trim(), id);
+    
+    // Optional: Audit-Log ohne change_reason
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO inbound_audit (inbound_id, field_name, old_value, new_value, changed_by, change_reason, changed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id, 'asn_ra_no',
+      existing.asn_ra_no || null,
+      asn_ra_no.trim(),
+      currentUser,
+      'RA-Nummer zugeordnet (Levis)',
+      now
+    );
+    
+    res.json({ ok: true, message: "RA-Nummer erfolgreich zugeordnet" });
+  } catch (err) {
+    console.error("Fehler beim Setzen der RA-Nummer:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// POST /api/inbound-simple/bulk-update-ra - Bulk RA-Nummern zuordnen
+router.post('/bulk-update-ra', (req, res) => {
+  try {
+    const db = getDb();
+    const { updates } = req.body; // Array von { identifier: 'OLPN123', identifier_type: 'olpn', asn_ra_no: 'RA123' }
+    const currentUser = req.headers['x-user'] || 'System';
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ ok: false, error: "Keine Updates bereitgestellt" });
+    }
+    
+    const results = [];
+    const errors = [];
+    
+    for (const update of updates) {
+      try {
+        const { identifier, identifier_type, asn_ra_no } = update;
+        
+        if (!identifier || !identifier_type || !asn_ra_no) {
+          errors.push({ identifier, error: "Fehlende Felder" });
+          continue;
+        }
+        
+        // Suche Eintrag basierend auf identifier_type
+        let existing;
+        if (identifier_type === 'olpn') {
+          existing = db.prepare("SELECT * FROM inbound_simple WHERE olpn = ? AND ignore_flag = 0 LIMIT 1").get(identifier.trim());
+        } else if (identifier_type === 'dn') {
+          existing = db.prepare("SELECT * FROM inbound_simple WHERE dn = ? AND ignore_flag = 0 LIMIT 1").get(identifier.trim());
+        } else if (identifier_type === 'tracking') {
+          existing = db.prepare("SELECT * FROM inbound_simple WHERE carrier_tracking_nr = ? AND ignore_flag = 0 LIMIT 1").get(identifier.trim());
+        } else {
+          errors.push({ identifier, error: "Ungültiger identifier_type" });
+          continue;
+        }
+        
+        if (!existing) {
+          errors.push({ identifier, error: "Eintrag nicht gefunden" });
+          continue;
+        }
+        
+        // Update RA-Nummer
+        db.prepare("UPDATE inbound_simple SET asn_ra_no = ? WHERE id = ?").run(asn_ra_no.trim(), existing.id);
+        
+        // Audit-Log
+        const now = new Date().toISOString();
+        db.prepare(`
+          INSERT INTO inbound_audit (inbound_id, field_name, old_value, new_value, changed_by, change_reason, changed_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          existing.id, 'asn_ra_no',
+          existing.asn_ra_no || null,
+          asn_ra_no.trim(),
+          currentUser,
+          'RA-Nummer zugeordnet (Bulk Import)',
+          now
+        );
+        
+        results.push({ identifier, id: existing.id, success: true });
+      } catch (err) {
+        errors.push({ identifier: update.identifier, error: err.message });
+      }
+    }
+    
+    res.json({ 
+      ok: true, 
+      success_count: results.length, 
+      error_count: errors.length,
+      results,
+      errors 
+    });
+  } catch (err) {
+    console.error("Fehler beim Bulk-Update der RA-Nummern:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// GET /api/inbound-simple/search - Suche nach OLPN/DN/Tracking
+router.get('/search', (req, res) => {
+  try {
+    const db = getDb();
+    const { q, type } = req.query; // q = Suchbegriff, type = 'olpn'|'dn'|'tracking'|'all'
+    
+    if (!q || q.trim() === '') {
+      return res.json([]);
+    }
+    
+    const searchTerm = `%${q.trim()}%`;
+    let sql;
+    let params;
+    
+    if (type === 'olpn') {
+      sql = `SELECT * FROM inbound_simple WHERE olpn LIKE ? AND ignore_flag = 0 LIMIT 50`;
+      params = [searchTerm];
+    } else if (type === 'dn') {
+      sql = `SELECT * FROM inbound_simple WHERE dn LIKE ? AND ignore_flag = 0 LIMIT 50`;
+      params = [searchTerm];
+    } else if (type === 'tracking') {
+      sql = `SELECT * FROM inbound_simple WHERE carrier_tracking_nr LIKE ? AND ignore_flag = 0 LIMIT 50`;
+      params = [searchTerm];
+    } else {
+      // Suche in allen Feldern
+      sql = `
+        SELECT * FROM inbound_simple 
+        WHERE (olpn LIKE ? OR dn LIKE ? OR carrier_tracking_nr LIKE ?) 
+        AND ignore_flag = 0 
+        LIMIT 50
+      `;
+      params = [searchTerm, searchTerm, searchTerm];
+    }
+    
+    const results = db.prepare(sql).all(...params);
+    res.json(results);
+  } catch (err) {
+    console.error("Fehler bei der Suche:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // PUT /api/inbound-simple/:id - Eintrag aktualisieren
 router.put('/:id', (req, res) => {
   try {
@@ -268,8 +428,8 @@ router.put('/:id', (req, res) => {
       return res.status(404).json({ ok: false, error: "Eintrag nicht gefunden" });
     }
     
-    // Pflichtkommentar bei Änderungen
-    if (!payload.change_reason || payload.change_reason.trim() === "") {
+    // Pflichtkommentar bei Änderungen (außer für RA-Import)
+    if (!payload.skip_change_reason && (!payload.change_reason || payload.change_reason.trim() === "")) {
       return res.status(400).json({ ok: false, error: "Bitte geben Sie einen Grund für die Änderung an" });
     }
     
@@ -426,6 +586,137 @@ router.post('/bulk', (req, res) => {
     });
   } catch (err) {
     console.error("Fehler beim Bulk-Insert:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// POST /api/inbound-simple/test-data - Erstelle 5 Test-Einträge mit verschiedenen RA-Nummern und MH-Status
+router.post('/test-data', (req, res) => {
+  try {
+    const db = getDb();
+    const now = new Date().toISOString();
+    const currentUser = req.headers['x-user'] || 'System';
+    
+    // 5 Test-Einträge mit verschiedenen RA-Nummern und MH-Status
+    const testEntries = [
+      {
+        cw: 'CW01',
+        olpn: 'TEST001',
+        carrier_tracking_nr: '88' + Math.random().toString().slice(2, 14).padStart(10, '0'),
+        asn_ra_no: 'RA123456',
+        mh_status: 'In Transit',
+        ship_status: 'In Transit',
+        carrier_name: 'FedEx',
+        actual_carton: 5,
+        planned_carton: 5,
+        customer_name: 'Test Kunde 1',
+        added_by: currentUser
+      },
+      {
+        cw: 'CW02',
+        olpn: 'TEST002',
+        carrier_tracking_nr: '88' + Math.random().toString().slice(2, 14).padStart(10, '0'),
+        asn_ra_no: 'RA234567',
+        mh_status: 'In Receiving',
+        ship_status: 'In Receiving',
+        carrier_name: 'DHL',
+        actual_carton: 3,
+        planned_carton: 3,
+        customer_name: 'Test Kunde 2',
+        added_by: currentUser
+      },
+      {
+        cw: 'CW03',
+        olpn: 'TEST003',
+        carrier_tracking_nr: '88' + Math.random().toString().slice(2, 14).padStart(10, '0'),
+        asn_ra_no: 'RA345678',
+        mh_status: 'Cancelled',
+        ship_status: 'Cancelled',
+        carrier_name: 'UPS',
+        actual_carton: 2,
+        planned_carton: 2,
+        customer_name: 'Test Kunde 3',
+        added_by: currentUser
+      },
+      {
+        cw: 'CW04',
+        olpn: 'TEST004',
+        carrier_tracking_nr: '88' + Math.random().toString().slice(2, 14).padStart(10, '0'),
+        asn_ra_no: 'RA456789',
+        mh_status: 'Verifiziert',
+        ship_status: 'Verifiziert',
+        carrier_name: 'DPD',
+        actual_carton: 8,
+        planned_carton: 8,
+        customer_name: 'Test Kunde 4',
+        added_by: currentUser
+      },
+      {
+        cw: 'CW05',
+        olpn: 'TEST005',
+        carrier_tracking_nr: '88' + Math.random().toString().slice(2, 14).padStart(10, '0'),
+        asn_ra_no: null, // Keine RA-Nummer -> #NV
+        mh_status: null,
+        ship_status: 'Pending',
+        carrier_name: 'GLS',
+        actual_carton: 1,
+        planned_carton: 1,
+        customer_name: 'Test Kunde 5',
+        added_by: currentUser
+      }
+    ];
+    
+    const stmt = db.prepare(`
+      INSERT INTO inbound_simple (
+        cw, aufgenommen_am, ignore_flag, area, stage, last_stage,
+        carrier_name, land, ship_status, planned_carton, actual_carton,
+        olpn, dn, shi, carrier_tracking_nr, customer_id, customer_name,
+        asn_ra_no, mh_status, kommentar,
+        added_by, created_at
+      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const insertedIds = [];
+    for (const entry of testEntries) {
+      const result = stmt.run(
+        entry.cw,
+        now,
+        null, // area
+        null, // stage
+        null, // last_stage
+        entry.carrier_name,
+        null, // land
+        entry.ship_status,
+        entry.planned_carton,
+        entry.actual_carton,
+        entry.olpn,
+        null, // dn
+        null, // shi
+        entry.carrier_tracking_nr,
+        null, // customer_id
+        entry.customer_name,
+        entry.asn_ra_no,
+        entry.mh_status,
+        'Test-Eintrag für RA-Status-Anzeige',
+        entry.added_by,
+        now
+      );
+      insertedIds.push(result.lastInsertRowid);
+    }
+    
+    res.json({ 
+      ok: true, 
+      message: '5 Test-Einträge erfolgreich erstellt',
+      inserted_ids: insertedIds,
+      entries: testEntries.map((e, i) => ({
+        id: insertedIds[i],
+        olpn: e.olpn,
+        asn_ra_no: e.asn_ra_no,
+        mh_status: e.mh_status
+      }))
+    });
+  } catch (err) {
+    console.error("Fehler beim Erstellen der Test-Einträge:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

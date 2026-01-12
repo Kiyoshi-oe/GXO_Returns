@@ -793,7 +793,9 @@ function render3DView() {
   window.addEventListener('resize', onWindowResize);
 }
 
-// Make showLocationDetails globally available for inline onclick
+// Make functions globally available
 window.showLocationDetails = showLocationDetails;
+window.openWarehouseMapModal = openWarehouseMapModal;
+window.closeWarehouseMapModal = closeWarehouseMapModal;
 
 console.log('✅ Warehouse Map initialisiert');

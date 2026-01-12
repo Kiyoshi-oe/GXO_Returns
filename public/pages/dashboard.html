@@ -179,12 +179,11 @@
                 <div class="stack">
                   <span class="kpi-number" id="kpiTotalCartons">-</span>
                   <span class="kpi-label">Kartons gesamt</span>
-                  <span class="muted">inklusive reservierter Bestände</span>
                 </div>
                 <div class="stack">
                   <span class="kpi-number" id="kpiOpenRAs">-</span>
-                  <span class="kpi-label">offene RA Positionen</span>
-                  <span class="muted" id="kpiUnclearRAs">davon - mit unklarer Nummer</span>
+                  <span class="kpi-label">Anzahl offene RA Positionen</span>
+                  <span class="muted" id="kpiUnclearRAs">davon - mit unklarer RA Nummer</span>
                 </div>
               </div>
             </div>
@@ -228,7 +227,7 @@
               <div class="card-header">
                 <div>
                   <div class="card-title">RA Status Übersicht</div>
-                  <div class="card-subtitle">Einfacher Blick auf gültig offen und Konflikte</div>
+                  <div class="card-subtitle"></div>
                 </div>
               </div>
               <div class="chart-wrapper">
@@ -258,8 +257,8 @@
             <div class="card">
               <div class="card-header">
                 <div>
-                  <div class="card-title">Lager Kennzahlen Grafik</div>
-                  <div class="card-subtitle">Demo Ansicht für künftige Auswertungen</div>
+                  <div class="card-title">Lager Kennzahlen </div>
+                  <div class="card-subtitle"></div>
                 </div>
               </div>
               <div class="chart-wrapper">
@@ -270,8 +269,8 @@
             <div class="card">
               <div class="card-header">
                 <div>
-                  <div class="card-title">Retouren nach Frachtführer</div>
-                  <div class="card-subtitle">Verteilung als Beispiel, Daten sind Platzhalter</div>
+                  <div class="card-title" data-i18n="dashboard.returns-by-carrier">Retouren nach Frachtführer</div>
+                  <div class="card-subtitle" data-i18n="dashboard.returns-by-carrier-subtitle">Verteilung als Beispiel, Daten sind Platzhalter</div>
                 </div>
               </div>
               <div class="chart-wrapper">
@@ -404,7 +403,7 @@
     },
     inbound: {
       title: "Wareneingang",
-      subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+      subtitle: "Einfache Erfassung neuer Kartons"
     },
     move: {
       title: "Umlagerung",
@@ -1759,37 +1758,45 @@
         }
       };
       
+      const formatValue = (value) => {
+        if (value === null || value === undefined || value === '') return '-';
+        if (typeof value === 'number' && isNaN(value)) return '-';
+        return String(value);
+      };
+      
+      const actualCarton = entry.actual_carton != null && entry.actual_carton !== undefined ? entry.actual_carton : null;
+      
       tr.innerHTML = `
         <td style="padding: 6px 8px; font-size: 11px;">
-          <div style="font-weight: 600;">${entry.location_code || '-'}</div>
-          ${entry.location_description ? `<div style="font-size: 10px; color: var(--text-muted);">${entry.location_description}</div>` : ''}
+          <div style="font-weight: 600;">${formatValue(entry.location_code)}</div>
+          ${entry.location_description ? `<div style="font-size: 10px; color: var(--text-muted);">${formatValue(entry.location_description)}</div>` : ''}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">#${entry.id || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.cw || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">#${formatValue(entry.id)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.cw)}</td>
         <td style="padding: 6px 8px; font-size: 11px;">${formatDate(entry.aufgenommen_am)}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.carrier_name || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.carrier_tracking_nr || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${entry.olpn || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.dn || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.shi || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.planned_carton || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px; color: ${entry.actual_carton > 0 ? 'var(--gxo-orange)' : 'var(--text-muted)'}; font-weight: ${entry.actual_carton > 0 ? '600' : 'normal'};">
-          ${entry.actual_carton || '-'}
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.carrier_name)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${formatValue(entry.carrier_tracking_nr)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; font-family: monospace;">${formatValue(entry.olpn)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.dn)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.shi)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.planned_carton)}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: ${actualCarton > 0 ? 'var(--gxo-orange)' : 'var(--text-muted)'}; font-weight: ${actualCarton > 0 ? '600' : 'normal'};">
+          ${formatValue(actualCarton)}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_id || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.customer_name || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.asn_ra_no || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.customer_id)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.customer_name)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.asn_ra_no)}</td>
         <td style="padding: 6px 8px; font-size: 11px;">
-          ${entry.area ? `<span class="pill">${entry.area}</span>` : '-'}
+          ${entry.area ? `<span class="pill">${formatValue(entry.area)}</span>` : '-'}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.land || '-'}</td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.ship_status || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.land)}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.ship_status)}</td>
         <td style="padding: 6px 8px; font-size: 11px; text-align: center;">
           ${entry.ignore_flag ? '<span style="color: var(--gxo-orange);">✗</span>' : '-'}
         </td>
-        <td style="padding: 6px 8px; font-size: 11px;">${entry.kommentar || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px;">${formatValue(entry.kommentar)}</td>
         <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatDateTime(entry.created_at)}</td>
-        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${entry.added_by || '-'}</td>
+        <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatValue(entry.added_by)}</td>
         <td style="padding: 6px 8px; text-align: center;">
           <button class="btn btn-ghost btn-sm" onclick="showInboundEntryDetails(${entry.id})" title="Details anzeigen">
             ✏️
@@ -4982,8 +4989,23 @@
           console.warn("⚠️ Navigation-Funktion noch nicht verfügbar");
         }
       } else {
-        console.warn("⚠️ Navigation-Items noch nicht verfügbar, versuche erneut...");
-        setTimeout(tryInit, 100);
+        // Maximalversuche verhindern Endlosschleife
+        if (typeof tryInit.retryCount === 'undefined') {
+          tryInit.retryCount = 0;
+        }
+        tryInit.retryCount++;
+        
+        if (tryInit.retryCount < 10) {
+          // Nur bei ersten Versuchen loggen
+          if (tryInit.retryCount <= 3) {
+            setTimeout(tryInit, 200);
+          } else {
+            // Bei späteren Versuchen stiller versuchen
+            setTimeout(tryInit, 300);
+          }
+        } else {
+          console.warn("⚠️ Navigation-Items konnten nach 10 Versuchen nicht geladen werden. Überspringe Initialisierung.");
+        }
       }
     }
     
@@ -5043,7 +5065,7 @@
         document.getElementById("kpiTotalEntries").textContent = stats.totalEntries || 0;
         document.getElementById("kpiTotalCartons").textContent = stats.totalCartons || 0;
         document.getElementById("kpiOpenRAs").textContent = stats.openRAs || 0;
-        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer Nummer`;
+        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer RA Nummer`;
       }
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Statistiken:", err);
@@ -9134,6 +9156,7 @@
 <script src="/js/features/search.js"></script>
 <script src="/js/features/import.js"></script>
 <script src="/js/features/export.js"></script>
+<script src="/js/features/warehouse-map.js"></script>
 <script src="/js/init-all-features.js"></script>
 
 

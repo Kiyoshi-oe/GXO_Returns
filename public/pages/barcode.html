@@ -127,13 +127,19 @@
     <div class="main">
       <div class="container">
         
-        <!-- Barcode Eingabe Card -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Barcode Konfiguration</h2>
-            <p class="card-subtitle">Geben Sie die Daten für Ihren Barcode ein</p>
-          </div>
-          <div class="card-body">
+        <!-- 2-Spalten Grid Layout -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          
+          <!-- Linke Spalte: Barcode Konfiguration und Vorschau -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- Barcode Eingabe Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Barcode Konfiguration</h2>
+                <p class="card-subtitle">Geben Sie die Daten für Ihren Barcode ein</p>
+              </div>
+              <div class="card-body">
             <div class="form-grid">
               <!-- Barcode Typ -->
               <div class="form-group">
@@ -260,55 +266,60 @@
             </div>
           </div>
         </div>
+          
+          <!-- Rechte Spalte: Batch-Generierung und Batch Vorschau -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- Batch Generierung Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Batch-Generierung</h2>
+                <p class="card-subtitle">Mehrere Barcodes auf einmal erstellen</p>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="batchInput" class="form-label">Barcode-Werte (einer pro Zeile)</label>
+                  <textarea 
+                    id="batchInput" 
+                    class="form-input" 
+                    rows="6"
+                    placeholder="123456789012&#10;234567890123&#10;345678901234"
+                  ></textarea>
+                  <small class="form-hint">Geben Sie jeden Barcode-Wert in einer neuen Zeile ein</small>
+                </div>
 
-        <!-- Batch Generierung Card -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Batch-Generierung</h2>
-            <p class="card-subtitle">Mehrere Barcodes auf einmal erstellen</p>
-          </div>
-          <div class="card-body">
-            <div class="form-group">
-              <label for="batchInput" class="form-label">Barcode-Werte (einer pro Zeile)</label>
-              <textarea 
-                id="batchInput" 
-                class="form-input" 
-                rows="6"
-                placeholder="123456789012&#10;234567890123&#10;345678901234"
-              ></textarea>
-              <small class="form-hint">Geben Sie jeden Barcode-Wert in einer neuen Zeile ein</small>
+                <div class="card-actions" style="margin-top: 24px;">
+                  <button id="generateBatchBtn" class="btn btn-primary">
+                    <span>📊</span>
+                    Batch Generieren
+                  </button>
+                  <button id="downloadAllBtn" class="btn btn-secondary" style="display: none;">
+                    <span>💾</span>
+                    Alle herunterladen (ZIP)
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div class="card-actions" style="margin-top: 24px;">
-              <button id="generateBatchBtn" class="btn btn-primary">
-                <span>📊</span>
-                Batch Generieren
-              </button>
-              <button id="downloadAllBtn" class="btn btn-secondary" style="display: none;">
-                <span>💾</span>
-                Alle herunterladen (ZIP)
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Batch Vorschau -->
-        <div id="batchPreview" style="display: none;">
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Batch Vorschau</h2>
-              <p class="card-subtitle" id="batchCount">0 Barcodes generiert</p>
-            </div>
-            <div class="card-body">
-              <div id="batchGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
-                <!-- Barcodes werden hier eingefügt -->
+            <!-- Batch Vorschau -->
+            <div id="batchPreview" style="display: none;">
+              <div class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Batch Vorschau</h2>
+                  <p class="card-subtitle" id="batchCount">0 Barcodes generiert</p>
+                </div>
+                <div class="card-body">
+                  <div id="batchGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                    <!-- Barcodes werden hier eingefügt -->
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Info Card -->
-        <div class="card">
+        
+        <!-- Info Card (volle Breite unter dem Grid) -->
+        <div class="card" style="margin-top: 24px;">
           <div class="card-header">
             <h2 class="card-title">ℹ️ Barcode-Typen Übersicht</h2>
           </div>
@@ -642,6 +653,13 @@
       to {
         transform: translateX(400px);
         opacity: 0;
+      }
+    }
+    
+    /* Responsive Grid für Barcode-Seite */
+    @media (max-width: 1024px) {
+      .barcode-grid-container {
+        grid-template-columns: 1fr !important;
       }
     }
   `;

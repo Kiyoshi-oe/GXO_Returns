@@ -149,48 +149,236 @@
     </header>
 
     <main class="main">
-      <section class="view" id="view-ra">
-        <div class="form-grid">
-            <div class="form-group">
-              <label>Report Datei</label>
-              <input type="file">
-              <span class="muted">Später erwartet das System eine Excel Datei mit RA Nummer und Status</span>
+      <div class="container">
+        
+        <!-- Tab Navigation -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div style="display: flex; gap: 12px; padding: 8px; background: var(--bg-soft); border-radius: 10px;">
+            <button class="ra-tab-btn active" data-tab="single" style="flex: 1; padding: 12px 20px; border: 2px solid var(--gxo-orange); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-main); transition: all 0.3s ease;">
+              🔍 Einzelne Zuordnung
+            </button>
+            <button class="ra-tab-btn" data-tab="bulk" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              📋 Bulk Import
+            </button>
+            <button class="ra-tab-btn" data-tab="manual" style="flex: 1; padding: 12px 20px; border: 2px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              ✏️ Manuelle Liste
+            </button>
+          </div>
+        </div>
+
+        <!-- Einzelne Zuordnung Tab -->
+        <div class="ra-tab-content active" id="tab-single">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">🔍 Einzelne RA-Nummer zuordnen</h2>
+              <p class="card-subtitle">Suchen Sie nach OLPN, DN oder Carrier Tracking-Nummer und ordnen Sie eine RA-Nummer zu</p>
             </div>
-            <div class="form-group">
-              <label>Zuordnung</label>
-              <select>
-                <option>Standard Zuordnung verwenden</option>
-                <option>Eigene Zuordnung definieren</option>
-              </select>
+            <div class="card-body">
+              <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div class="form-group">
+                  <label>Suchtyp</label>
+                  <select id="searchType" class="form-select">
+                    <option value="all">Alle (OLPN, DN, Tracking)</option>
+                    <option value="olpn">OLPN</option>
+                    <option value="dn">DN</option>
+                    <option value="tracking">Carrier Tracking-Nummer</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Suchbegriff</label>
+                  <input type="text" id="searchInput" class="form-input" placeholder="z.B. OLPN123 oder DN456" onkeyup="debounceSearch()">
+                </div>
+              </div>
+              
+              <div id="searchResults" style="display: none; margin-bottom: 24px;">
+                <div class="card" style="background: var(--bg-soft);">
+                  <div class="card-body">
+                    <h3 style="margin: 0 0 16px 0; font-size: 16px;">Suchergebnisse</h3>
+                    <div id="searchResultsList"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="selectedEntry" style="display: none;">
+                <div class="card" style="background: var(--bg-soft); border: 2px solid var(--gxo-orange);">
+                  <div class="card-body">
+                    <h3 style="margin: 0 0 16px 0; font-size: 16px;">Ausgewählter Eintrag</h3>
+                    <div id="selectedEntryDetails" style="margin-bottom: 16px;"></div>
+                    <div class="form-group">
+                      <label>RA-Nummer <span style="color: var(--error);">*</span></label>
+                      <input type="text" id="raNumberInput" class="form-input" placeholder="z.B. RA123456">
+                    </div>
+                    <div class="card-actions" style="margin-top: 16px;">
+                      <button class="btn btn-primary" onclick="assignRAToSingleEntry()">
+                        <span>✓</span>
+                        RA-Nummer zuordnen
+                      </button>
+                      <button class="btn btn-secondary" onclick="clearSelectedEntry()">
+                        <span>✗</span>
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <table style="margin-top: 10px;">
-            <thead>
-            <tr>
-              <th>RA Nummer</th>
-              <th>Status Report</th>
-              <th>Status System</th>
-              <th>Bewertung</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr class="data-row">
-              <td>RA 12345</td>
-              <td>gültig</td>
-              <td>gültig</td>
-              <td><span class="badge badge-ok">passt</span></td>
-            </tr>
-            <tr class="data-row">
-              <td>RA 55555</td>
-              <td>storniert</td>
-              <td>gültig</td>
-              <td><span class="badge badge-soft">Konflikt Beispiel</span></td>
-            </tr>
-            </tbody>
-          </table>
         </div>
-      </section
+
+        <!-- Bulk Import Tab -->
+        <div class="ra-tab-content" id="tab-bulk" style="display: none;">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <h2 class="card-title">📋 Bulk Import - Excel</h2>
+              <p class="card-subtitle">Importieren Sie mehrere RA-Nummern auf einmal über Excel</p>
+            </div>
+            <div class="card-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div>
+                  <h3 style="margin: 0 0 16px 0; font-size: 16px;">1. Template herunterladen</h3>
+                  <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted);">
+                    Laden Sie das Excel-Template herunter und füllen Sie es mit Ihren Daten aus.
+                  </p>
+                  <button class="btn btn-primary" onclick="downloadRATemplate()">
+                    <span>📥</span>
+                    Excel Template herunterladen
+                  </button>
+                </div>
+                <div>
+                  <h3 style="margin: 0 0 16px 0; font-size: 16px;">2. Excel-Datei importieren</h3>
+                  <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted);">
+                    Wählen Sie die ausgefüllte Excel-Datei aus und importieren Sie sie.
+                  </p>
+                  <div class="form-group">
+                    <input type="file" id="excelFileInput" accept=".csv,.xlsx,.xls" style="display: none;" onchange="handleExcelImport(event)">
+                    <button class="btn btn-secondary" onclick="document.getElementById('excelFileInput').click()">
+                      <span>📤</span>
+                      Excel-Datei auswählen
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="bulkImportResults" style="margin-top: 24px; display: none;">
+                <!-- Wird dynamisch gefüllt -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manuelle Liste Tab -->
+        <div class="ra-tab-content" id="tab-manual" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">✏️ Manuelle Liste</h2>
+              <p class="card-subtitle">Erstellen Sie eine Liste von Zuordnungen und importieren Sie sie auf einmal</p>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom: 24px;">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                  <div class="form-group">
+                    <label>Suchtyp</label>
+                    <select id="manualSearchType" class="form-select">
+                      <option value="olpn">OLPN</option>
+                      <option value="dn">DN</option>
+                      <option value="tracking">Carrier Tracking</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Nummer</label>
+                    <input type="text" id="manualNumberInput" class="form-input" placeholder="z.B. OLPN123">
+                  </div>
+                  <div class="form-group">
+                    <label>RA-Nummer</label>
+                    <input type="text" id="manualRANumberInput" class="form-input" placeholder="z.B. RA123456">
+                  </div>
+                  <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="addToManualList()" style="width: 100%;">
+                      <span>➕</span>
+                      Hinzufügen
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="manualListContainer" style="margin-bottom: 24px;">
+                <div class="card" style="background: var(--bg-soft);">
+                  <div class="card-body">
+                    <h3 style="margin: 0 0 16px 0; font-size: 16px;">Zuordnungs-Liste (<span id="manualListCount">0</span> Einträge)</h3>
+                    <div style="overflow-x: auto;">
+                      <table class="data-table">
+                        <thead>
+                          <tr>
+                            <th>Suchtyp</th>
+                            <th>Nummer</th>
+                            <th>RA-Nummer</th>
+                            <th>Status</th>
+                            <th>Aktionen</th>
+                          </tr>
+                        </thead>
+                        <tbody id="manualListTableBody">
+                          <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                              Noch keine Einträge hinzugefügt
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="card-actions" style="margin-top: 16px;">
+                      <button class="btn btn-primary" onclick="importManualList()" id="importManualListBtn" disabled>
+                        <span>📤</span>
+                        Alle zuordnen (<span id="manualListCountBtn">0</span>)
+                      </button>
+                      <button class="btn btn-secondary" onclick="clearManualList()">
+                        <span>🗑️</span>
+                        Liste leeren
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zuordnungs-Historie -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2 class="card-title">📋 Zuordnungs-Historie</h2>
+            <button class="btn btn-ghost" onclick="loadRAHistory()" style="display: flex; align-items: center; gap: 6px;">
+              <span>🔄</span>
+              Aktualisieren
+            </button>
+          </div>
+          <div class="card-body">
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>OLPN</th>
+                    <th>DN</th>
+                    <th>Tracking</th>
+                    <th>RA-Nummer</th>
+                    <th>Carrier</th>
+                    <th>Zugeordnet von</th>
+                    <th>Zugeordnet am</th>
+                  </tr>
+                </thead>
+                <tbody id="raHistoryTableBody">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                      Lade Historie...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </main>
   </div>
 </div>
@@ -276,7 +464,7 @@
     },
     inbound: {
       title: "Wareneingang",
-      subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+      subtitle: "Einfache Erfassung neuer Kartons"
     },
     move: {
       title: "Umlagerung",
@@ -4916,7 +5104,7 @@
         document.getElementById("kpiTotalEntries").textContent = stats.totalEntries || 0;
         document.getElementById("kpiTotalCartons").textContent = stats.totalCartons || 0;
         document.getElementById("kpiOpenRAs").textContent = stats.openRAs || 0;
-        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer Nummer`;
+        document.getElementById("kpiUnclearRAs").textContent = `davon ${stats.unclearRAs || 0} mit unklarer RA Nummer`;
       }
     } catch (err) {
       console.error("Fehler beim Laden der Dashboard-Statistiken:", err);
@@ -9039,6 +9227,505 @@
       }
     })
     .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+
+  // RA Import Funktionalität
+  let searchTimeout;
+  let selectedEntryData = null;
+  let manualList = [];
+
+  // Tab Navigation - Initialisierung
+  function initRATabNavigation() {
+    document.querySelectorAll('.ra-tab-btn').forEach(btn => {
+      // Entferne eventuelle vorhandene Listener
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      newBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const tabName = newBtn.getAttribute('data-tab');
+        console.log('🔄 Wechsle zu Tab:', tabName);
+        
+        // Alle Tabs deaktivieren
+        document.querySelectorAll('.ra-tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--text-muted)';
+          b.style.borderColor = 'transparent';
+        });
+        
+        // Aktiven Tab aktivieren
+        newBtn.classList.add('active');
+        newBtn.style.background = 'var(--bg-card)';
+        newBtn.style.color = 'var(--text-main)';
+        newBtn.style.borderColor = 'var(--gxo-orange)';
+        
+        // Alle Tab-Inhalte ausblenden
+        document.querySelectorAll('.ra-tab-content').forEach(content => {
+          content.style.display = 'none';
+          content.classList.remove('active');
+        });
+      
+        // Aktiven Tab-Inhalt anzeigen
+        const activeContent = document.getElementById('tab-' + tabName);
+        if (activeContent) {
+          activeContent.style.display = 'block';
+          activeContent.classList.add('active');
+          console.log('✅ Tab-Inhalt angezeigt:', tabName);
+        } else {
+          console.warn('⚠️ Tab-Inhalt nicht gefunden:', 'tab-' + tabName);
+        }
+      });
+    });
+  }
+  
+  // Tab Navigation sofort initialisieren (wenn DOM bereit)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRATabNavigation);
+  } else {
+    initRATabNavigation();
+  }
+  
+  // Auch nach kurzer Verzögerung nochmal versuchen (falls dynamisch geladen)
+  setTimeout(() => {
+    if (document.querySelectorAll('.ra-tab-btn').length > 0) {
+      initRATabNavigation();
+    }
+  }, 500);
+
+  // Debounced Search
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      performSearch();
+    }, 500);
+  }
+
+  // Suche durchführen
+  async function performSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchType = document.getElementById('searchType').value;
+    const searchTerm = searchInput.value.trim();
+    
+    if (!searchTerm || searchTerm.length < 2) {
+      document.getElementById('searchResults').style.display = 'none';
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/inbound-simple/search?q=${encodeURIComponent(searchTerm)}&type=${searchType}`);
+      if (!response.ok) throw new Error('Fehler bei der Suche');
+      
+      const results = await response.json();
+      const resultsContainer = document.getElementById('searchResults');
+      const resultsList = document.getElementById('searchResultsList');
+      
+      if (results.length === 0) {
+        resultsContainer.style.display = 'block';
+        resultsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Ergebnisse gefunden</div>';
+        return;
+      }
+      
+      resultsContainer.style.display = 'block';
+      resultsList.innerHTML = results.map(entry => `
+        <div class="card" style="margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease;" 
+             onclick="selectEntry(${entry.id})"
+             onmouseover="this.style.background='var(--bg-card)'; this.style.borderColor='var(--gxo-orange)'"
+             onmouseout="this.style.background='var(--bg-soft)'; this.style.borderColor='transparent'">
+          <div style="padding: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+              <div><strong>ID:</strong> #${entry.id}</div>
+              <div><strong>OLPN:</strong> ${entry.olpn || '-'}</div>
+              <div><strong>DN:</strong> ${entry.dn || '-'}</div>
+              <div><strong>Tracking:</strong> ${entry.carrier_tracking_nr || '-'}</div>
+              <div><strong>Carrier:</strong> ${entry.carrier_name || '-'}</div>
+              <div><strong>RA-Nummer:</strong> ${entry.asn_ra_no || '<span style="color: var(--gxo-orange);">Nicht zugeordnet</span>'}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error('Fehler bei der Suche:', err);
+      alert('Fehler bei der Suche: ' + err.message);
+    }
+  }
+
+  // Eintrag auswählen
+  async function selectEntry(entryId) {
+    try {
+      const response = await fetch(`/api/inbound-simple/${entryId}`);
+      if (!response.ok) throw new Error('Eintrag nicht gefunden');
+      
+      const entry = await response.json();
+      selectedEntryData = entry;
+      
+      const detailsContainer = document.getElementById('selectedEntryDetails');
+      detailsContainer.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 13px;">
+          <div><strong>ID:</strong> #${entry.id}</div>
+          <div><strong>OLPN:</strong> ${entry.olpn || '-'}</div>
+          <div><strong>DN:</strong> ${entry.dn || '-'}</div>
+          <div><strong>Tracking:</strong> ${entry.carrier_tracking_nr || '-'}</div>
+          <div><strong>Carrier:</strong> ${entry.carrier_name || '-'}</div>
+          <div><strong>Aktuelle RA:</strong> ${entry.asn_ra_no || '<span style="color: var(--gxo-orange);">Nicht zugeordnet</span>'}</div>
+        </div>
+      `;
+      
+      document.getElementById('raNumberInput').value = entry.asn_ra_no || '';
+      document.getElementById('selectedEntry').style.display = 'block';
+      document.getElementById('searchResults').style.display = 'none';
+    } catch (err) {
+      console.error('Fehler beim Laden des Eintrags:', err);
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  // RA-Nummer zuordnen (Einzel)
+  async function assignRAToSingleEntry() {
+    if (!selectedEntryData) {
+      alert('Bitte wählen Sie zuerst einen Eintrag aus');
+      return;
+    }
+    
+    const raNumber = document.getElementById('raNumberInput').value.trim();
+    if (!raNumber) {
+      alert('Bitte geben Sie eine RA-Nummer ein');
+      return;
+    }
+    
+    try {
+      const currentUser = localStorage.getItem('wms_current_user') || 'System';
+      const response = await fetch(`/api/inbound-simple/${selectedEntryData.id}/ra`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({ asn_ra_no: raNumber })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Fehler beim Zuordnen');
+      }
+      
+      alert('✅ RA-Nummer erfolgreich zugeordnet!');
+      clearSelectedEntry();
+      loadRAHistory();
+    } catch (err) {
+      console.error('Fehler:', err);
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  function clearSelectedEntry() {
+    selectedEntryData = null;
+    document.getElementById('selectedEntry').style.display = 'none';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('raNumberInput').value = '';
+    document.getElementById('searchResults').style.display = 'none';
+  }
+
+  // Excel Template Download
+  function downloadRATemplate() {
+    const csv = [
+      'Suchtyp,Nummer,RA-Nummer',
+      'olpn,OLPN123456,RA123456',
+      'dn,DN789012,RA789012',
+      'tracking,TRACK123456,RA123456'
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'RA-Import-Template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    alert('✅ Template heruntergeladen!');
+  }
+
+  // Excel Import
+  async function handleExcelImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Prüfe ob es eine CSV-Datei ist
+    if (file.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target.result;
+          const lines = text.split('\n').filter(l => l.trim());
+          const updates = [];
+          
+          // Überspringe Header
+          for (let i = 1; i < lines.length; i++) {
+            const [identifier_type, identifier, asn_ra_no] = lines[i].split(',').map(s => s.trim());
+            if (identifier_type && identifier && asn_ra_no) {
+              updates.push({
+                identifier_type: identifier_type.toLowerCase(),
+                identifier: identifier,
+                asn_ra_no: asn_ra_no
+              });
+            }
+          }
+          
+          if (updates.length === 0) {
+            alert('Keine gültigen Daten gefunden');
+            return;
+          }
+          
+          await processBulkUpdate(updates);
+        } catch (err) {
+          console.error('Fehler:', err);
+          alert('Fehler: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      // Für Excel-Dateien (.xlsx, .xls) - einfache CSV-Konvertierung
+      alert('Bitte verwenden Sie eine CSV-Datei oder konvertieren Sie die Excel-Datei zu CSV.\n\nFormat: identifier_type,identifier,asn_ra_no\nBeispiel: olpn,OLPN123,RA123456');
+    }
+  }
+  
+  // Bulk Update verarbeiten
+  async function processBulkUpdate(updates) {
+    try {
+      const currentUser = localStorage.getItem('wms_current_user') || 'System';
+      const response = await fetch('/api/inbound-simple/bulk-update-ra', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({ updates })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Fehler beim Import');
+      }
+      
+      const result = await response.json();
+      const successCount = result.results ? result.results.length : 0;
+      const errorCount = result.errors ? result.errors.length : 0;
+      
+      alert(`✅ Import abgeschlossen!\nErfolgreich: ${successCount}\nFehler: ${errorCount}`);
+      
+      // Zeige Ergebnisse im Container
+      const resultsContainer = document.getElementById('bulkImportResults');
+      if (resultsContainer) {
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `
+          <div class="card">
+            <div class="card-body">
+              <h3 style="margin: 0 0 16px 0;">Import-Ergebnisse</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div style="padding: 16px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 4px solid var(--gxo-green);">
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Erfolgreich</div>
+                  <div style="font-size: 24px; font-weight: 700; color: var(--gxo-green);">${successCount}</div>
+                </div>
+                <div style="padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 4px solid #ef4444;">
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Fehler</div>
+                  <div style="font-size: 24px; font-weight: 700; color: #ef4444;">${errorCount}</div>
+                </div>
+              </div>
+              ${errorCount > 0 && result.errors ? `
+                <div style="margin-top: 16px;">
+                  <h4 style="margin: 0 0 8px 0; font-size: 14px;">Fehler-Details:</h4>
+                  <div style="max-height: 200px; overflow-y: auto;">
+                    ${result.errors.map(e => `<div style="padding: 8px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 4px; font-size: 12px;">
+                      <strong>${e.identifier || 'Unbekannt'}:</strong> ${e.error || 'Unbekannter Fehler'}
+                    </div>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      loadRAHistory();
+    } catch (err) {
+      console.error('Fehler:', err);
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  // Manuelle Liste
+  function addToManualList() {
+    const searchType = document.getElementById('manualSearchType').value;
+    const number = document.getElementById('manualNumberInput').value.trim();
+    const raNumber = document.getElementById('manualRANumberInput').value.trim();
+    
+    if (!number || !raNumber) {
+      alert('Bitte füllen Sie alle Felder aus');
+      return;
+    }
+    
+    manualList.push({
+      identifier_type: searchType,
+      identifier: number,
+      asn_ra_no: raNumber,
+      status: 'pending'
+    });
+    
+    updateManualList();
+    document.getElementById('manualNumberInput').value = '';
+    document.getElementById('manualRANumberInput').value = '';
+  }
+
+  function updateManualList() {
+    const tbody = document.getElementById('manualListTableBody');
+    const count = manualList.length;
+    
+    document.getElementById('manualListCount').textContent = count;
+    document.getElementById('manualListCountBtn').textContent = count;
+    document.getElementById('importManualListBtn').disabled = count === 0;
+    
+    if (count === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">Noch keine Einträge hinzugefügt</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = manualList.map((item, index) => `
+      <tr>
+        <td>${item.identifier_type.toUpperCase()}</td>
+        <td>${item.identifier}</td>
+        <td>${item.asn_ra_no}</td>
+        <td>${item.status === 'pending' ? '<span style="color: var(--gxo-orange);">Ausstehend</span>' : item.status === 'success' ? '<span style="color: var(--gxo-green);">✓ Erfolgreich</span>' : '<span style="color: #ef4444;">✗ Fehler</span>'}</td>
+        <td><button class="btn btn-sm btn-ghost" onclick="removeFromManualList(${index})">🗑️</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function removeFromManualList(index) {
+    manualList.splice(index, 1);
+    updateManualList();
+  }
+
+  function clearManualList() {
+    if (confirm('Möchten Sie die Liste wirklich leeren?')) {
+      manualList = [];
+      updateManualList();
+    }
+  }
+
+  async function importManualList() {
+    if (manualList.length === 0) {
+      alert('Die Liste ist leer');
+      return;
+    }
+    
+    try {
+      // Bereite Updates vor (entferne status Feld)
+      const updates = manualList.map(item => ({
+        identifier_type: item.identifier_type,
+        identifier: item.identifier,
+        asn_ra_no: item.asn_ra_no
+      }));
+      
+      const currentUser = localStorage.getItem('wms_current_user') || 'System';
+      const response = await fetch('/api/inbound-simple/bulk-update-ra', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user': currentUser
+        },
+        body: JSON.stringify({ updates })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Fehler beim Import');
+      }
+      
+      const result = await response.json();
+      const successCount = result.results ? result.results.length : 0;
+      const errorCount = result.errors ? result.errors.length : 0;
+      
+      // Update Status in manualList
+      if (result.results) {
+        result.results.forEach(r => {
+          const item = manualList.find(m => m.identifier === r.identifier);
+          if (item) item.status = 'success';
+        });
+      }
+      
+      if (result.errors) {
+        result.errors.forEach(e => {
+          const item = manualList.find(m => m.identifier === e.identifier);
+          if (item) item.status = 'error';
+        });
+      }
+      
+      updateManualList();
+      alert(`✅ Import abgeschlossen!\nErfolgreich: ${successCount}\nFehler: ${errorCount}`);
+      loadRAHistory();
+    } catch (err) {
+      console.error('Fehler:', err);
+      alert('Fehler: ' + err.message);
+    }
+  }
+
+  // RA Historie laden
+  async function loadRAHistory() {
+    const tbody = document.getElementById('raHistoryTableBody');
+    if (!tbody) return;
+    
+    try {
+      const response = await fetch('/api/inbound-simple?limit=100');
+      if (!response.ok) throw new Error('Fehler beim Laden');
+      
+      const entries = await response.json();
+      const entriesWithRA = entries.filter(e => e.asn_ra_no);
+      
+      if (entriesWithRA.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Zuordnungen gefunden</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = entriesWithRA.map(entry => `
+        <tr>
+          <td>#${entry.id}</td>
+          <td>${entry.olpn || '-'}</td>
+          <td>${entry.dn || '-'}</td>
+          <td>${entry.carrier_tracking_nr || '-'}</td>
+          <td><strong>${entry.asn_ra_no}</strong></td>
+          <td>${entry.carrier_name || '-'}</td>
+          <td>${entry.added_by || '-'}</td>
+          <td>${entry.created_at ? new Date(entry.created_at).toLocaleString('de-DE') : '-'}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error('Fehler:', err);
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--error);">❌ Fehler beim Laden</td></tr>';
+    }
+  }
+
+  // Funktionen global verfügbar machen
+  window.handleExcelImport = handleExcelImport;
+  window.addToManualList = addToManualList;
+  window.removeFromManualList = removeFromManualList;
+  window.clearManualList = clearManualList;
+  window.importManualList = importManualList;
+  window.downloadRATemplate = downloadRATemplate;
+  window.processBulkUpdate = processBulkUpdate;
+  
+  // Initialisierung
+  document.addEventListener('DOMContentLoaded', () => {
+    loadRAHistory();
+    initRATabNavigation(); // Tab-Navigation initialisieren
+  });
+  
+  // Auch nach window.load nochmal versuchen
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      initRATabNavigation();
+    }, 100);
+  });
 </script>
 
 </body>

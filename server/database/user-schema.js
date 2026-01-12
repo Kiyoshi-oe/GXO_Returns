@@ -202,6 +202,26 @@ function seedRoles() {
         system: { read: false, write: false, delete: false, export: false },
         warehouse_map: { read: true, write: false, delete: false, export: false }
       })
+    },
+    {
+      name: 'levis',
+      display_name: 'Levis',
+      description: 'Zugriff nur auf RA Import für RA-Nummern-Verwaltung',
+      permissions: JSON.stringify({
+        dashboard: { read: false, write: false, delete: false, export: false },
+        inbound: { read: false, write: false, delete: false, export: false },
+        inventory: { read: false, write: false, delete: false, export: false },
+        movement: { read: false, write: false, delete: false, export: false },
+        archive: { read: false, write: false, delete: false, export: false },
+        settings: { read: false, write: false, delete: false, export: false },
+        users: { read: false, write: false, delete: false, export: false, approve_requests: false },
+        reports: { read: false, write: false, delete: false, export: false },
+        audit: { read: false, write: false, delete: false, export: false },
+        backup: { read: false, write: false, delete: false, export: false },
+        system: { read: false, write: false, delete: false, export: false },
+        warehouse_map: { read: false, write: false, delete: false, export: false },
+        ra_import: { read: true, write: true, delete: false, export: true }
+      })
     }
   ];
   
@@ -214,7 +234,7 @@ function seedRoles() {
     stmt.run(role.name, role.display_name, role.description, role.permissions, now);
   });
   
-  console.log('✅ Standard-Rollen hinzugefügt (6 Rollen: Admin, Manager, Teamlead, Process Assistant, Trainer, Operator)');
+  console.log('✅ Standard-Rollen hinzugefügt (7 Rollen: Admin, Manager, Teamlead, Process Assistant, Trainer, Operator, Levis)');
 }
 
 /**

@@ -288,4 +288,256 @@ router.get('/audit-logs/users', (req, res) => {
   }
 });
 
+// GET /api/audit-logs/export - Audit-Logs als Excel exportieren
+router.get('/audit-logs/export', (req, res) => {
+  try {
+    const { getDb } = require('../database');
+    const db = getDb();
+    const { inbound_id, field_name, changed_by, from_date, to_date } = req.query;
+    
+    let sql = `
+      SELECT 
+        a.id,
+        a.inbound_id,
+        a.field_name,
+        a.old_value,
+        a.new_value,
+        a.changed_by,
+        a.change_reason,
+        a.changed_at,
+        i.cw,
+        i.olpn,
+        i.carrier_name
+      FROM inbound_audit a
+      LEFT JOIN inbound_simple i ON a.inbound_id = i.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (inbound_id) {
+      sql += ` AND a.inbound_id = ?`;
+      params.push(inbound_id);
+    }
+    if (field_name) {
+      sql += ` AND a.field_name = ?`;
+      params.push(field_name);
+    }
+    if (changed_by) {
+      sql += ` AND a.changed_by LIKE ?`;
+      params.push(`%${changed_by}%`);
+    }
+    if (from_date) {
+      sql += ` AND DATE(a.changed_at) >= ?`;
+      params.push(from_date);
+    }
+    if (to_date) {
+      sql += ` AND DATE(a.changed_at) <= ?`;
+      params.push(toDate);
+    }
+    
+    sql += ` ORDER BY a.changed_at DESC`;
+    
+    const logs = db.prepare(sql).all(...params);
+    
+    // Excel-Export (vereinfacht - könnte mit xlsx-Bibliothek verbessert werden)
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Audit-Log');
+    
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Eintrag-ID', key: 'inbound_id', width: 12 },
+      { header: 'Feld', key: 'field_name', width: 20 },
+      { header: 'Alter Wert', key: 'old_value', width: 30 },
+      { header: 'Neuer Wert', key: 'new_value', width: 30 },
+      { header: 'Benutzer', key: 'changed_by', width: 20 },
+      { header: 'Grund', key: 'change_reason', width: 40 },
+      { header: 'Zeitstempel', key: 'changed_at', width: 20 }
+    ];
+    
+    logs.forEach(log => {
+      worksheet.addRow({
+        id: log.id,
+        inbound_id: log.inbound_id,
+        field_name: log.field_name,
+        old_value: log.old_value || '',
+        new_value: log.new_value || '',
+        changed_by: log.changed_by || '',
+        change_reason: log.change_reason || '',
+        changed_at: log.changed_at ? new Date(log.changed_at).toLocaleString('de-DE') : ''
+      });
+    });
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=audit-log-${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    workbook.xlsx.write(res).then(() => {
+      res.end();
+    });
+  } catch (err) {
+    console.error("Fehler beim Export der Audit-Logs:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// GET /api/audit-logs/compliance-report - Compliance-Report generieren
+router.get('/audit-logs/compliance-report', (req, res) => {
+  try {
+    const { getDb } = require('../database');
+    const db = getDb();
+    const { from_date, to_date, format = 'pdf' } = req.query;
+    
+    let sql = `
+      SELECT 
+        a.*,
+        i.cw,
+        i.olpn,
+        i.carrier_name
+      FROM inbound_audit a
+      LEFT JOIN inbound_simple i ON a.inbound_id = i.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (from_date) {
+      sql += ` AND DATE(a.changed_at) >= ?`;
+      params.push(from_date);
+    }
+    if (to_date) {
+      sql += ` AND DATE(a.changed_at) <= ?`;
+      params.push(to_date);
+    }
+    
+    sql += ` ORDER BY a.changed_at DESC`;
+    
+    const logs = db.prepare(sql).all(...params);
+    
+    // Statistiken
+    const stats = {
+      total_changes: logs.length,
+      unique_users: new Set(logs.map(l => l.changed_by)).size,
+      unique_entries: new Set(logs.map(l => l.inbound_id)).size,
+      changes_by_field: {}
+    };
+    
+    logs.forEach(log => {
+      stats.changes_by_field[log.field_name] = (stats.changes_by_field[log.field_name] || 0) + 1;
+    });
+    
+    // PDF-Export (vereinfacht - könnte mit pdfkit verbessert werden)
+    if (format === 'pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=compliance-report-${from_date}-${to_date}.pdf`);
+      res.json({ ok: true, logs, stats, message: 'PDF-Export wird implementiert' });
+    } else {
+      res.json({ ok: true, logs, stats });
+    }
+  } catch (err) {
+    console.error("Fehler beim Generieren des Compliance-Reports:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// GET /api/audit-logs/user-activity - Benutzer-Aktivität abrufen
+router.get('/audit-logs/user-activity', (req, res) => {
+  try {
+    const { getDb } = require('../database');
+    const db = getDb();
+    const { user_id, from_date, to_date } = req.query;
+    
+    let sql = `
+      SELECT 
+        ual.*,
+        u.username
+      FROM user_audit_log ual
+      LEFT JOIN users u ON ual.user_id = u.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (user_id) {
+      sql += ` AND ual.user_id = ?`;
+      params.push(user_id);
+    }
+    if (from_date) {
+      sql += ` AND DATE(ual.created_at) >= ?`;
+      params.push(from_date);
+    }
+    if (to_date) {
+      sql += ` AND DATE(ual.created_at) <= ?`;
+      params.push(to_date);
+    }
+    
+    sql += ` ORDER BY ual.created_at DESC LIMIT 1000`;
+    
+    const activity = db.prepare(sql).all(...params);
+    
+    res.json(activity);
+  } catch (err) {
+    console.error("Fehler beim Abrufen der Benutzer-Aktivität:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// GET /api/audit-logs/integrity-check - Daten-Integritäts-Prüfung
+router.get('/audit-logs/integrity-check', (req, res) => {
+  try {
+    const { getDb } = require('../database');
+    const db = getDb();
+    
+    const issues = [];
+    const stats = {
+      total_entries: 0,
+      checked_fields: 0
+    };
+    
+    // Prüfe auf fehlende Referenzen
+    const orphanedAudits = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM inbound_audit a
+      LEFT JOIN inbound_simple i ON a.inbound_id = i.id
+      WHERE i.id IS NULL
+    `).get();
+    
+    if (orphanedAudits.count > 0) {
+      issues.push(`${orphanedAudits.count} Audit-Einträge mit ungültiger Eintrag-ID gefunden`);
+    }
+    
+    // Prüfe auf fehlende Benutzer
+    const auditsWithoutUser = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM inbound_audit 
+      WHERE changed_by IS NULL OR changed_by = ''
+    `).get();
+    
+    if (auditsWithoutUser.count > 0) {
+      issues.push(`${auditsWithoutUser.count} Audit-Einträge ohne Benutzer-Information gefunden`);
+    }
+    
+    // Prüfe auf doppelte Einträge
+    const duplicateAudits = db.prepare(`
+      SELECT inbound_id, field_name, changed_at, COUNT(*) as count
+      FROM inbound_audit
+      GROUP BY inbound_id, field_name, changed_at
+      HAVING count > 1
+    `).all();
+    
+    if (duplicateAudits.length > 0) {
+      issues.push(`${duplicateAudits.length} mögliche doppelte Audit-Einträge gefunden`);
+    }
+    
+    // Gesamtstatistiken
+    stats.total_entries = db.prepare('SELECT COUNT(*) as count FROM inbound_audit').get().count;
+    stats.checked_fields = db.prepare('SELECT COUNT(DISTINCT field_name) as count FROM inbound_audit').get().count;
+    
+    res.json({ ok: true, issues, stats });
+  } catch (err) {
+    console.error("Fehler bei der Daten-Integritäts-Prüfung:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 module.exports = router;

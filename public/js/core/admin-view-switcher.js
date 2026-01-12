@@ -32,17 +32,39 @@ class AdminViewSwitcher {
       return;
     }
 
-    // Zeige Badge wenn simulierte Rolle aktiv ist
+    // Stelle simulierte Rolle wieder her (nach Reload)
     const savedSimulatedRole = localStorage.getItem('wms_simulated_role');
-    if (savedSimulatedRole && savedSimulatedRole !== 'admin') {
+    if (savedSimulatedRole) {
+      this.simulatedRole = savedSimulatedRole;
       const savedDisplay = localStorage.getItem('wms_simulated_role_display');
-      if (savedDisplay) {
+      
+      if (savedSimulatedRole !== 'admin' && savedDisplay) {
         this.showSimulatedBadge(savedDisplay);
       }
     }
 
-    // Erstelle View Switcher UI
-    this.createSwitcherUI();
+    // Erstelle View Switcher UI nicht mehr (ist jetzt in Einstellungen)
+    // this.createSwitcherUI();
+    
+    // Entferne FAB Button falls er noch existiert (von vorheriger Version)
+    const existingSwitcher = document.getElementById('adminViewSwitcher');
+    if (existingSwitcher) {
+      existingSwitcher.remove();
+    }
+    
+    // Update Role Display nach dem Reload (wenn simulierte Rolle aktiv ist)
+    if (savedSimulatedRole) {
+      const savedDisplay = localStorage.getItem('wms_simulated_role_display');
+      if (savedDisplay) {
+        // Warte kurz, damit UI erstellt ist
+        setTimeout(() => {
+          this.updateRoleDisplay(savedSimulatedRole, savedDisplay);
+        }, 100);
+      }
+    }
+    
+    // Passe UI basierend auf Berechtigungen an
+    this.applyRoleBasedUI();
     
     console.log('✅ Admin View Switcher initialisiert');
   }
@@ -85,6 +107,10 @@ class AdminViewSwitcher {
   }
 
   createSwitcherUI() {
+    // FAB Button wurde entfernt - Admin View Switcher ist jetzt in Einstellungen verfügbar
+    // Diese Funktion wird nicht mehr aufgerufen, aber für Kompatibilität behalten
+    return;
+    
     // Prüfe ob UI bereits existiert
     if (document.getElementById('adminViewSwitcher')) {
       return;
@@ -381,6 +407,9 @@ class AdminViewSwitcher {
       // Schließe Panel
       this.togglePanel();
       
+      // Passe UI sofort an (vor Reload)
+      this.applyRoleBasedUI();
+      
       // Reload page um UI zu aktualisieren
       window.location.reload();
       
@@ -404,6 +433,127 @@ class AdminViewSwitcher {
     if (activeOption) {
       activeOption.classList.add('active');
     }
+  }
+
+  // Passe UI basierend auf Berechtigungen der simulierten Rolle an
+  applyRoleBasedUI() {
+    if (!this.simulatedRole || this.simulatedRole === 'admin') {
+      return; // Keine Anpassung für Admin oder wenn keine Simulation aktiv ist
+    }
+
+    const user = window.getCurrentUser();
+    if (!user || !user.permissions) {
+      return;
+    }
+
+    try {
+      const permissions = typeof user.permissions === 'string' 
+        ? JSON.parse(user.permissions) 
+        : user.permissions;
+
+      // Navigation basierend auf Berechtigungen anpassen
+      this.applyNavigationPermissions(permissions);
+      
+      // Buttons und Aktionen basierend auf Berechtigungen anpassen
+      this.applyActionPermissions(permissions);
+      
+      console.log('🎭 UI angepasst für simulierte Rolle:', this.simulatedRole);
+    } catch (error) {
+      console.error('Fehler beim Anpassen der UI:', error);
+    }
+  }
+
+  // Passe Navigation basierend auf Berechtigungen an
+  applyNavigationPermissions(permissions) {
+    // Mapping: data-view/href -> Modul-Name
+    const viewToModule = {
+      'dashboard': 'dashboard',
+      'inbound': 'inbound',
+      'inventory': 'inventory',
+      'move': 'movement',
+      'archive': 'archive',
+      'suche': 'search',
+      'warehouse-map': 'warehouse_map',
+      'barcode': 'barcode',
+      'ra': 'ra_import',
+      'ra-import': 'ra_import',
+      'performance': 'performance',
+      'settings': 'settings',
+      'einstellungen': 'settings',
+      'import': 'import',
+      'export': 'export'
+    };
+
+    // Alle Navigation-Items durchgehen
+    document.querySelectorAll('.nav-item').forEach(navItem => {
+      let module = null;
+      
+      // Prüfe data-view Attribut
+      const dataView = navItem.getAttribute('data-view');
+      if (dataView && viewToModule[dataView]) {
+        module = viewToModule[dataView];
+      }
+      
+      // Prüfe href Attribut
+      if (!module) {
+        const href = navItem.getAttribute('href');
+        if (href) {
+          const route = href.replace('/', '').replace('#', '');
+          if (viewToModule[route]) {
+            module = viewToModule[route];
+          }
+        }
+      }
+      
+      // Prüfe data-module Attribut
+      if (!module) {
+        const dataModule = navItem.getAttribute('data-module');
+        if (dataModule) {
+          module = dataModule;
+        }
+      }
+      
+      // Wenn Modul gefunden, prüfe Berechtigung
+      if (module) {
+        const hasRead = permissions[module]?.read === true;
+        if (!hasRead) {
+          navItem.style.display = 'none';
+          navItem.style.visibility = 'hidden';
+        } else {
+          navItem.style.display = '';
+          navItem.style.visibility = '';
+        }
+      }
+    });
+  }
+
+  // Passe Buttons und Aktionen basierend auf Berechtigungen an
+  applyActionPermissions(permissions) {
+    // Buttons mit data-permission Attribut
+    document.querySelectorAll('[data-permission]').forEach(button => {
+      const permissionAttr = button.getAttribute('data-permission');
+      const [module, action] = permissionAttr.split('.');
+      
+      const hasPermission = permissions[module]?.[action] === true;
+      if (!hasPermission) {
+        button.style.display = 'none';
+      } else {
+        button.style.display = '';
+      }
+    });
+
+    // Speichern-Buttons basierend auf write-Berechtigung
+    document.querySelectorAll('[data-module]').forEach(element => {
+      const module = element.getAttribute('data-module');
+      const action = element.getAttribute('data-action') || 'write';
+      
+      const hasPermission = permissions[module]?.[action] === true;
+      if (!hasPermission && action === 'write') {
+        element.style.display = 'none';
+      } else if (hasPermission) {
+        element.style.display = '';
+      }
+    });
   }
 
   showSimulatedBadge(roleName) {

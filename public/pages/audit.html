@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Audit & Compliance - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/GXO_logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/GXO_logo.png">
+  
+  <!-- Externes CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+  <div class="loading-text">
+    <span class="gxo-text">GXO</span> <span class="returns-text">Returns</span>
+  </div>
+  <div class="loading-subtitle">
+    <span class="loading-dots"></span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/wareneingang" class="nav-item">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/umlagerung" class="nav-item">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/suche" class="nav-item">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
+    <a href="/audit" class="nav-item active">
+      <span class="nav-icon">🔍</span>
+      <span>Audit & Compliance</span>
+    </a>
+    <a href="/einstellungen" class="nav-item">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item">
+      <span class="nav-icon">📥</span>
+      <span>Datenverwaltung</span>
+    </a>
+
+    <div class="sidebar-footer">
+      <div style="font-size: 11px; color: var(--text-soft);">
+        LVS Returns System<br>
+        Version 1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="topbarTitle" data-i18n="audit.title">Audit & Compliance</div>
+        <div class="topbar-subtitle" id="topbarSubtitle" data-i18n="audit.subtitle">Vollständiges Audit-Log und Compliance-Reports</div>
+      </div>
+      <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-icon" id="themeToggle" aria-label="Ansicht wechseln">☾</button>
+        <div id="currentUserDisplay" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-soft); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;" onclick="toggleUserMenu()">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="userAvatar">👤</div>
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="userName">Nicht angemeldet</span>
+            <span style="font-size: 11px; color: var(--text-soft); display: none;" id="userEmail">Windows-Benutzer</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        
+        <!-- Filter Card -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="audit.filters">🔍 Filter & Suche</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label data-i18n="audit.filter-inbound-id">Eintrag-ID</label>
+                <input type="number" id="filterInboundId" class="form-input" placeholder="z.B. 123">
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.filter-field">Feld</label>
+                <select id="filterField" class="form-select">
+                  <option value="">Alle Felder</option>
+                  <option value="carrier_name">Carrier</option>
+                  <option value="location_id">Stellplatz</option>
+                  <option value="olpn">OLPN</option>
+                  <option value="carrier_tracking_nr">Tracking-Nummer</option>
+                  <option value="actual_carton">Kartons</option>
+                  <option value="stage">Stage</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.filter-user">Benutzer</label>
+                <input type="text" id="filterUser" class="form-input" placeholder="Benutzername">
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.filter-from-date">Von Datum</label>
+                <input type="date" id="filterFromDate" class="form-input">
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.filter-to-date">Bis Datum</label>
+                <input type="date" id="filterToDate" class="form-input">
+              </div>
+            </div>
+            <div class="card-actions" style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="loadAuditLogs()">
+                <span>🔍</span>
+                <span data-i18n="common.search">Suchen</span>
+              </button>
+              <button class="btn btn-secondary" onclick="resetAuditFilters()">
+                <span>🔄</span>
+                <span data-i18n="common.reset">Zurücksetzen</span>
+              </button>
+              <button class="btn btn-secondary" onclick="exportAuditLogs()">
+                <span>📤</span>
+                <span data-i18n="audit.export">Als Excel exportieren</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Log Table -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="audit.audit-log">📋 Audit-Log</h2>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="auditLogCount" style="font-size: 14px; color: var(--text-muted);">0 Einträge</span>
+              <button class="btn btn-ghost" onclick="loadAuditLogs()" style="display: flex; align-items: center; gap: 6px;">
+                <span>🔄</span>
+                <span data-i18n="common.refresh">Aktualisieren</span>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th data-i18n="audit.entry-id">Eintrag-ID</th>
+                    <th data-i18n="audit.field">Feld</th>
+                    <th data-i18n="audit.old-value">Alter Wert</th>
+                    <th data-i18n="audit.new-value">Neuer Wert</th>
+                    <th data-i18n="audit.user">Benutzer</th>
+                    <th data-i18n="audit.reason">Grund</th>
+                    <th data-i18n="audit.timestamp">Zeitstempel</th>
+                  </tr>
+                </thead>
+                <tbody id="auditLogTableBody">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                      <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                      <p data-i18n="audit.loading">Lade Audit-Log...</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance Reports -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="audit.compliance-reports">📊 Compliance-Reports</h2>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+              <div class="card" style="background: var(--bg-soft); padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onclick="generateComplianceReport('daily')" onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='var(--bg-soft)'">
+                <div style="font-size: 32px; margin-bottom: 12px;">📅</div>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;" data-i18n="audit.daily-report">Tages-Report</h3>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);" data-i18n="audit.daily-report-desc">Alle Änderungen des heutigen Tages</p>
+              </div>
+              <div class="card" style="background: var(--bg-soft); padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onclick="generateComplianceReport('weekly')" onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='var(--bg-soft)'">
+                <div style="font-size: 32px; margin-bottom: 12px;">📆</div>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;" data-i18n="audit.weekly-report">Wochen-Report</h3>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);" data-i18n="audit.weekly-report-desc">Alle Änderungen der letzten 7 Tage</p>
+              </div>
+              <div class="card" style="background: var(--bg-soft); padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onclick="generateComplianceReport('monthly')" onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='var(--bg-soft)'">
+                <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;" data-i18n="audit.monthly-report">Monats-Report</h3>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);" data-i18n="audit.monthly-report-desc">Alle Änderungen des letzten Monats</p>
+              </div>
+              <div class="card" style="background: var(--bg-soft); padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;" onclick="generateComplianceReport('custom')" onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background='var(--bg-soft)'">
+                <div style="font-size: 32px; margin-bottom: 12px;">⚙️</div>
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;" data-i18n="audit.custom-report">Benutzerdefiniert</h3>
+                <p style="margin: 0; font-size: 12px; color: var(--text-muted);" data-i18n="audit.custom-report-desc">Zeitraum selbst wählen</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Activity Tracking -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="audit.user-activity">👥 Benutzer-Aktivitäts-Tracking</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label data-i18n="audit.select-user">Benutzer auswählen</label>
+                <select id="userActivityUser" class="form-select">
+                  <option value="">Alle Benutzer</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.activity-from-date">Von Datum</label>
+                <input type="date" id="userActivityFromDate" class="form-input">
+              </div>
+              <div class="form-group">
+                <label data-i18n="audit.activity-to-date">Bis Datum</label>
+                <input type="date" id="userActivityToDate" class="form-input">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="loadUserActivity()">
+              <span>🔍</span>
+              <span data-i18n="audit.load-activity">Aktivität laden</span>
+            </button>
+            <div id="userActivityContainer" style="margin-top: 24px;">
+              <!-- Wird dynamisch gefüllt -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Integrity Check -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="audit.data-integrity">🔒 Daten-Integritäts-Prüfung</h2>
+          </div>
+          <div class="card-body">
+            <p style="margin-bottom: 16px; color: var(--text-muted);" data-i18n="audit.integrity-desc">
+              Prüft die Datenintegrität des Systems und erkennt mögliche Inkonsistenzen.
+            </p>
+            <button class="btn btn-primary" onclick="runDataIntegrityCheck()">
+              <span>🔍</span>
+              <span data-i18n="audit.run-check">Prüfung starten</span>
+            </button>
+            <div id="integrityCheckResults" style="margin-top: 24px; display: none;">
+              <!-- Wird dynamisch gefüllt -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Loading Screen Management
+  (function() {
+    setTimeout(() => {
+      const loadingScreen = document.getElementById("loadingScreen");
+      if (loadingScreen) {
+        loadingScreen.style.transition = "opacity 0.6s ease, visibility 0.6s ease";
+        loadingScreen.style.opacity = "0";
+        loadingScreen.style.visibility = "hidden";
+        setTimeout(() => {
+          loadingScreen.style.display = "none";
+        }, 600);
+      }
+    }, 500);
+  })();
+
+  // Windows Benutzername abrufen
+  fetch('/api/system/user')
+    .then(res => res.json())
+    .then(data => {
+      const userNameEl = document.getElementById('userName');
+      const userAvatarEl = document.getElementById('userAvatar');
+      if (userNameEl && data.username) {
+        userNameEl.textContent = data.username;
+      }
+      if (userAvatarEl && data.username) {
+        userAvatarEl.textContent = data.username.charAt(0).toUpperCase();
+      }
+    })
+    .catch(err => console.warn('Benutzername konnte nicht geladen werden:', err));
+
+  // Theme Toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'light' ? '☀' : '☾';
+  
+  themeToggle.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lvsTheme', next);
+    themeToggle.textContent = next === 'light' ? '☀' : '☾';
+  });
+
+  // Audit Log Funktionen
+  async function loadAuditLogs() {
+    const tbody = document.getElementById('auditLogTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Daten...</td></tr>';
+    
+    try {
+      const params = new URLSearchParams();
+      const inboundId = document.getElementById('filterInboundId')?.value;
+      const field = document.getElementById('filterField')?.value;
+      const user = document.getElementById('filterUser')?.value;
+      const fromDate = document.getElementById('filterFromDate')?.value;
+      const toDate = document.getElementById('filterToDate')?.value;
+      
+      if (inboundId) params.append('inbound_id', inboundId);
+      if (field) params.append('field_name', field);
+      if (user) params.append('changed_by', user);
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      params.append('limit', '1000');
+      
+      const response = await fetch(`/api/audit-logs?${params.toString()}`);
+      if (!response.ok) throw new Error('Fehler beim Laden der Audit-Logs');
+      
+      const logs = await response.json();
+      
+      document.getElementById('auditLogCount').textContent = `${logs.length} Einträge`;
+      
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Einträge gefunden</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = logs.map(log => {
+        const changedAt = log.changed_at ? new Date(log.changed_at).toLocaleString('de-DE') : '-';
+        const oldValue = log.old_value !== null && log.old_value !== undefined ? String(log.old_value).substring(0, 50) : '-';
+        const newValue = log.new_value !== null && log.new_value !== undefined ? String(log.new_value).substring(0, 50) : '-';
+        const changeReason = log.change_reason || '-';
+        
+        return `
+          <tr>
+            <td>${log.id}</td>
+            <td>
+              <a href="#" onclick="showInboundEntryDetails(${log.inbound_id}); return false;" style="color: var(--gxo-orange); text-decoration: none; cursor: pointer; font-weight: 600;">
+                #${log.inbound_id}
+              </a>
+            </td>
+            <td><strong>${log.field_name}</strong></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.old_value || ''}">${oldValue}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.new_value || ''}">${newValue}</td>
+            <td>${log.changed_by || '-'}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${changeReason}">${changeReason}</td>
+            <td>${changedAt}</td>
+          </tr>
+        `;
+      }).join('');
+      
+    } catch (err) {
+      console.error("Fehler beim Laden der Audit-Logs:", err);
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--error);">❌ Fehler beim Laden der Daten</td></tr>';
+    }
+  }
+  
+  function resetAuditFilters() {
+    document.getElementById('filterInboundId').value = '';
+    document.getElementById('filterField').value = '';
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterFromDate').value = '';
+    document.getElementById('filterToDate').value = '';
+    loadAuditLogs();
+  }
+  
+  async function exportAuditLogs() {
+    try {
+      const params = new URLSearchParams();
+      const inboundId = document.getElementById('filterInboundId')?.value;
+      const field = document.getElementById('filterField')?.value;
+      const user = document.getElementById('filterUser')?.value;
+      const fromDate = document.getElementById('filterFromDate')?.value;
+      const toDate = document.getElementById('filterToDate')?.value;
+      
+      if (inboundId) params.append('inbound_id', inboundId);
+      if (field) params.append('field_name', field);
+      if (user) params.append('changed_by', user);
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      
+      const response = await fetch(`/api/audit-logs/export?${params.toString()}`);
+      if (!response.ok) throw new Error('Fehler beim Export');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      alert('Audit-Log erfolgreich exportiert!');
+    } catch (err) {
+      console.error('Fehler beim Export:', err);
+      alert('Fehler beim Export: ' + err.message);
+    }
+  }
+  
+  async function generateComplianceReport(type) {
+    try {
+      let fromDate, toDate;
+      const today = new Date();
+      
+      switch(type) {
+        case 'daily':
+          fromDate = toDate = today.toISOString().split('T')[0];
+          break;
+        case 'weekly':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(today.getDate() - 7);
+          fromDate = weekAgo.toISOString().split('T')[0];
+          toDate = today.toISOString().split('T')[0];
+          break;
+        case 'monthly':
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(today.getMonth() - 1);
+          fromDate = monthAgo.toISOString().split('T')[0];
+          toDate = today.toISOString().split('T')[0];
+          break;
+        case 'custom':
+          fromDate = prompt('Von Datum (YYYY-MM-DD):');
+          toDate = prompt('Bis Datum (YYYY-MM-DD):');
+          if (!fromDate || !toDate) return;
+          break;
+      }
+      
+      const params = new URLSearchParams();
+      params.append('from_date', fromDate);
+      params.append('to_date', toDate);
+      params.append('format', 'pdf');
+      
+      const response = await fetch(`/api/audit-logs/compliance-report?${params.toString()}`);
+      if (!response.ok) throw new Error('Fehler beim Generieren des Reports');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compliance-report-${type}-${fromDate}-${toDate}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      alert('Compliance-Report erfolgreich generiert!');
+    } catch (err) {
+      console.error('Fehler beim Generieren des Reports:', err);
+      alert('Fehler: ' + err.message);
+    }
+  }
+  
+  async function loadUserActivity() {
+    const container = document.getElementById('userActivityContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Aktivität...</div>';
+    
+    try {
+      const userId = document.getElementById('userActivityUser')?.value;
+      const fromDate = document.getElementById('userActivityFromDate')?.value;
+      const toDate = document.getElementById('userActivityToDate')?.value;
+      
+      const params = new URLSearchParams();
+      if (userId) params.append('user_id', userId);
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      
+      const response = await fetch(`/api/audit-logs/user-activity?${params.toString()}`);
+      if (!response.ok) throw new Error('Fehler beim Laden');
+      
+      const activity = await response.json();
+      
+      if (activity.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Aktivität gefunden</div>';
+        return;
+      }
+      
+      container.innerHTML = `
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Zeitstempel</th>
+                <th>Aktion</th>
+                <th>Entität</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activity.map(a => `
+                <tr>
+                  <td>${new Date(a.created_at).toLocaleString('de-DE')}</td>
+                  <td><strong>${a.action}</strong></td>
+                  <td>${a.entity_type || '-'}</td>
+                  <td>${a.entity_id ? `ID: ${a.entity_id}` : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      console.error('Fehler:', err);
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">❌ Fehler beim Laden</div>';
+    }
+  }
+  
+  async function runDataIntegrityCheck() {
+    const resultsContainer = document.getElementById('integrityCheckResults');
+    if (!resultsContainer) return;
+    
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Prüfung läuft...</div>';
+    
+    try {
+      const response = await fetch('/api/audit-logs/integrity-check');
+      if (!response.ok) throw new Error('Fehler bei der Prüfung');
+      
+      const results = await response.json();
+      
+      const issues = results.issues || [];
+      const stats = results.stats || {};
+      
+      resultsContainer.innerHTML = `
+        <div style="padding: 20px; background: var(--bg-soft); border-radius: 12px; margin-bottom: 16px;">
+          <h3 style="margin: 0 0 12px 0;">Statistiken</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div>
+              <strong>Gesamt Einträge:</strong> ${stats.total_entries || 0}
+            </div>
+            <div>
+              <strong>Geprüfte Felder:</strong> ${stats.checked_fields || 0}
+            </div>
+            <div>
+              <strong>Gefundene Probleme:</strong> ${issues.length}
+            </div>
+          </div>
+        </div>
+        ${issues.length > 0 ? `
+          <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 2px solid #ef4444;">
+            <h3 style="margin: 0 0 12px 0; color: #ef4444;">⚠️ Gefundene Probleme</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              ${issues.map(issue => `<li>${issue}</li>`).join('')}
+            </ul>
+          </div>
+        ` : `
+          <div style="padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border: 2px solid var(--gxo-green);">
+            <h3 style="margin: 0; color: var(--gxo-green);">✅ Keine Probleme gefunden</h3>
+          </div>
+        `}
+      `;
+    } catch (err) {
+      console.error('Fehler:', err);
+      resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">❌ Fehler bei der Prüfung</div>';
+    }
+  }
+  
+  function showInboundEntryDetails(id) {
+    // Öffne Wareneingang-Details (falls verfügbar)
+    if (typeof window.showInboundEntryDetails === 'function') {
+      window.showInboundEntryDetails(id);
+    } else {
+      window.location.href = `/wareneingang?entry=${id}`;
+    }
+  }
+  
+  // Lade Benutzer für Activity Tracking
+  async function loadUsersForActivity() {
+    try {
+      const response = await fetch('/api/users');
+      if (!response.ok) return;
+      
+      const users = await response.json();
+      const select = document.getElementById('userActivityUser');
+      if (!select) return;
+      
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.username} (${user.role_display_name || user.role})`;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error('Fehler beim Laden der Benutzer:', err);
+    }
+  }
+  
+  // Initialisierung
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAuditLogs();
+    loadUsersForActivity();
+    
+    // Setze Standard-Datum auf heute
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('filterToDate').value = today;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    document.getElementById('filterFromDate').value = weekAgo.toISOString().split('T')[0];
+  });
+</script>
+
+<script src="/js/navigation/routing.js"></script>
+<script src="/js/init-all-features.js"></script>
+
+</body>
+</html>

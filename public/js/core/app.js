@@ -21,7 +21,7 @@ const viewMeta = {
   },
   inbound: {
     title: "Wareneingang",
-    subtitle: "Einfache Erfassung neuer Paletten und Kartons"
+    subtitle: "Einfache Erfassung neuer Kartons"
   },
   move: {
     title: "Umlagerung",

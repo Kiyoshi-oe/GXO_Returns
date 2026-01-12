@@ -325,6 +325,249 @@ router.post('/excel', async (req, res) => {
   }
 });
 
+// GET /api/export - Generische Export-Route (für Vorschau und Export)
+router.get('/', async (req, res) => {
+  try {
+    const { 
+      type = 'all',
+      preview = 'false',
+      limit = 100,
+      columns,
+      location_ids,
+      areas,
+      date_from,
+      date_to
+    } = req.query;
+    
+    const db = getDb();
+    let sql = '';
+    let params = [];
+    
+    // Spalten-Filter
+    const selectedColumns = columns ? columns.split(',') : [];
+    
+    // SQL basierend auf Typ erstellen
+    if (type === 'all' || type === 'cartons') {
+      const whereClause = 'WHERE i.ignore_flag = 0';
+      
+      if (areas) {
+        const areaList = areas.split(',');
+        sql = `
+          SELECT 
+            i.id, i.cw, i.aufgenommen_am, i.carrier_name, i.carrier_tracking_nr,
+            i.olpn, i.dn, i.shi, i.customer_id, i.customer_name, i.asn_ra_no,
+            i.area, i.stage, i.land, i.ship_status, i.planned_carton, i.actual_carton,
+            i.mh_status, i.kommentar, i.created_at, i.added_by,
+            l.code as location_code, l.description as location_description
+          FROM inbound_simple i
+          LEFT JOIN location l ON i.location_id = l.id
+          ${whereClause} AND i.area IN (${areaList.map(() => '?').join(',')})
+          ORDER BY i.created_at DESC
+        `;
+        params = areaList;
+      } else {
+        sql = `
+          SELECT 
+            i.id, i.cw, i.aufgenommen_am, i.carrier_name, i.carrier_tracking_nr,
+            i.olpn, i.dn, i.shi, i.customer_id, i.customer_name, i.asn_ra_no,
+            i.area, i.stage, i.land, i.ship_status, i.planned_carton, i.actual_carton,
+            i.mh_status, i.kommentar, i.created_at, i.added_by,
+            l.code as location_code, l.description as location_description
+          FROM inbound_simple i
+          LEFT JOIN location l ON i.location_id = l.id
+          ${whereClause}
+          ORDER BY i.created_at DESC
+        `;
+      }
+      
+      if (preview === 'true') {
+        sql += ` LIMIT ?`;
+        params.push(parseInt(limit));
+      }
+    } else if (type === 'locations') {
+      if (location_ids) {
+        const locationList = location_ids.split(',').map(id => parseInt(id));
+        sql = `
+          SELECT 
+            l.id, l.code, l.description, l.area, l.is_active, l.created_at,
+            COUNT(DISTINCT i.id) as entry_count,
+            SUM(i.actual_carton) as total_cartons
+          FROM location l
+          LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+          WHERE l.id IN (${locationList.map(() => '?').join(',')})
+          GROUP BY l.id
+          ORDER BY l.code
+        `;
+        params = locationList;
+      } else {
+        sql = `
+          SELECT 
+            l.id, l.code, l.description, l.area, l.is_active, l.created_at,
+            COUNT(DISTINCT i.id) as entry_count,
+            SUM(i.actual_carton) as total_cartons
+          FROM location l
+          LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+          GROUP BY l.id
+          ORDER BY l.code
+        `;
+      }
+      
+      if (preview === 'true') {
+        sql += ` LIMIT ?`;
+        params.push(parseInt(limit));
+      }
+    } else if (type === 'inbounds') {
+      let whereClause = 'WHERE i.ignore_flag = 0';
+      if (date_from) {
+        whereClause += ` AND DATE(i.created_at) >= ?`;
+        params.push(date_from);
+      }
+      if (date_to) {
+        whereClause += ` AND DATE(i.created_at) <= ?`;
+        params.push(date_to);
+      }
+      
+      sql = `
+        SELECT 
+          i.id, i.created_at as timestamp, i.added_by as user,
+          i.cw, i.olpn, i.carrier_tracking_nr, i.carrier_name, i.land,
+          i.actual_carton, l.code as location_code, i.asn_ra_no,
+          i.customer_name, i.kommentar
+        FROM inbound_simple i
+        LEFT JOIN location l ON i.location_id = l.id
+        ${whereClause}
+        ORDER BY i.created_at DESC
+      `;
+      
+      if (preview === 'true') {
+        sql += ` LIMIT ?`;
+        params.push(parseInt(limit));
+      }
+    } else if (type === 'movements') {
+      let whereClause = '';
+      if (date_from) {
+        whereClause += ` WHERE DATE(m.moved_at) >= ?`;
+        params.push(date_from);
+      }
+      if (date_to) {
+        whereClause += whereClause ? ` AND DATE(m.moved_at) <= ?` : ` WHERE DATE(m.moved_at) <= ?`;
+        params.push(date_to);
+      }
+      
+      sql = `
+        SELECT 
+          m.id, m.moved_at as timestamp, m.moved_by as user,
+          m.inbound_id, i.cw, i.olpn, i.carrier_tracking_nr,
+          l_from.code as from_location, l_to.code as to_location,
+          m.reason, i.actual_carton
+        FROM movement m
+        LEFT JOIN location l_from ON m.from_location_id = l_from.id
+        LEFT JOIN location l_to ON m.to_location_id = l_to.id
+        LEFT JOIN inbound_simple i ON m.inbound_id = i.id
+        ${whereClause}
+        ORDER BY m.moved_at DESC
+      `;
+      
+      if (preview === 'true') {
+        sql += ` LIMIT ?`;
+        params.push(parseInt(limit));
+      }
+    } else if (type === 'archives') {
+      let whereClause = '';
+      if (date_from) {
+        whereClause += ` WHERE DATE(a.archived_at) >= ?`;
+        params.push(date_from);
+      }
+      if (date_to) {
+        whereClause += whereClause ? ` AND DATE(a.archived_at) <= ?` : ` WHERE DATE(a.archived_at) <= ?`;
+        params.push(date_to);
+      }
+      
+      sql = `
+        SELECT 
+          a.id, a.archived_at as timestamp, a.archived_by as user,
+          a.inbound_id, i.cw, i.olpn, i.carrier_tracking_nr,
+          l.code as location_code, a.reason, a.notes
+        FROM archive a
+        LEFT JOIN inbound_simple i ON a.inbound_id = i.id
+        LEFT JOIN location l ON a.location_id = l.id
+        ${whereClause}
+        ORDER BY a.archived_at DESC
+      `;
+      
+      if (preview === 'true') {
+        sql += ` LIMIT ?`;
+        params.push(parseInt(limit));
+      }
+    } else {
+      return res.status(400).json({ ok: false, error: 'Ungültiger Export-Typ' });
+    }
+    
+    const rows = db.prepare(sql).all(...params);
+    
+    // Spalten filtern falls angegeben
+    let filteredRows = rows;
+    if (selectedColumns.length > 0 && rows.length > 0) {
+      filteredRows = rows.map(row => {
+        const filtered = {};
+        selectedColumns.forEach(col => {
+          if (row.hasOwnProperty(col)) {
+            filtered[col] = row[col];
+          }
+        });
+        return filtered;
+      });
+    }
+    
+    // Für Vorschau: JSON zurückgeben
+    if (preview === 'true') {
+      return res.json(filteredRows);
+    }
+    
+    // Für Export: Excel generieren
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'LVS Returns';
+    workbook.created = new Date();
+    
+    const worksheet = workbook.addWorksheet('Export');
+    
+    if (filteredRows.length > 0) {
+      const headers = selectedColumns.length > 0 
+        ? selectedColumns.filter(col => filteredRows[0].hasOwnProperty(col))
+        : Object.keys(filteredRows[0]);
+      
+      worksheet.columns = headers.map(header => ({
+        header,
+        key: header,
+        width: Math.max(header.length + 2, 15)
+      }));
+      
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFF3A00' }
+      };
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      
+      filteredRows.forEach(row => {
+        worksheet.addRow(headers.map(header => row[header] || ''));
+      });
+    }
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    res.setHeader('Content-Disposition', `attachment; filename=export_${timestamp}.xlsx`);
+    
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error("Fehler bei Export:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // GET /api/export/tables - Verfügbare Tabellen für Export
 router.get('/tables', (req, res) => {
   res.json({

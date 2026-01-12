@@ -739,30 +739,59 @@ router.get('/warehouse/areas', (req, res) => {
   try {
     const db = getDb();
     
-    const areasRaw = db.prepare(`
-      SELECT 
-        l.area,
-        COUNT(DISTINCT l.id) as totalLocations,
-        COUNT(DISTINCT CASE WHEN i.id IS NOT NULL THEN l.id END) as occupiedLocations,
-        COUNT(i.id) as totalEntries,
-        COALESCE(SUM(i.actual_carton), 0) as totalCartons
+    // Hole Areas sowohl aus location als auch aus inbound_simple (falls area direkt dort gespeichert ist)
+    const areasFromLocations = db.prepare(`
+      SELECT DISTINCT l.area
       FROM location l
-      LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
       WHERE l.area IS NOT NULL AND l.area != ''
-      GROUP BY l.area
-      ORDER BY totalEntries DESC
     `).all();
     
-    // Berechne zusätzliche Felder
-    const areas = areasRaw.map(a => ({
-      area: a.area,
-      totalLocations: a.totalLocations,
-      occupiedLocations: a.occupiedLocations,
-      utilizationPercent: a.totalLocations > 0 ? Math.round((a.occupiedLocations / a.totalLocations) * 100) : 0,
-      totalCartons: a.totalCartons,
-      avgCartonsPerLocation: a.occupiedLocations > 0 ? (a.totalCartons / a.occupiedLocations) : 0,
-      totalEntries: a.totalEntries
-    }));
+    const areasFromInbound = db.prepare(`
+      SELECT DISTINCT i.area
+      FROM inbound_simple i
+      WHERE i.area IS NOT NULL AND i.area != '' AND i.ignore_flag = 0
+    `).all();
+    
+    // Kombiniere beide Quellen und entferne Duplikate
+    const allAreas = new Set();
+    areasFromLocations.forEach(a => {
+      if (a.area && a.area.trim() !== '') {
+        allAreas.add(a.area.trim());
+      }
+    });
+    areasFromInbound.forEach(a => {
+      if (a.area && a.area.trim() !== '') {
+        allAreas.add(a.area.trim());
+      }
+    });
+    
+    // Konvertiere Set zu Array und sortiere
+    const uniqueAreas = Array.from(allAreas).sort();
+    
+    // Erstelle detaillierte Statistiken für jede Area
+    const areas = uniqueAreas.map(areaName => {
+      const stats = db.prepare(`
+        SELECT 
+          COUNT(DISTINCT l.id) as totalLocations,
+          COUNT(DISTINCT CASE WHEN i.id IS NOT NULL THEN l.id END) as occupiedLocations,
+          COUNT(i.id) as totalEntries,
+          COALESCE(SUM(i.actual_carton), 0) as totalCartons
+        FROM location l
+        LEFT JOIN inbound_simple i ON l.id = i.location_id AND i.ignore_flag = 0
+        WHERE l.area = ? OR (i.area = ? AND i.ignore_flag = 0)
+      `).get(areaName, areaName);
+      
+      return {
+        area: areaName,
+        name: areaName, // Für Kompatibilität
+        totalLocations: stats.totalLocations || 0,
+        occupiedLocations: stats.occupiedLocations || 0,
+        utilizationPercent: stats.totalLocations > 0 ? Math.round((stats.occupiedLocations / stats.totalLocations) * 100) : 0,
+        totalCartons: stats.totalCartons || 0,
+        avgCartonsPerLocation: stats.occupiedLocations > 0 ? (stats.totalCartons / stats.occupiedLocations) : 0,
+        totalEntries: stats.totalEntries || 0
+      };
+    });
     
     res.json(areas);
   } catch (err) {
@@ -1243,5 +1272,95 @@ function formatUptime(seconds) {
   
   return parts.join(' ');
 }
+
+// GET /api/performance/warehouse/ra-status - RA-Status-Übersicht
+router.get('/warehouse/ra-status', (req, res) => {
+  try {
+    const db = getDb();
+    const { area } = req.query;
+    
+    // Status-Mapping basierend auf ship_status und mh_status
+    let sql = `
+      SELECT 
+        CASE 
+          WHEN ship_status = 'In Transit' THEN 'inTransit'
+          WHEN ship_status = 'In Receiving' THEN 'inReceiving'
+          WHEN ship_status = 'Cancelled' THEN 'cancelled'
+          WHEN asn_ra_no IS NULL OR asn_ra_no = '' THEN 'notFound'
+          WHEN mh_status = 'Verifiziert' OR ship_status = 'Verifiziert' THEN 'verified'
+          ELSE 'other'
+        END as status,
+        COUNT(*) as count
+      FROM inbound_simple
+      WHERE ignore_flag = 0
+    `;
+    
+    const params = [];
+    if (area && area.trim() !== '') {
+      // Prüfe ob area direkt in inbound_simple oder über location verfügbar ist
+      sql += ` AND (area = ? OR EXISTS (SELECT 1 FROM location l WHERE l.id = inbound_simple.location_id AND l.area = ?))`;
+      params.push(area.trim(), area.trim());
+    }
+    
+    sql += ` GROUP BY status`;
+    
+    const results = db.prepare(sql).all(...params);
+    
+    // Gesamtanzahl für Prozentberechnung
+    let totalSql = `SELECT COUNT(*) as total FROM inbound_simple WHERE ignore_flag = 0`;
+    const totalParams = [];
+    if (area && area.trim() !== '') {
+      totalSql += ` AND (area = ? OR EXISTS (SELECT 1 FROM location l WHERE l.id = inbound_simple.location_id AND l.area = ?))`;
+      totalParams.push(area.trim(), area.trim());
+    }
+    const totalResult = db.prepare(totalSql).get(...totalParams);
+    const total = totalResult?.total || 0;
+    
+    // Initialisiere Zähler
+    const stats = {
+      total: total,
+      inTransit: 0,
+      inReceiving: 0,
+      cancelled: 0,
+      notFound: 0,
+      verified: 0,
+      other: 0
+    };
+    
+    // Zähle Ergebnisse
+    results.forEach(row => {
+      const count = row.count || 0;
+      
+      switch (row.status) {
+        case 'inTransit':
+          stats.inTransit = count;
+          break;
+        case 'inReceiving':
+          stats.inReceiving = count;
+          break;
+        case 'cancelled':
+          stats.cancelled = count;
+          break;
+        case 'notFound':
+          stats.notFound = count;
+          break;
+        case 'verified':
+          stats.verified = count;
+          break;
+        default:
+          stats.other += count;
+      }
+    });
+    
+    res.json({
+      ok: true,
+      stats,
+      area: area || null
+    });
+  } catch (err) {
+    console.error("Fehler bei warehouse/ra-status:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 module.exports = router;

@@ -279,6 +279,12 @@ async function loadExportPreview() {
   
   isLoadingPreview = true;
   
+  // Zeige Ladeanzeige
+  const previewBody = document.getElementById('exportPreviewBody');
+  if (previewBody) {
+    previewBody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 30px; color: var(--text-muted);">Lade Vorschau...</td></tr>';
+  }
+  
   try {
     const exportType = document.getElementById('exportType')?.value || 'all';
     const previewHeader = document.getElementById('exportPreviewHeader');
@@ -359,6 +365,8 @@ async function loadExportPreview() {
     params.append('preview', 'true');
     params.append('limit', '50');
     
+    console.log('📤 Lade Vorschau:', params.toString());
+    
     const response = await fetch(`/api/export?${params.toString()}`);
     if (!response.ok) {
       let errorMessage = 'Fehler beim Laden der Vorschau';
@@ -366,12 +374,22 @@ async function loadExportPreview() {
         const errorData = await response.json();
         errorMessage = errorData.error || errorMessage;
       } catch (e) {
-        // Wenn JSON-Parsing fehlschlägt, verwende Standard-Fehlermeldung
+        const text = await response.text();
+        errorMessage = text || errorMessage;
       }
       throw new Error(errorMessage);
     }
     
     data = await response.json();
+    
+    // Sicherstellen, dass data ein Array ist
+    if (!Array.isArray(data)) {
+      console.error('API hat kein Array zurückgegeben:', data);
+      if (data.ok === false) {
+        throw new Error(data.error || 'Fehler beim Laden der Daten');
+      }
+      data = [];
+    }
     exportData = data;
     
     // Sicherstellen, dass data ein Array ist
@@ -551,12 +569,35 @@ async function executeExport() {
     }
     
     params.append('columns', Array.from(selectedColumns).join(','));
+    params.append('preview', 'false');
+    
+    console.log('📤 Starte Export:', params.toString());
     
     // Download starten
     const response = await fetch(`/api/export?${params.toString()}`);
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Fehler beim Export');
+      let errorMessage = 'Fehler beim Export';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        const text = await response.text();
+        errorMessage = text || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    // Prüfe Content-Type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('spreadsheet')) {
+      // Versuche JSON-Fehler zu lesen
+      const text = await response.text();
+      try {
+        const error = JSON.parse(text);
+        throw new Error(error.error || 'Fehler beim Export');
+      } catch (e) {
+        throw new Error('Fehler beim Export: ' + text);
+      }
     }
     
     // Datei herunterladen

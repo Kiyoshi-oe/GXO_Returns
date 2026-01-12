@@ -37,10 +37,18 @@ let allAccessRequests = [];
 async function loadUsers() {
   try {
     const response = await fetch('/api/users');
+    if (!response.ok) {
+      throw new Error('Fehler beim Laden der Benutzer');
+    }
     allUsers = await response.json();
+    // Filtere nur aktive Benutzer NICHT - zeige alle registrierten Benutzer
     renderUsersTable();
   } catch (error) {
     console.error('Fehler beim Laden der Benutzer:', error);
+    const container = document.getElementById('usersTableContainer');
+    if (container) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">❌ Fehler beim Laden der Benutzer: ' + error.message + '</div>';
+    }
   }
 }
 
@@ -64,45 +72,61 @@ function renderUsersTable() {
     return;
   }
   
-  const table = `
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Benutzername</th>
-          <th>Name</th>
-          <th>E-Mail</th>
-          <th>Rolle</th>
-          <th>Status</th>
-          <th>Letzter Login</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${allUsers.map(user => `
-          <tr>
-            <td><strong>${user.username}</strong></td>
-            <td>${user.full_name || '-'}</td>
-            <td>${user.email || '-'}</td>
-            <td>
-              <span class="badge ${getRoleBadgeClass(user.role)}">${user.role_display_name || user.role}</span>
-            </td>
-            <td>
-              ${user.is_active 
-                ? '<span style="color: var(--gxo-green);">● Aktiv</span>' 
-                : '<span style="color: var(--text-muted);">● Inaktiv</span>'}
-            </td>
-            <td>${user.last_login ? formatDate(user.last_login) : 'Nie'}</td>
-            <td>
-              <button class="btn btn-sm btn-ghost" onclick="editUser(${user.id})">Bearbeiten</button>
-              <button class="btn btn-sm btn-ghost" onclick="deleteUser(${user.id})" ${user.role === 'admin' ? 'disabled' : ''}>Löschen</button>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
+  // Grid-Layout mit Cards statt Tabelle
+  const grid = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+      ${allUsers.map(user => `
+        <div class="card" style="background: var(--bg-soft); border: 2px solid var(--border-soft); transition: all 0.2s ease; cursor: pointer;" 
+             onmouseover="this.style.borderColor='var(--gxo-orange)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+             onmouseout="this.style.borderColor='var(--border-soft)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+          <div style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--gxo-orange) 0%, #FF6B3D 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
+                  ${(user.full_name || user.username).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 16px; color: var(--text-main); margin-bottom: 4px;">${user.username}</div>
+                  <div style="font-size: 13px; color: var(--text-muted);">${user.full_name || '-'}</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                ${user.is_active 
+                  ? '<span style="width: 10px; height: 10px; border-radius: 50%; background: var(--gxo-green);"></span>' 
+                  : '<span style="width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted);"></span>'}
+              </div>
+            </div>
+            
+            <div style="display: grid; gap: 12px; margin-bottom: 16px; font-size: 13px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--text-muted);">📧</span>
+                <span style="color: var(--text-main);">${user.email || 'Keine E-Mail'}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--text-muted);">👤</span>
+                <span class="badge ${getRoleBadgeClass(user.role)}" style="font-size: 12px; padding: 4px 10px;">${user.role_display_name || user.role}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--text-muted);">🕐</span>
+                <span style="color: var(--text-main);">${user.last_login ? formatDate(user.last_login) : 'Nie eingeloggt'}</span>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; border-top: 1px solid var(--border-soft); padding-top: 16px;">
+              <button class="btn btn-sm btn-primary" onclick="editUser(${user.id})" style="flex: 1;">
+                <span>✏️</span> Bearbeiten
+              </button>
+              <button class="btn btn-sm btn-ghost" onclick="deleteUser(${user.id})" ${user.role === 'admin' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''} style="flex: 1;">
+                <span>🗑️</span> Löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
   `;
   
-  container.innerHTML = table;
+  container.innerHTML = grid;
 }
 
 // Get role badge class
@@ -251,22 +275,45 @@ function showUserEditModal(user) {
 
 // Delete user
 async function deleteUser(userId) {
-  if (!confirm('Möchten Sie diesen Benutzer wirklich löschen?')) return;
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) {
+    alert('Benutzer nicht gefunden');
+    return;
+  }
+  
+  if (user.role === 'admin') {
+    if (!confirm(`⚠️ Warnung: Sie möchten einen Administrator löschen.\n\nMöchten Sie den Benutzer "${user.username}" wirklich löschen?`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`Möchten Sie den Benutzer "${user.username}" wirklich löschen?`)) {
+      return;
+    }
+  }
   
   try {
     const response = await fetch(`/api/users/${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
     if (response.ok) {
-      showNotification('Benutzer gelöscht', 'success');
-      loadUsers();
+      const result = await response.json();
+      if (result.ok) {
+        showNotification('Benutzer erfolgreich gelöscht', 'success');
+        loadUsers();
+      } else {
+        showNotification('Fehler: ' + (result.error || 'Unbekannter Fehler'), 'error');
+      }
     } else {
       const error = await response.json();
-      showNotification('Fehler: ' + error.error, 'error');
+      showNotification('Fehler: ' + (error.error || 'Fehler beim Löschen'), 'error');
     }
   } catch (error) {
-    showNotification('Fehler beim Löschen', 'error');
+    console.error('Fehler beim Löschen:', error);
+    showNotification('Fehler beim Löschen: ' + error.message, 'error');
   }
 }
 
