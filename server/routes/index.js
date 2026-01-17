@@ -15,6 +15,7 @@ const archiveRoutes = require('./archive');
 const exportRoutes = require('./export');
 const usersRoutes = require('./users');
 const accessRequestsRoutes = require('./access-requests');
+const dailyPerformanceRoutes = require('./daily-performance');
 
 /**
  * Registriert alle API-Routes
@@ -60,6 +61,9 @@ function registerRoutes(app) {
   
   // Access Requests API
   app.use('/api/access-requests', accessRequestsRoutes);
+  
+  // Daily Performance API
+  app.use('/api/daily-performance', dailyPerformanceRoutes);
   
   // System API (current-user, init, etc.)
   app.use('/api', systemRoutes);

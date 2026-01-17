@@ -185,7 +185,8 @@ const pageRoutes = {
   '/export': 'import.html',
   '/suche': 'suche.html',
   '/login': 'login.html', // Login Seite
-  '/access-request': 'access-request.html' // Zugriffs-Anfrage Seite (öffentlich)
+  '/access-request': 'access-request.html', // Zugriffs-Anfrage Seite (öffentlich)
+  '/daily-performance': 'daily-performance.html' // Tägliche Performance Seite
 };
 
 // Seiten servieren

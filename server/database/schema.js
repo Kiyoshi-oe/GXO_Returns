@@ -211,8 +211,45 @@ function runMigrations() {
     { table: 'inbound_simple', column: 'location_id', sql: 'ALTER TABLE inbound_simple ADD COLUMN location_id INTEGER' },
     
     // Movement-Spalten
-    { table: 'movement', column: 'inbound_id', sql: 'ALTER TABLE movement ADD COLUMN inbound_id INTEGER' }
+    { table: 'movement', column: 'inbound_id', sql: 'ALTER TABLE movement ADD COLUMN inbound_id INTEGER' },
+    
+    // Daily Performance Spalten
+    { table: 'daily_performance', column: 'start_volume', sql: 'ALTER TABLE daily_performance ADD COLUMN start_volume REAL' },
+    
+    // RA Zuordnungs-Timestamp
+    { table: 'inbound_simple', column: 'ra_assigned_at', sql: 'ALTER TABLE inbound_simple ADD COLUMN ra_assigned_at TEXT' },
+    { table: 'inbound_simple', column: 'ra_assigned_by', sql: 'ALTER TABLE inbound_simple ADD COLUMN ra_assigned_by TEXT' }
   ];
+  
+  // Erstelle daily_performance Tabelle falls nicht vorhanden
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS daily_performance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL UNIQUE,
+        day_name TEXT,
+        rest_volume REAL,
+        actual_in_vol_cartons INTEGER,
+        planned_fte INTEGER,
+        planned_hours INTEGER,
+        planned_volume INTEGER,
+        actual_am_hours INTEGER,
+        actual_pm_hours INTEGER,
+        actual_fte INTEGER,
+        actual_volume INTEGER,
+        rate REAL,
+        comment TEXT,
+        created_at TEXT,
+        updated_at TEXT,
+        created_by TEXT
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_daily_performance_date ON daily_performance(date);
+    `);
+    console.log('✅ Tabelle daily_performance erstellt');
+  } catch (err) {
+    // Tabelle existiert bereits
+  }
   
   for (const migration of migrations) {
     try {

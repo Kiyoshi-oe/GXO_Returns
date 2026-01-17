@@ -800,11 +800,11 @@
           <div class="form-grid">
             <div class="form-group">
               <label>CW</label>
-              <input type="text" id="cwInput" placeholder="Zum Beispiel CW 47">
+              <input type="text" id="cwInput" placeholder="Zum Beispiel CW 47" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Aufgenommen am</label>
-              <input type="date" id="aufgenommenInput" lang="de-DE">
+              <input type="date" id="aufgenommenInput" lang="de-DE" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Ignore</label>
@@ -829,7 +829,7 @@
             </div>
             <div class="form-group">
               <label>Carrier Name</label>
-              <input type="text" id="carrierNameInput" placeholder="Wird von der Auswahl oben gefüllt">
+              <input type="text" id="carrierNameInput" placeholder="Wird von der Auswahl oben gefüllt" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Land</label>
@@ -840,47 +840,47 @@
             </div>
             <div class="form-group">
               <label>Ship Status</label>
-              <input type="text" id="shipStatusInput">
+              <input type="text" id="shipStatusInput" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Planned Carton</label>
-              <input type="number" id="plannedCartonInput" placeholder="Zum Beispiel 2">
+              <input type="number" id="plannedCartonInput" placeholder="Zum Beispiel 2" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Actual Carton Count</label>
-              <input type="number" id="actualCartonInput" placeholder="Zum Beispiel 2">
+              <input type="number" id="actualCartonInput" placeholder="Zum Beispiel 2" autocomplete="on">
             </div>
             <div class="form-group">
               <label>OLPN</label>
-              <input type="text" id="olpnInput" placeholder="00050197980027746580">
+              <input type="text" id="olpnInput" placeholder="00050197980027746580" autocomplete="on">
             </div>
             <div class="form-group">
               <label>DN</label>
-              <input type="text" id="dnInput" placeholder="0 falls nicht vorhanden">
+              <input type="text" id="dnInput" placeholder="0 falls nicht vorhanden" autocomplete="on">
             </div>
             <div class="form-group">
               <label>SHI</label>
-              <input type="text" id="shiInput">
+              <input type="text" id="shiInput" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Carrier Tracking Number</label>
-              <input type="text" id="carrierTrackingInput" placeholder="z.B. 882826466627">
+              <input type="text" id="carrierTrackingInput" placeholder="z.B. 882826466627" autocomplete="shipping tracking-number">
             </div>
             <div class="form-group">
               <label>Customer ID</label>
-              <input type="text" id="customerIdInput" placeholder="zum Beispiel 20062673">
+              <input type="text" id="customerIdInput" placeholder="zum Beispiel 20062673" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Customer Name</label>
-              <input type="text" id="customerNameInput" placeholder="zum Beispiel Zalando">
+              <input type="text" id="customerNameInput" placeholder="zum Beispiel Zalando" autocomplete="organization">
             </div>
             <div class="form-group">
               <label>ASN RA Nummer</label>
-              <input type="text" id="asnInput" placeholder="zum Beispiel 70378154">
+              <input type="text" id="asnInput" placeholder="zum Beispiel 70378154" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Kommentar</label>
-              <input type="text" id="kommentarInput" placeholder="Optionaler Kommentar">
+              <input type="text" id="kommentarInput" placeholder="Optionaler Kommentar" autocomplete="on">
             </div>
             <div class="form-group">
               <label>Added by</label>
@@ -2718,7 +2718,7 @@
         <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatDateTime(entry.created_at)}</td>
         <td style="padding: 6px 8px; font-size: 11px; color: var(--text-muted);">${formatValue(entry.added_by)}</td>
         <td style="padding: 6px 8px; text-align: center;">
-          <button class="btn btn-ghost btn-sm" onclick="showInboundEntryDetails(${entry.id})" title="Details anzeigen">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editInboundEntry(${entry.id}, ${entry.location_id || 'null'})" style="padding: 4px 8px; font-size: 11px;" title="Bearbeiten">
             ✏️
           </button>
         </td>
@@ -3421,134 +3421,141 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">CW</label>
-              <input type="text" id="editCw" value="${entry.cw || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editCw" value="${entry.cw || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Aufgenommen am</label>
-              <input type="date" id="editAufgenommenAm" value="${entry.aufgenommen_am ? entry.aufgenommen_am.split('T')[0] : ''}" lang="de-DE" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="date" id="editAufgenommenAm" value="${entry.aufgenommen_am ? entry.aufgenommen_am.split('T')[0] : ''}" lang="de-DE" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Carrier Name</label>
-              <input type="text" id="editCarrierName" value="${entry.carrier_name || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editCarrierName" value="${entry.carrier_name || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Area</label>
-              <input type="text" id="editArea" value="${entry.area || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editArea" value="${entry.area || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Land</label>
-              <input type="text" id="editLand" value="${entry.land || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editLand" value="${entry.land || ''}" autocomplete="country-name" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Ship Status</label>
-              <input type="text" id="editShipStatus" value="${entry.ship_status || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editShipStatus" value="${entry.ship_status || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Stage</label>
-              <input type="text" id="editStage" value="${entry.stage || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editStage" value="${entry.stage || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Last Stage</label>
-              <input type="text" id="editLastStage" value="${entry.last_stage || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editLastStage" value="${entry.last_stage || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Planned Carton</label>
-              <input type="number" id="editPlannedCarton" value="${entry.planned_carton || ''}" min="0" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="number" id="editPlannedCarton" value="${entry.planned_carton || ''}" min="0" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Actual Carton <span style="color: var(--gxo-orange);">*</span></label>
-              <input type="number" id="editActualCarton" value="${entry.actual_carton || ''}" min="0" required style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="number" id="editActualCarton" value="${entry.actual_carton || ''}" min="0" required autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">OLPN</label>
-              <input type="text" id="editOlpn" value="${entry.olpn || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <input type="text" id="editOlpn" value="${entry.olpn || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Carrier Tracking Number</label>
-              <input type="text" id="editTrackingNr" value="${entry.carrier_tracking_nr || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <input type="text" id="editTrackingNr" value="${entry.carrier_tracking_nr || ''}" autocomplete="shipping tracking-number" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">DN</label>
-              <input type="text" id="editDn" value="${entry.dn || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editDn" value="${entry.dn || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">SHI</label>
-              <input type="text" id="editShi" value="${entry.shi || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editShi" value="${entry.shi || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Customer ID</label>
-              <input type="text" id="editCustomerId" value="${entry.customer_id || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <input type="text" id="editCustomerId" value="${entry.customer_id || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Customer Name</label>
-              <input type="text" id="editCustomerName" value="${entry.customer_name || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editCustomerName" value="${entry.customer_name || ''}" autocomplete="organization" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">ASN/RA Nummer</label>
-              <input type="text" id="editAsnRaNo" value="${entry.asn_ra_no || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
+              <input type="text" id="editAsnRaNo" value="${entry.asn_ra_no || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-family: monospace;">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">MH Status</label>
-              <input type="text" id="editMhStatus" value="${entry.mh_status || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="editMhStatus" value="${entry.mh_status || ''}" autocomplete="on" style="flex: 1; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+                ${(entry.mh_status && entry.mh_status.toLowerCase().includes('verifiziert')) ? `
+                  <button type="button" class="btn btn-ghost" onclick="setMhStatusToRequest()" style="padding: 8px 12px; font-size: 12px; background: rgba(245, 59, 1, 0.1); border-color: var(--gxo-orange); color: var(--gxo-orange); white-space: nowrap;" title="Setzt MH Status auf 'Request' für RA Import">
+                    📋 Auf Request setzen
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Neue RA</label>
-              <input type="text" id="editNeueRa" value="${entry.neue_ra || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editNeueRa" value="${entry.neue_ra || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
             
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">New Reopen RA</label>
-              <input type="text" id="editNewReopenRa" value="${entry.new_reopen_ra || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <input type="text" id="editNewReopenRa" value="${entry.new_reopen_ra || ''}" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Kommentar</label>
-              <textarea id="editKommentar" rows="3" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;">${entry.kommentar || ''}</textarea>
+              <textarea id="editKommentar" rows="3" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;">${entry.kommentar || ''}</textarea>
             </div>
           </div>
           
           <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
             <div class="form-group">
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Ignore Flag</label>
-              <select id="editIgnoreFlag" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
+              <select id="editIgnoreFlag" autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main);">
                 <option value="0" ${entry.ignore_flag == 0 ? 'selected' : ''}>Nein</option>
                 <option value="1" ${entry.ignore_flag == 1 ? 'selected' : ''}>Ja</option>
               </select>
@@ -3557,37 +3564,48 @@
           
           <div class="form-group" style="margin-bottom: 16px;">
             <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Grund für Änderung <span style="color: var(--gxo-orange);">*</span></label>
-            <textarea id="editChangeReason" rows="2" placeholder="Bitte geben Sie einen Grund für die Änderung an..." required style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;"></textarea>
+            <textarea id="editChangeReason" rows="2" placeholder="Bitte geben Sie einen Grund für die Änderung an..." required autocomplete="on" style="width: 100%; padding: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background: var(--bg-card); color: var(--text-main); resize: vertical;"></textarea>
           </div>
         </div>
       `;
       
+      // Speichere entryId für setMhStatusToRequest Funktion
+      window.currentEditEntryId = entryId;
+      
       // Modal anzeigen mit Custom-Buttons
       showEditModal(modalHtml, async () => {
-        // ALLE Felder auslesen
-        const cw = document.getElementById("editCw").value;
-        const aufgenommenAm = document.getElementById("editAufgenommenAm").value;
-        const carrierName = document.getElementById("editCarrierName").value;
-        const area = document.getElementById("editArea").value;
-        const land = document.getElementById("editLand").value;
-        const shipStatus = document.getElementById("editShipStatus").value;
-        const stage = document.getElementById("editStage").value;
-        const lastStage = document.getElementById("editLastStage").value;
-        const plannedCarton = document.getElementById("editPlannedCarton").value;
-        const actualCarton = document.getElementById("editActualCarton").value;
-        const olpn = document.getElementById("editOlpn").value;
-        const trackingNr = document.getElementById("editTrackingNr").value;
-        const dn = document.getElementById("editDn").value;
-        const shi = document.getElementById("editShi").value;
-        const customerId = document.getElementById("editCustomerId").value;
-        const customerName = document.getElementById("editCustomerName").value;
-        const asnRaNo = document.getElementById("editAsnRaNo").value;
-        const mhStatus = document.getElementById("editMhStatus").value;
-        const neueRa = document.getElementById("editNeueRa").value;
-        const newReopenRa = document.getElementById("editNewReopenRa").value;
-        const kommentar = document.getElementById("editKommentar").value;
-        const ignoreFlag = document.getElementById("editIgnoreFlag").value;
-        const changeReason = document.getElementById("editChangeReason").value;
+        // ALLE Felder auslesen - WICHTIG: Direkt vor dem Senden lesen
+        const cw = document.getElementById("editCw")?.value || '';
+        const aufgenommenAm = document.getElementById("editAufgenommenAm")?.value || '';
+        const carrierName = document.getElementById("editCarrierName")?.value || '';
+        const area = document.getElementById("editArea")?.value || '';
+        const land = document.getElementById("editLand")?.value || '';
+        const shipStatus = document.getElementById("editShipStatus")?.value || '';
+        const stage = document.getElementById("editStage")?.value || '';
+        const lastStage = document.getElementById("editLastStage")?.value || '';
+        const plannedCarton = document.getElementById("editPlannedCarton")?.value || '';
+        const actualCarton = document.getElementById("editActualCarton")?.value || '';
+        const olpn = document.getElementById("editOlpn")?.value || '';
+        const trackingNr = document.getElementById("editTrackingNr")?.value || '';
+        const dn = document.getElementById("editDn")?.value || '';
+        const shi = document.getElementById("editShi")?.value || '';
+        const customerId = document.getElementById("editCustomerId")?.value || '';
+        const customerName = document.getElementById("editCustomerName")?.value || '';
+        const asnRaNo = document.getElementById("editAsnRaNo")?.value || '';
+        const mhStatusInput = document.getElementById("editMhStatus");
+        const mhStatus = mhStatusInput ? mhStatusInput.value : '';
+        const neueRa = document.getElementById("editNeueRa")?.value || '';
+        const newReopenRa = document.getElementById("editNewReopenRa")?.value || '';
+        const kommentar = document.getElementById("editKommentar")?.value || '';
+        const ignoreFlag = document.getElementById("editIgnoreFlag")?.value || '0';
+        const changeReason = document.getElementById("editChangeReason")?.value || '';
+        
+        // Debug: Logge die Werte
+        console.log('📝 Speichere Eintrag:', {
+          entryId,
+          mhStatus: mhStatus,
+          changeReason: changeReason
+        });
         
         if (!changeReason || changeReason.trim() === "") {
           showCustomModal("❌ Bitte geben Sie einen Grund für die Änderung an", "error");
@@ -3630,7 +3648,7 @@
               customer_id: customerId ? customerId.trim() : null,
               customer_name: customerName ? customerName.trim() : null,
               asn_ra_no: asnRaNo ? asnRaNo.trim() : null,
-              mh_status: mhStatus ? mhStatus.trim() : null,
+              mh_status: mhStatus && mhStatus.trim() !== '' ? mhStatus.trim() : null,
               neue_ra: neueRa ? neueRa.trim() : null,
               new_reopen_ra: newReopenRa ? newReopenRa.trim() : null,
               kommentar: kommentar || null,
@@ -3670,6 +3688,14 @@
           
           // Inbound-Liste aktualisieren
           await loadInboundList();
+          
+          // Gesamtübersicht aktualisieren falls aktiv
+          const overallTab = document.getElementById('inventory-tab-content-overall');
+          if (overallTab && overallTab.style.display !== 'none') {
+            if (typeof loadOverallInventory === 'function') {
+              await loadOverallInventory();
+            }
+          }
           
           return true;
         } catch (err) {
@@ -10127,6 +10153,32 @@
       }
     })
     .catch(err => console.error('Fehler beim Laden der Benutzer-Informationen:', err));
+
+  // Setze MH Status auf "Request"
+  window.setMhStatusToRequest = function() {
+    const mhStatusInput = document.getElementById('editMhStatus');
+    if (mhStatusInput) {
+      mhStatusInput.value = 'Request';
+      mhStatusInput.style.background = 'rgba(245, 59, 1, 0.1)';
+      mhStatusInput.style.borderColor = 'var(--gxo-orange)';
+      
+      // Trigger input event um sicherzustellen, dass der Wert registriert wird
+      mhStatusInput.dispatchEvent(new Event('input', { bubbles: true }));
+      mhStatusInput.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      // Setze automatisch einen Grund
+      const changeReasonInput = document.getElementById('editChangeReason');
+      if (changeReasonInput && !changeReasonInput.value.trim()) {
+        changeReasonInput.value = 'MH Status auf Request gesetzt für RA Import';
+        changeReasonInput.dispatchEvent(new Event('input', { bubbles: true }));
+        changeReasonInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      
+      console.log('✅ MH Status auf Request gesetzt:', mhStatusInput.value);
+    } else {
+      console.error('❌ editMhStatus Input-Feld nicht gefunden');
+    }
+  };
 </script>
 
 </body>

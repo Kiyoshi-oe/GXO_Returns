@@ -1363,4 +1363,170 @@ router.get('/warehouse/ra-status', (req, res) => {
   }
 });
 
+// GET /api/performance/employees - Mitarbeiter-Performance
+router.get('/employees', (req, res) => {
+  try {
+    const db = getDb();
+    const { date } = req.query;
+    
+    // Datum verwenden oder heute
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    
+    // 30 Beispiel-Mitarbeiter
+    const exampleEmployees = [
+      'Max.Mustermann', 'Anna.Schmidt', 'Thomas.Mueller', 'Sarah.Weber', 'Michael.Fischer',
+      'Julia.Becker', 'Daniel.Wagner', 'Lisa.Hoffmann', 'Sebastian.Schaefer', 'Nina.Koch',
+      'Andreas.Bauer', 'Melanie.Richter', 'Christian.Klein', 'Stephanie.Wolf', 'Martin.Schroeder',
+      'Jessica.Neumann', 'Florian.Schwarz', 'Laura.Zimmermann', 'Jan.Braun', 'Kathrin.Hartmann',
+      'Tobias.Krause', 'Vanessa.Werner', 'Philipp.Lange', 'Sabine.Schmitt', 'Marco.Hofmann',
+      'Nicole.Schulz', 'Benjamin.Koerner', 'Jennifer.Mayer', 'Stefan.Herrmann', 'Petra.Walter'
+    ];
+    
+    // Hole echte Daten aus der Datenbank für heute
+    const realData = db.prepare(`
+      SELECT 
+        COALESCE(added_by, 'Unbekannt') as employee,
+        COUNT(*) as total_units,
+        COALESCE(SUM(actual_carton), 0) as total_cartons,
+        strftime('%H', aufgenommen_am) as hour,
+        aufgenommen_am
+      FROM inbound_simple
+      WHERE ignore_flag = 0 
+        AND DATE(aufgenommen_am) = ?
+        AND added_by IS NOT NULL
+      GROUP BY added_by, strftime('%H', aufgenommen_am)
+    `).all(targetDate);
+    
+    // Erstelle Map für echte Daten
+    const realDataMap = new Map();
+    realData.forEach(row => {
+      if (!realDataMap.has(row.employee)) {
+        realDataMap.set(row.employee, {
+          total_units: 0,
+          total_cartons: 0,
+          hourly: {}
+        });
+      }
+      const emp = realDataMap.get(row.employee);
+      emp.total_units += row.total_units;
+      emp.total_cartons += row.total_cartons;
+      emp.hourly[parseInt(row.hour)] = row.total_units;
+    });
+    
+    // Kombiniere echte und Beispiel-Daten
+    const employees = exampleEmployees.map((empName, index) => {
+      const realEmp = realDataMap.get(empName);
+      
+      // Wenn echte Daten vorhanden, verwende diese, sonst generiere Beispiel-Daten
+      if (realEmp) {
+        return {
+          name: empName,
+          total_units: realEmp.total_units,
+          total_cartons: realEmp.total_cartons,
+          hourly: realEmp.hourly,
+          shift: getShiftForEmployee(empName, index)
+        };
+      } else {
+        // Generiere Beispiel-Daten
+        const shift = getShiftForEmployee(empName, index);
+        const hourly = generateExampleHourlyData(shift, index);
+        const total_units = Object.values(hourly).reduce((sum, val) => sum + val, 0);
+        
+        return {
+          name: empName,
+          total_units: total_units,
+          total_cartons: Math.floor(total_units * (1.2 + Math.random() * 0.6)), // 1.2-1.8 Kartons pro Unit
+          hourly: hourly,
+          shift: shift
+        };
+      }
+    });
+    
+    // Berechne Schicht-Statistiken
+    const shiftStats = {
+      early: { employees: 0, total_units: 0, avg_units: 0 },
+      late: { employees: 0, total_units: 0, avg_units: 0 }
+    };
+    
+    employees.forEach(emp => {
+      if (emp.shift === 'early') {
+        shiftStats.early.employees++;
+        shiftStats.early.total_units += emp.total_units;
+      } else {
+        shiftStats.late.employees++;
+        shiftStats.late.total_units += emp.total_units;
+      }
+    });
+    
+    shiftStats.early.avg_units = shiftStats.early.employees > 0 
+      ? Math.round(shiftStats.early.total_units / shiftStats.early.employees) 
+      : 0;
+    shiftStats.late.avg_units = shiftStats.late.employees > 0 
+      ? Math.round(shiftStats.late.total_units / shiftStats.late.employees) 
+      : 0;
+    
+    res.json({
+      ok: true,
+      date: targetDate,
+      employees: employees,
+      shift_stats: shiftStats,
+      total_employees: employees.length,
+      total_units: employees.reduce((sum, e) => sum + e.total_units, 0)
+    });
+  } catch (err) {
+    console.error("Fehler bei employees:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Hilfsfunktion: Bestimme Schicht basierend auf Mitarbeiter-Index
+function getShiftForEmployee(name, index) {
+  // Erste 15 Mitarbeiter = Frühschicht, Rest = Spätschicht
+  return index < 15 ? 'early' : 'late';
+}
+
+// Hilfsfunktion: Generiere Beispiel-Stundendaten
+function generateExampleHourlyData(shift, employeeIndex) {
+  const hourly = {};
+  
+  if (shift === 'early') {
+    // Frühschicht: 6:30 - 14:57
+    // Peak-Zeiten: 8-12 Uhr
+    for (let hour = 6; hour <= 14; hour++) {
+      let baseUnits = 0;
+      
+      if (hour >= 8 && hour <= 12) {
+        // Peak-Zeit: 15-25 Units pro Stunde
+        baseUnits = 15 + Math.floor(Math.random() * 11) + (employeeIndex % 5);
+      } else if (hour === 6 || hour === 7) {
+        // Frühe Stunden: 5-10 Units
+        baseUnits = 5 + Math.floor(Math.random() * 6);
+      } else {
+        // Nachmittag: 8-15 Units
+        baseUnits = 8 + Math.floor(Math.random() * 8);
+      }
+      
+      hourly[hour] = baseUnits;
+    }
+  } else {
+    // Spätschicht: 15:00 - 23:27
+    // Peak-Zeiten: 15-19 Uhr
+    for (let hour = 15; hour <= 23; hour++) {
+      let baseUnits = 0;
+      
+      if (hour >= 15 && hour <= 19) {
+        // Peak-Zeit: 18-28 Units pro Stunde
+        baseUnits = 18 + Math.floor(Math.random() * 11) + (employeeIndex % 5);
+      } else {
+        // Späte Stunden: 10-18 Units
+        baseUnits = 10 + Math.floor(Math.random() * 9);
+      }
+      
+      hourly[hour] = baseUnits;
+    }
+  }
+  
+  return hourly;
+}
+
 module.exports = router;

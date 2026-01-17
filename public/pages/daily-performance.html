@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Tägliche Performance - LVS Returns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-logo-container">
+    <div class="loading-ring-2"></div>
+    <div class="loading-ring"></div>
+    <img src="/images/GXO_logo.png" alt="GXO" class="loading-logo">
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="/images/GXO_logo.png" class="sidebar-logo-img" alt="GXO">
+        <span class="sidebar-logo-text-main">Returns</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Ansichten</div>
+      <a href="/dashboard" class="nav-item ">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="/wareneingang" class="nav-item ">
+        <span class="nav-icon">📥</span>
+        <span>Wareneingang</span>
+      </a>
+      <a href="/lagerbestand" class="nav-item ">
+        <span class="nav-icon">📦</span>
+        <span>Lagerbestand</span>
+      </a>
+      <a href="/umlagerung" class="nav-item ">
+        <span class="nav-icon">↔️</span>
+        <span>Umlagerung</span>
+      </a>
+      <a href="/archive" class="nav-item ">
+        <span class="nav-icon">🗂️</span>
+        <span>Archiv</span>
+      </a>
+      <a href="/suche" class="nav-item ">
+        <span class="nav-icon">🔍</span>
+        <span>Globale Suche</span>
+      </a>
+    </nav>
+
+    <div class="nav-section-title">Administration</div>
+    <a href="/ra-import" class="nav-item ">
+      <span class="nav-icon">📑</span>
+      <span>RA Import</span>
+    </a>
+    <a href="/performance" class="nav-item ">
+      <span class="nav-icon">⚡</span>
+      <span>Performance</span>
+    </a>
+    <a href="/daily-performance" class="nav-item active">
+      <span class="nav-icon">📅</span>
+      <span>Tägliche Performance</span>
+    </a>
+    <a href="/einstellungen" class="nav-item ">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </a>
+    <a href="/import" class="nav-item ">
+      <span class="nav-icon">📥</span>
+      <span>Datenverwaltung</span>
+    </a>
+
+    <div class="nav-section-title">Tools</div>
+    <a href="/barcode" class="nav-item ">
+      <span class="nav-icon">📊</span>
+      <span>Barcode Generator</span>
+    </a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">📅 Tägliche Performance</div>
+        <div class="topbar-subtitle">Daily Staffing Assumption & Performance Tracking</div>
+      </div>
+      <div class="topbar-right" style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" id="dateRangeStart" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 13px;" onchange="loadPerformanceData()">
+        <span style="color: var(--text-muted);">bis</span>
+        <input type="date" id="dateRangeEnd" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 13px;" onchange="loadPerformanceData()">
+        <button class="btn btn-ghost" onclick="createTestData()" style="padding: 6px 12px; font-size: 13px; background: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #10b981;">🎲 Test-Daten</button>
+        <button class="btn" onclick="exportPerformanceData()" style="padding: 6px 12px; font-size: 13px;">📥 Exportieren</button>
+        <button class="btn-icon" id="themeToggle">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Zusammenfassung -->
+      <div class="grid-4" style="margin-bottom: 20px;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%); border-left: 4px solid #3b82f6;">
+          <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+            <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📊 Geplant</div>
+          </div>
+          <div style="padding: 16px;" id="summaryPlanned">
+            <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+          </div>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%); border-left: 4px solid #10b981;">
+          <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+            <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">✅ Aktuell</div>
+          </div>
+          <div style="padding: 16px;" id="summaryActual">
+            <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+          </div>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-left: 4px solid #f59e0b;">
+          <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+            <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📈 Rate</div>
+          </div>
+          <div style="padding: 16px;" id="summaryRate">
+            <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+          </div>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, rgba(245, 59, 1, 0.1) 0%, rgba(245, 59, 1, 0.05) 100%); border-left: 4px solid var(--gxo-orange);">
+          <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+            <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📊 Prozent</div>
+          </div>
+          <div style="padding: 16px;" id="summaryPercentage">
+            <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance-Tabelle -->
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div class="card-title" style="font-size: 14px;">📋 Daily Performance Tabelle</div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-ghost" onclick="createTestData()" style="padding: 6px 12px; font-size: 12px; background: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #10b981;">🎲 Test-Daten</button>
+            <button class="btn btn-ghost" onclick="addNewRow()" style="padding: 6px 12px; font-size: 12px;">➕ Neuer Eintrag</button>
+            <button class="btn btn-ghost" onclick="loadPerformanceData()" style="padding: 6px 12px; font-size: 12px;">🔄 Aktualisieren</button>
+          </div>
+        </div>
+        <div style="padding: 16px; overflow-x: auto;">
+          <table class="data-table" id="performanceTable" style="width: 100%; font-size: 12px; min-width: 1800px; border-collapse: separate; border-spacing: 0;">
+            <thead>
+              <tr>
+                <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border-soft); font-weight: 600; color: var(--text-main);">Datum</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Tag</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Rest Volume</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Actual IN Vol<br>(Cartons)</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #3b82f6; border-right: 2px solid #3b82f6;">Planned<br>FTE</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Planned<br>Hours</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Planned<br>Volume</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Actual AM<br>Hours</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Actual PM<br>Hours</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Actual<br>FTE</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Actual<br>Volume</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Rate</th>
+                <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main); min-width: 300px;">Comment</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="performanceTableBody">
+              <tr><td colspan="14" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Daten...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/core/app.js"></script>
+<script src="/js/core/theme.js"></script>
+<script src="/js/core/utils.js"></script>
+<script src="/js/navigation/routing.js"></script>
+<script src="/js/features/search.js"></script>
+<script src="/js/init-all-features.js"></script>
+
+<script>
+  // Theme-Initialisierung
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('lvsTheme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'light' ? '☀' : '☾';
+  
+  themeToggle.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lvsTheme', next);
+    themeToggle.textContent = next === 'light' ? '☀' : '☾';
+  });
+
+  // Setze Standard-Datum (letzte 30 Tage)
+  const dateRangeEnd = document.getElementById('dateRangeEnd');
+  const dateRangeStart = document.getElementById('dateRangeStart');
+  if (dateRangeEnd && !dateRangeEnd.value) {
+    dateRangeEnd.value = new Date().toISOString().split('T')[0];
+  }
+  if (dateRangeStart && !dateRangeStart.value) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    dateRangeStart.value = startDate.toISOString().split('T')[0];
+  }
+
+  // Lade Performance-Daten
+  async function loadPerformanceData() {
+    const startDate = document.getElementById('dateRangeStart')?.value;
+    const endDate = document.getElementById('dateRangeEnd')?.value;
+    
+    if (!startDate || !endDate) {
+      alert('Bitte wählen Sie ein Datumsbereich aus');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/daily-performance?startDate=${startDate}&endDate=${endDate}&limit=100`);
+      const result = await response.json();
+      
+      if (!result.ok) {
+        throw new Error(result.error || 'Fehler beim Laden');
+      }
+
+      // Lade Zusammenfassung
+      const summaryResponse = await fetch(`/api/daily-performance/stats/summary?startDate=${startDate}&endDate=${endDate}`);
+      const summary = await summaryResponse.json();
+      
+      if (summary.ok) {
+        loadSummary(summary.summary);
+      }
+
+      // Rendere Tabelle
+      renderTable(result.data, startDate, endDate);
+    } catch (err) {
+      console.error('Fehler beim Laden:', err);
+      document.getElementById('performanceTableBody').innerHTML = 
+        `<tr><td colspan="14" style="text-align: center; padding: 40px; color: var(--error);">Fehler: ${err.message}</td></tr>`;
+    }
+  }
+
+  // Lade Zusammenfassung
+  function loadSummary(summary) {
+    const planned = summary.totalPlannedVolume || 0;
+    const actual = summary.totalActualVolume || 0;
+    const rate = summary.averageRate || 0;
+    const percentage = summary.percentageFromTotal || 0;
+    const totalDays = summary.totalDays || 0;
+
+    document.getElementById('summaryPlanned').innerHTML = `
+      <div style="font-size: 28px; font-weight: bold; color: #3b82f6; margin-bottom: 4px;">${planned.toLocaleString('de-DE')}</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Planned Volume</div>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${totalDays} Tage</div>
+    `;
+
+    document.getElementById('summaryActual').innerHTML = `
+      <div style="font-size: 28px; font-weight: bold; color: #10b981; margin-bottom: 4px;">${actual.toLocaleString('de-DE')}</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Actual Volume</div>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Ø ${totalDays > 0 ? Math.round(actual / totalDays).toLocaleString('de-DE') : 0}/Tag</div>
+    `;
+
+    document.getElementById('summaryRate').innerHTML = `
+      <div style="font-size: 28px; font-weight: bold; color: #f59e0b; margin-bottom: 4px;">${rate.toFixed(1)}</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Ø Rate</div>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Units/Stunde</div>
+    `;
+
+    document.getElementById('summaryPercentage').innerHTML = `
+      <div style="font-size: 28px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#ef4444'}; margin-bottom: 4px;">${percentage}%</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">von Planned</div>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${percentage >= 80 ? '✅ Gut' : percentage >= 50 ? '⚠️ OK' : '❌ Niedrig'}</div>
+    `;
+  }
+
+  // Rendere Tabelle
+  function renderTable(data, startDate, endDate) {
+    const tbody = document.getElementById('performanceTableBody');
+    if (!tbody) return;
+
+    // Erstelle alle Daten zwischen startDate und endDate
+    const allDates = [];
+    const dateMap = new Map();
+    
+    data.forEach(row => {
+      dateMap.set(row.date, row);
+    });
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      allDates.push(dateStr);
+    }
+
+    if (allDates.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten im ausgewählten Zeitraum</td></tr>';
+      return;
+    }
+
+    let html = '';
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+    allDates.forEach(dateStr => {
+      const row = dateMap.get(dateStr) || {
+        date: dateStr,
+        day_name: dayNames[new Date(dateStr).getDay()],
+        rest_volume: 0,
+        actual_in_vol_cartons: 0,
+        planned_fte: 30,
+        planned_hours: 225,
+        planned_volume: 6300,
+        actual_am_hours: 0,
+        actual_pm_hours: 0,
+        actual_fte: 0,
+        actual_volume: 0,
+        rate: 0,
+        comment: ''
+      };
+
+      const isWeekend = row.day_name === 'So' || row.day_name === 'Sa';
+      const rowStyle = isWeekend ? 'background: rgba(107, 114, 128, 0.1); opacity: 0.8;' : '';
+      const totalHours = (row.actual_am_hours || 0) + (row.actual_pm_hours || 0);
+      const rateValue = row.rate || (totalHours > 0 ? (row.actual_volume / totalHours).toFixed(1) : 0);
+      const rateColor = rateValue >= 20 ? '#10b981' : rateValue >= 15 ? '#f59e0b' : rateValue > 0 ? '#ef4444' : 'var(--text-muted)';
+      const rateBg = rateValue >= 20 ? 'rgba(16, 185, 129, 0.15)' : rateValue >= 15 ? 'rgba(245, 158, 11, 0.15)' : rateValue > 0 ? 'rgba(239, 68, 68, 0.15)' : 'transparent';
+
+      html += `
+        <tr data-date="${row.date}" style="${rowStyle}">
+          <td style="padding: 8px; position: sticky; left: 0; background: ${isWeekend ? 'rgba(107, 114, 128, 0.1)' : 'var(--bg-card)'}; z-index: 5; border-right: 2px solid var(--border-soft);">
+            <input type="date" value="${row.date}" class="date-input" style="width: 100%; padding: 6px 8px; background: transparent; border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDate(this, '${row.date}')" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <span style="padding: 4px 10px; background: ${isWeekend ? 'rgba(107, 114, 128, 0.2)' : 'var(--bg-soft)'}; border-radius: 6px; font-weight: 600; font-size: 12px; color: ${isWeekend ? 'var(--text-muted)' : 'var(--text-main)'};">${row.day_name}</span>
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.rest_volume || 0}" class="number-input" data-field="rest_volume" data-date="${row.date}" style="width: 120px; padding: 6px 8px; text-align: right; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'" step="0.01">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_in_vol_cartons || 0}" class="number-input" data-field="actual_in_vol_cartons" data-date="${row.date}" style="width: 100px; padding: 6px 8px; text-align: right; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.planned_fte || 30}" class="number-input" data-field="planned_fte" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.planned_hours || 225}" class="number-input" data-field="planned_hours" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.planned_volume || 6300}" class="number-input" data-field="planned_volume" data-date="${row.date}" style="width: 100px; padding: 6px 8px; text-align: right; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_am_hours || 0}" class="number-input" data-field="actual_am_hours" data-date="${row.date}" style="width: 90px; padding: 6px 8px; text-align: right; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#10b981'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_pm_hours || 0}" class="number-input" data-field="actual_pm_hours" data-date="${row.date}" style="width: 90px; padding: 6px 8px; text-align: right; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#f59e0b'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.actual_fte || 0}" class="number-input" data-field="actual_fte" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_volume || 0}" class="number-input" data-field="actual_volume" data-date="${row.date}" style="width: 110px; padding: 6px 8px; text-align: right; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#10b981'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <span class="rate-display" data-date="${row.date}" style="
+              display: inline-block;
+              padding: 4px 10px;
+              background: ${rateBg};
+              border-radius: 6px;
+              font-weight: 700;
+              color: ${rateColor};
+              font-size: 13px;
+              min-width: 50px;
+              text-align: center;
+            ">${rateValue > 0 ? rateValue : '-'}</span>
+          </td>
+          <td style="padding: 8px;">
+            <textarea class="comment-input" data-field="comment" data-date="${row.date}" style="width: 100%; min-width: 300px; padding: 8px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 11px; resize: vertical; min-height: 50px; font-family: inherit; transition: all 0.2s ease;" onchange="updateField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'" placeholder="Kommentar eingeben...">${row.comment || ''}</textarea>
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <div style="display: flex; gap: 4px; justify-content: center;">
+              <button class="btn btn-ghost" onclick="event.stopPropagation(); saveRow('${row.date}')" style="padding: 6px 10px; font-size: 12px; background: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #10b981; border-radius: 6px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'" title="Speichern">💾</button>
+              <button class="btn btn-ghost" onclick="event.stopPropagation(); deleteRow('${row.date}')" style="padding: 6px 10px; font-size: 12px; background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; border-radius: 6px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'" title="Löschen">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  // Feld aktualisieren
+  async function updateField(input) {
+    const date = input.getAttribute('data-date');
+    const field = input.getAttribute('data-field');
+    const value = input.value;
+
+    // Berechne Rate automatisch wenn relevant
+    if (field === 'actual_volume' || field === 'actual_am_hours' || field === 'actual_pm_hours') {
+      calculateRate(date);
+    }
+  }
+
+  // Rate berechnen
+  function calculateRate(date) {
+    const row = document.querySelector(`tr[data-date="${date}"]`);
+    if (!row) return;
+
+    const actualVolume = parseFloat(row.querySelector('input[data-field="actual_volume"]')?.value || 0);
+    const actualAmHours = parseFloat(row.querySelector('input[data-field="actual_am_hours"]')?.value || 0);
+    const actualPmHours = parseFloat(row.querySelector('input[data-field="actual_pm_hours"]')?.value || 0);
+    const totalHours = actualAmHours + actualPmHours;
+
+    const rate = totalHours > 0 ? (actualVolume / totalHours).toFixed(1) : 0;
+    const rateDisplay = row.querySelector('.rate-display');
+    if (rateDisplay) {
+      const rateValue = parseFloat(rate);
+      const rateColor = rateValue >= 20 ? '#10b981' : rateValue >= 15 ? '#f59e0b' : rateValue > 0 ? '#ef4444' : 'var(--text-muted)';
+      const rateBg = rateValue >= 20 ? 'rgba(16, 185, 129, 0.15)' : rateValue >= 15 ? 'rgba(245, 158, 11, 0.15)' : rateValue > 0 ? 'rgba(239, 68, 68, 0.15)' : 'transparent';
+      
+      rateDisplay.textContent = rateValue > 0 ? rate : '-';
+      rateDisplay.style.color = rateColor;
+      rateDisplay.style.background = rateBg;
+    }
+  }
+
+  // Zeile speichern
+  async function saveRow(date) {
+    const row = document.querySelector(`tr[data-date="${date}"]`);
+    if (!row) return;
+
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const dateObj = new Date(date);
+    const dayName = dayNames[dateObj.getDay()];
+
+    const data = {
+      date: date,
+      day_name: dayName,
+      rest_volume: parseFloat(row.querySelector('input[data-field="rest_volume"]')?.value || 0),
+      actual_in_vol_cartons: parseInt(row.querySelector('input[data-field="actual_in_vol_cartons"]')?.value || 0),
+      planned_fte: parseInt(row.querySelector('input[data-field="planned_fte"]')?.value || 30),
+      planned_hours: parseInt(row.querySelector('input[data-field="planned_hours"]')?.value || 225),
+      planned_volume: parseInt(row.querySelector('input[data-field="planned_volume"]')?.value || 6300),
+      actual_am_hours: parseInt(row.querySelector('input[data-field="actual_am_hours"]')?.value || 0),
+      actual_pm_hours: parseInt(row.querySelector('input[data-field="actual_pm_hours"]')?.value || 0),
+      actual_fte: parseInt(row.querySelector('input[data-field="actual_fte"]')?.value || 0),
+      actual_volume: parseInt(row.querySelector('input[data-field="actual_volume"]')?.value || 0),
+      rate: parseFloat(row.querySelector('.rate-display')?.textContent || 0),
+      comment: row.querySelector('textarea[data-field="comment"]')?.value || ''
+    };
+
+    try {
+      const response = await fetch('/api/daily-performance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        // Zeige Erfolgs-Feedback
+        const btn = row.querySelector('button[onclick*="saveRow"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅';
+        btn.style.color = '#10b981';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.color = '';
+        }, 2000);
+      } else {
+        throw new Error(result.error || 'Fehler beim Speichern');
+      }
+    } catch (err) {
+      console.error('Fehler beim Speichern:', err);
+      alert('Fehler beim Speichern: ' + err.message);
+    }
+  }
+
+  // Zeile löschen
+  async function deleteRow(date) {
+    if (!confirm(`Möchten Sie den Eintrag für ${date} wirklich löschen?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/daily-performance/${date}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        loadPerformanceData();
+      } else {
+        throw new Error(result.error || 'Fehler beim Löschen');
+      }
+    } catch (err) {
+      console.error('Fehler beim Löschen:', err);
+      alert('Fehler beim Löschen: ' + err.message);
+    }
+  }
+
+  // Datum aktualisieren
+  async function updateDate(input, oldDate) {
+    const newDate = input.value;
+    if (newDate === oldDate) return;
+
+    // Lade alte Daten
+    const oldRow = document.querySelector(`tr[data-date="${oldDate}"]`);
+    if (!oldRow) return;
+
+    // Erstelle neue Zeile mit neuem Datum
+    const data = {
+      date: newDate,
+      day_name: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(newDate).getDay()],
+      rest_volume: parseFloat(oldRow.querySelector('input[data-field="rest_volume"]')?.value || 0),
+      actual_in_vol_cartons: parseInt(oldRow.querySelector('input[data-field="actual_in_vol_cartons"]')?.value || 0),
+      planned_fte: parseInt(oldRow.querySelector('input[data-field="planned_fte"]')?.value || 30),
+      planned_hours: parseInt(oldRow.querySelector('input[data-field="planned_hours"]')?.value || 225),
+      planned_volume: parseInt(oldRow.querySelector('input[data-field="planned_volume"]')?.value || 6300),
+      actual_am_hours: parseInt(oldRow.querySelector('input[data-field="actual_am_hours"]')?.value || 0),
+      actual_pm_hours: parseInt(oldRow.querySelector('input[data-field="actual_pm_hours"]')?.value || 0),
+      actual_fte: parseInt(oldRow.querySelector('input[data-field="actual_fte"]')?.value || 0),
+      actual_volume: parseInt(oldRow.querySelector('input[data-field="actual_volume"]')?.value || 0),
+      rate: parseFloat(oldRow.querySelector('.rate-display')?.textContent || 0),
+      comment: oldRow.querySelector('textarea[data-field="comment"]')?.value || ''
+    };
+
+    try {
+      // Speichere neue Zeile
+      await fetch('/api/daily-performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      // Lösche alte Zeile
+      await fetch(`/api/daily-performance/${oldDate}`, {
+        method: 'DELETE'
+      });
+
+      loadPerformanceData();
+    } catch (err) {
+      console.error('Fehler beim Aktualisieren des Datums:', err);
+      alert('Fehler beim Aktualisieren: ' + err.message);
+      input.value = oldDate; // Zurücksetzen
+    }
+  }
+
+  // Neuer Eintrag
+  function addNewRow() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = prompt('Datum eingeben (YYYY-MM-DD):', today);
+    
+    if (!dateInput) return;
+
+    // Lade Daten für das Datum
+    fetch(`/api/daily-performance/${dateInput}`)
+      .then(r => r.json())
+      .then(result => {
+        if (result.ok) {
+          loadPerformanceData();
+        }
+      })
+      .catch(err => {
+        console.error('Fehler:', err);
+      });
+  }
+
+  // Test-Daten erstellen
+  async function createTestData() {
+    if (!confirm('Möchten Sie Test-Daten für die letzten 30 Tage erstellen? Bestehende Daten werden überschrieben.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/daily-performance/seed?days=30', {
+        method: 'POST'
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        alert(`✅ ${result.message}`);
+        loadPerformanceData();
+      } else {
+        throw new Error(result.error || 'Fehler beim Erstellen');
+      }
+    } catch (err) {
+      console.error('Fehler beim Erstellen der Test-Daten:', err);
+      alert('Fehler beim Erstellen der Test-Daten: ' + err.message);
+    }
+  }
+
+  window.createTestData = createTestData;
+
+  // Export
+  async function exportPerformanceData() {
+    const startDate = document.getElementById('dateRangeStart')?.value;
+    const endDate = document.getElementById('dateRangeEnd')?.value;
+    
+    if (!startDate || !endDate) {
+      alert('Bitte wählen Sie ein Datumsbereich aus');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/daily-performance?startDate=${startDate}&endDate=${endDate}&limit=1000`);
+      const result = await response.json();
+      
+      if (!result.ok) {
+        throw new Error(result.error || 'Fehler beim Export');
+      }
+
+      // Erstelle CSV
+      const headers = ['Datum', 'Tag', 'Rest Volume', 'Actual IN Vol (Cartons)', 'Planned FTE', 'Planned Hours', 'Planned Volume', 'Actual AM Hours', 'Actual PM Hours', 'Actual FTE', 'Actual Volume', 'Rate', 'Comment'];
+      const csvRows = [headers.join(';')];
+      
+      result.data.forEach(row => {
+        csvRows.push([
+          row.date,
+          row.day_name || '',
+          row.rest_volume || 0,
+          row.actual_in_vol_cartons || 0,
+          row.planned_fte || 30,
+          row.planned_hours || 225,
+          row.planned_volume || 6300,
+          row.actual_am_hours || 0,
+          row.actual_pm_hours || 0,
+          row.actual_fte || 0,
+          row.actual_volume || 0,
+          row.rate || 0,
+          (row.comment || '').replace(/"/g, '""')
+        ].join(';'));
+      });
+
+      const csv = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Daily_Performance_${startDate}_${endDate}.csv`;
+      link.click();
+    } catch (err) {
+      console.error('Fehler beim Export:', err);
+      alert('Fehler beim Export: ' + err.message);
+    }
+  }
+
+  // Initialisierung
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPerformanceData();
+      setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          setTimeout(() => loadingScreen.style.display = 'none', 600);
+        }
+      }, 500);
+    });
+  } else {
+    loadPerformanceData();
+    setTimeout(() => {
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => loadingScreen.style.display = 'none', 600);
+      }
+    }, 500);
+  }
+</script>
+
+</body>
+</html>

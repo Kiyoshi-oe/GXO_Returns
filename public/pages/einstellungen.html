@@ -993,55 +993,63 @@
             </div>
           </div>
 
-          <!-- Rechte Spalte: Rollen & Berechtigungen -->
-          <div>
+          <!-- Rollen & Berechtigungen -->
+          <div style="grid-column: 1 / -1;">
             <div class="card">
-          <div class="card-header">
-            <h2>🔐 Rollen & Berechtigungen</h2>
-            <button class="btn btn-ghost" onclick="loadRolePermissions()" style="display: flex; align-items: center; gap: 8px;">
-              <span>🔄</span> Aktualisieren
-            </button>
-          </div>
-          <div class="card-body">
-            <!-- 2er Grid: Admin View Switcher und Rollen -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-              
-              <!-- Admin View Switcher (nur für Admins) -->
-              <div>
-                <div id="adminViewSwitcherSettings" style="display: none;">
-                  <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--text-muted);">
-                    Simulieren Sie die Ansicht anderer Rollen, um Berechtigungen zu testen und die UI für verschiedene Benutzerrollen zu prüfen.
-                  </p>
-                  
-                  <div style="padding: 12px; background: var(--bg-card); border-radius: 10px; margin-bottom: 16px; font-size: 13px; color: var(--text-main);">
-                    <strong style="color: var(--gxo-orange);">Aktuelle Ansicht:</strong> <span id="settingsCurrentViewRole">Administrator</span>
-                  </div>
-                  
-                  <div id="settingsRoleOptions" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-                    <!-- Wird dynamisch gefüllt -->
-                  </div>
-                  
-                  <button id="settingsResetViewBtn" class="btn btn-secondary" style="width: 100%; display: none;">
-                    <span>🔄</span> Zurück zur Admin-Ansicht
-                  </button>
-                </div>
-                <div id="adminViewSwitcherPlaceholder" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                  <div style="font-size: 48px; margin-bottom: 16px;">👑</div>
-                  <p>Lade Admin View Switcher...</p>
-                </div>
+              <div class="card-header">
+                <h2>🔐 Rollen & Berechtigungen</h2>
+                <button class="btn btn-ghost" onclick="loadRolePermissions()" style="display: flex; align-items: center; gap: 8px;">
+                  <span>🔄</span> Aktualisieren
+                </button>
               </div>
-              
-              <!-- Rollen & Berechtigungen -->
-              <div>
-                <div id="rolesPermissionsContainer">
-                  <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
-                    <p>Lade Rollen...</p>
+              <div class="card-body">
+                <!-- Layout: Links Rollen-Liste, Rechts Detailansicht -->
+                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 24px;">
+                  
+                  <!-- Linke Spalte: Rollen-Liste (Sidebar) -->
+                  <div style="border-right: 2px solid var(--border-soft); padding-right: 24px;">
+                    <div style="margin-bottom: 20px;">
+                      <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span>🔒</span> Rollen & Berechtigungen
+                      </h3>
+                      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                        Simulieren Sie die Ansicht anderer Rollen, um Berechtigungen zu testen und die UI für verschiedene Benutzerrollen zu prüfen.
+                      </p>
+                      
+                      <div style="padding: 12px; background: var(--bg-soft); border-radius: 10px; margin-bottom: 16px; font-size: 13px; color: var(--text-main); border-left: 3px solid var(--gxo-orange);">
+                        <strong style="color: var(--gxo-orange);">Aktuelle Ansicht:</strong><br>
+                        <span id="settingsCurrentViewRole" style="font-size: 14px; font-weight: 600;">Administrator</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Admin View Switcher (nur für Admins) -->
+                    <div id="adminViewSwitcherSettings" style="display: none;">
+                      <div id="settingsRoleOptions" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                        <!-- Wird dynamisch gefüllt -->
+                      </div>
+                      
+                      <button id="settingsResetViewBtn" class="btn btn-secondary" style="width: 100%; display: none;">
+                        <span>🔄</span> Zurück zur Admin-Ansicht
+                      </button>
+                    </div>
+                    <div id="adminViewSwitcherPlaceholder" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                      <div style="font-size: 48px; margin-bottom: 16px;">👑</div>
+                      <p>Lade Admin View Switcher...</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Rechte Spalte: Rollen-Detailansicht mit Berechtigungen -->
+                  <div>
+                    <div id="rolesPermissionsContainer">
+                      <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+                        <p>Wählen Sie eine Rolle aus, um Details anzuzeigen</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
           </div>
 
           <!-- Untere Spalte: Zugriffs-Anfragen -->
@@ -10718,6 +10726,220 @@
       });
     });
   });
+
+  // ============================================
+  // ROLLEN & BERECHTIGUNGEN LADEN
+  // ============================================
+
+  let selectedRoleForDetails = null;
+
+  async function loadRolePermissions() {
+    const container = document.getElementById('rolesPermissionsContainer');
+    if (!container) return;
+
+    try {
+      const response = await fetch('/api/users/roles/list');
+      if (!response.ok) {
+        throw new Error('Fehler beim Laden der Rollen');
+      }
+
+      const roles = await response.json();
+      
+      if (roles.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Rollen gefunden</div>';
+        return;
+      }
+
+      // Wenn keine Rolle ausgewählt, wähle die erste
+      if (!selectedRoleForDetails) {
+        selectedRoleForDetails = roles[0].name;
+      }
+
+      // Rendere alle Rollen-Karten in einem kompakten Grid
+      let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">';
+      
+      roles.forEach(role => {
+        const permissions = typeof role.permissions === 'string' 
+          ? JSON.parse(role.permissions) 
+          : role.permissions || {};
+        
+        const moduleCount = Object.keys(permissions).length;
+        const permissionModules = Object.keys(permissions).slice(0, 6);
+        const remainingCount = moduleCount - permissionModules.length;
+        
+        const roleColors = {
+          'admin': { header: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+          'manager': { header: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+          'operator': { header: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+          'teamlead': { header: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+          'process_assistant': { header: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },
+          'trainer': { header: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+          'levis': { header: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' }
+        };
+        
+        const colors = roleColors[role.name] || { header: '#6b7280', bg: 'rgba(107, 114, 128, 0.1)' };
+        
+        html += `
+          <div class="role-card" data-role="${role.name}" style="
+            background: var(--bg-card);
+            border: 2px solid var(--border-soft);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            ${selectedRoleForDetails === role.name ? 'border-color: var(--gxo-orange); box-shadow: 0 4px 12px rgba(245, 59, 1, 0.2);' : ''}
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform=''; this.style.boxShadow='${selectedRoleForDetails === role.name ? '0 4px 12px rgba(245, 59, 1, 0.2)' : 'none'}'">
+            <div style="
+              background: linear-gradient(135deg, ${colors.header} 0%, ${colors.header}dd 100%);
+              padding: 14px 16px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+            ">
+              <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                <span style="font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); flex-shrink: 0;">${getRoleIcon(role.name)}</span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 700; color: white; margin-bottom: 2px;">${role.display_name}</div>
+                  <div style="font-size: 11px; color: rgba(255,255,255,0.9); line-height: 1.3; word-wrap: break-word;">${getRoleDescription(role.name)}</div>
+                </div>
+              </div>
+              <button class="btn btn-ghost" onclick="event.stopPropagation(); editRole('${role.name}')" style="
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                flex-shrink: 0;
+                margin-left: 8px;
+              " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                ✏️
+              </button>
+            </div>
+            
+            <div style="padding: 14px 16px;">
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+                  Berechtigungen
+                </div>
+                <div style="font-size: 13px; color: var(--gxo-orange); font-weight: 600; margin-bottom: 10px;">
+                  ${moduleCount} Module
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  ${permissionModules.map(module => `
+                    <span style="
+                      padding: 4px 10px;
+                      background: var(--bg-soft);
+                      border: 1px solid var(--border-soft);
+                      border-radius: 6px;
+                      font-size: 11px;
+                      color: var(--text-main);
+                      font-weight: 500;
+                      white-space: nowrap;
+                    ">${module}</span>
+                  `).join('')}
+                  ${remainingCount > 0 ? `
+                    <span style="
+                      padding: 4px 10px;
+                      background: var(--bg-soft);
+                      border: 1px solid var(--border-soft);
+                      border-radius: 6px;
+                      font-size: 11px;
+                      color: var(--text-muted);
+                      font-weight: 500;
+                      white-space: nowrap;
+                    ">+${remainingCount}</span>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+
+      // Event-Listener für Rollen-Karten hinzufügen
+      document.querySelectorAll('.role-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          // Ignoriere Klicks auf den Edit-Button
+          if (e.target.closest('button')) return;
+          
+          const roleName = card.getAttribute('data-role');
+          selectRoleForDetails(roleName, roles);
+        });
+      });
+
+      // Wähle die erste Rolle automatisch aus
+      if (selectedRoleForDetails) {
+        selectRoleForDetails(selectedRoleForDetails, roles);
+      }
+
+    } catch (err) {
+      console.error('Fehler beim Laden der Rollen:', err);
+      container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--error);">Fehler: ${err.message}</div>`;
+    }
+  }
+
+  function selectRoleForDetails(roleName, roles) {
+    selectedRoleForDetails = roleName;
+    const role = roles.find(r => r.name === roleName);
+    if (!role) return;
+
+    // Aktualisiere Hervorhebung
+    document.querySelectorAll('.role-card').forEach(card => {
+      const cardRole = card.getAttribute('data-role');
+      if (cardRole === roleName) {
+        card.style.borderColor = 'var(--gxo-orange)';
+        card.style.boxShadow = '0 4px 12px rgba(245, 59, 1, 0.2)';
+      } else {
+        card.style.borderColor = 'var(--border-soft)';
+        card.style.boxShadow = 'none';
+      }
+    });
+
+    // Zeige Details (kann später erweitert werden)
+    console.log('Rolle ausgewählt:', roleName);
+  }
+
+  function editRole(roleName) {
+    // Öffne Edit-Modal (kann später implementiert werden)
+    alert(`Rolle "${roleName}" bearbeiten - Feature wird noch implementiert`);
+  }
+
+  window.loadRolePermissions = loadRolePermissions;
+
+  // Hilfsfunktionen für Rollen-Icons und Beschreibungen
+  function getRoleIcon(roleName) {
+    const icons = {
+      'admin': '👑',
+      'manager': '📊',
+      'operator': '👤',
+      'teamlead': '👔',
+      'process_assistant': '🛠️',
+      'trainer': '🎓',
+      'levis': '👤'
+    };
+    return icons[roleName] || '👤';
+  }
+
+  function getRoleDescription(roleName) {
+    const descriptions = {
+      'admin': 'Vollzugriff (Ihre Rolle)',
+      'manager': 'Erweiterte Rechte + Genehmigungen',
+      'operator': 'Grundlegende Operationen',
+      'teamlead': 'Team-Management',
+      'process_assistant': 'Prozess-Unterstützung',
+      'trainer': 'Schulung & Lesezugriff',
+      'levis': 'Benutzerrolle'
+    };
+    return descriptions[roleName] || 'Benutzerrolle';
+  }
+
+  window.getRoleIcon = getRoleIcon;
+  window.getRoleDescription = getRoleDescription;
 </script>
 
 </body>

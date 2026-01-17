@@ -11,17 +11,28 @@ const { getCached, invalidateCache } = require('../utils/cache');
 router.get('/', (req, res) => {
   try {
     const db = getDb();
-    const { limit = 50 } = req.query;
+    const { limit = 50, with_ra_only = false } = req.query;
     
-    const rows = db.prepare(`
+    let sql = `
       SELECT 
         id, cw, aufgenommen_am, carrier_name, area, stage, 
-        planned_carton, actual_carton, olpn, mh_status, 
-        carrier_tracking_nr, kommentar, created_at, added_by, location_id
+        planned_carton, actual_carton, olpn, dn, mh_status, 
+        carrier_tracking_nr, kommentar, created_at, added_by, location_id,
+        asn_ra_no, ra_assigned_at, ra_assigned_by
       FROM inbound_simple 
-      ORDER BY id DESC 
-      LIMIT ?
-    `).all(parseInt(limit));
+      WHERE ignore_flag = 0
+    `;
+    
+    const params = [];
+    
+    if (with_ra_only === 'true') {
+      sql += ` AND (asn_ra_no IS NOT NULL AND asn_ra_no != '' AND asn_ra_no != 'NULL')`;
+    }
+    
+    sql += ` ORDER BY id DESC LIMIT ?`;
+    params.push(parseInt(limit));
+    
+    const rows = db.prepare(sql).all(...params);
     
     res.json(rows);
   } catch (err) {
@@ -179,6 +190,58 @@ router.get('/check-duplicate', (req, res) => {
   }
 });
 
+// GET /api/inbound-simple/filter-ra - Gefilterte RA-Daten für Levis (MUSS VOR /:id stehen!)
+router.get('/filter-ra', (req, res) => {
+  try {
+    const db = getDb();
+    const { filter_type = 'all', search = '' } = req.query;
+    
+    let sql = `
+      SELECT 
+        id, olpn, dn, carrier_name, carrier_tracking_nr,
+        asn_ra_no, mh_status, ra_assigned_at, ra_assigned_by,
+        customer_name, area, stage, created_at
+      FROM inbound_simple
+      WHERE ignore_flag = 0
+    `;
+    const params = [];
+    
+    // Filter nach Typ
+    if (filter_type === 'request') {
+      sql += ` AND (mh_status LIKE ? OR mh_status LIKE ?)`;
+      params.push('%Request%', '%request%');
+    } else if (filter_type === 'missing_ra') {
+      sql += ` AND (asn_ra_no IS NULL OR asn_ra_no = '' OR asn_ra_no = 'NULL')`;
+      sql += ` AND (olpn IS NOT NULL AND olpn != '' OR dn IS NOT NULL AND dn != '')`;
+    }
+    
+    // Zusätzliche Suche
+    if (search && search.trim() !== '') {
+      sql += ` AND (
+        olpn LIKE ? OR 
+        dn LIKE ? OR 
+        carrier_name LIKE ? OR
+        carrier_tracking_nr LIKE ?
+      )`;
+      const searchPattern = `%${search.trim()}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+    
+    sql += ` ORDER BY id DESC LIMIT 500`;
+    
+    const rows = db.prepare(sql).all(...params);
+    
+    res.json({
+      ok: true,
+      data: rows,
+      count: rows.length
+    });
+  } catch (err) {
+    console.error("Fehler beim Abrufen gefilterter RA-Daten:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // GET /api/inbound-simple/:id - Einzelner Eintrag
 router.get('/:id', (req, res) => {
   try {
@@ -272,11 +335,16 @@ router.put('/:id/ra', (req, res) => {
       return res.status(400).json({ ok: false, error: "RA-Nummer ist erforderlich" });
     }
     
-    // Update RA-Nummer ohne change_reason (für Levis-Rolle)
-    db.prepare("UPDATE inbound_simple SET asn_ra_no = ? WHERE id = ?").run(asn_ra_no.trim(), id);
+    const now = new Date().toISOString();
+    
+    // Update RA-Nummer mit Timestamp (für Levis-Rolle)
+    db.prepare(`
+      UPDATE inbound_simple 
+      SET asn_ra_no = ?, ra_assigned_at = ?, ra_assigned_by = ?
+      WHERE id = ?
+    `).run(asn_ra_no.trim(), now, currentUser, id);
     
     // Optional: Audit-Log ohne change_reason
-    const now = new Date().toISOString();
     db.prepare(`
       INSERT INTO inbound_audit (inbound_id, field_name, old_value, new_value, changed_by, change_reason, changed_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -289,7 +357,7 @@ router.put('/:id/ra', (req, res) => {
       now
     );
     
-    res.json({ ok: true, message: "RA-Nummer erfolgreich zugeordnet" });
+    res.json({ ok: true, message: "RA-Nummer erfolgreich zugeordnet", ra_assigned_at: now });
   } catch (err) {
     console.error("Fehler beim Setzen der RA-Nummer:", err);
     res.status(500).json({ ok: false, error: err.message });

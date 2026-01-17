@@ -108,6 +108,12 @@
           <button class="performance-tab-btn" data-tab="warehouse" style="flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
             📦 Lager-Performance
           </button>
+          <button class="performance-tab-btn" data-tab="employees" style="flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            👥 Mitarbeiter-Performance
+          </button>
+          <button class="performance-tab-btn" data-tab="daily" style="flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+            📅 Tägliche Performance
+          </button>
         </div>
       </div>
 
@@ -391,6 +397,382 @@
           </div>
         </div>
       </div>
+
+      <!-- Mitarbeiter-Performance Tab -->
+      <div id="tab-employees" class="performance-tab-content" style="display: none;">
+        <!-- View-Navigation für Mitarbeiter-Performance -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-soft);">
+            <button class="employee-view-btn active" data-view="timeline" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-main); border-bottom: 3px solid var(--gxo-orange); transition: all 0.3s ease;">
+              📊 Timeline
+            </button>
+            <button class="employee-view-btn" data-view="comparison" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              📈 Vergleich
+            </button>
+            <button class="employee-view-btn" data-view="heatmap" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              🔥 Heatmap
+            </button>
+            <button class="employee-view-btn" data-view="teams" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              👥 Teams
+            </button>
+            <button class="employee-view-btn" data-view="trends" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              📉 Trends
+            </button>
+            <button class="employee-view-btn" data-view="metrics" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;">
+              📊 Metriken
+            </button>
+          </div>
+        </div>
+
+        <!-- Datum-Auswahl und Schicht-Übersicht -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📅 Datum auswählen</div>
+            </div>
+            <div style="padding: 16px;">
+              <input type="date" id="employeeDatePicker" style="width: 100%; padding: 8px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 14px;" onchange="loadEmployeePerformance()">
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📊 Schicht-Übersicht</div>
+            </div>
+            <div style="padding: 16px;" id="shiftOverview">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Schicht-Übersicht...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline-Ansicht -->
+        <div id="employee-view-timeline" class="employee-view-content">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">👥 Mitarbeiter-Performance (Timeline 0:00 - 23:59)</div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="employeeShiftFilter" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; cursor: pointer;" onchange="loadEmployeePerformance()">
+                  <option value="all">Alle Schichten</option>
+                  <option value="early">Frühschicht (6:30 - 14:57)</option>
+                  <option value="late">Spätschicht (15:00 - 23:27)</option>
+                </select>
+                <button class="btn btn-ghost" onclick="loadEmployeePerformance()" style="padding: 4px 8px; font-size: 11px;">🔄</button>
+              </div>
+            </div>
+            <div style="padding: 16px;" id="employeeList">
+              <div style="text-align: center; padding: 40px; font-size: 12px; color: var(--text-muted);">Lade Mitarbeiter-Daten...</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🏆 Top-Performer</div>
+            </div>
+            <div style="padding: 16px;" id="topPerformers">
+              <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Top-Performer...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vergleichs-Ansicht -->
+        <div id="employee-view-comparison" class="employee-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">📈 Mitarbeiter-Vergleich</div>
+            </div>
+            <div style="padding: 16px;" id="employeeComparison">
+              <div style="text-align: center; padding: 40px; font-size: 12px; color: var(--text-muted);">Lade Vergleichsdaten...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heatmap-Ansicht -->
+        <div id="employee-view-heatmap" class="employee-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px;">
+              <div class="card-title" style="font-size: 14px;">🔥 Aktivitäts-Heatmap (0:00 - 23:59)</div>
+            </div>
+            <div style="padding: 16px;" id="employeeHeatmap">
+              <div style="text-align: center; padding: 40px; font-size: 12px; color: var(--text-muted);">Lade Heatmap...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team-Ansicht -->
+        <div id="employee-view-teams" class="employee-view-content" style="display: none;">
+          <div class="grid-2" style="margin-bottom: 16px;">
+            <div class="card">
+              <div class="card-header" style="padding: 12px 16px;">
+                <div class="card-title" style="font-size: 14px;">🌅 Frühschicht-Team</div>
+              </div>
+              <div style="padding: 16px;" id="earlyShiftTeam">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Team-Daten...</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="padding: 12px 16px;">
+                <div class="card-title" style="font-size: 14px;">🌆 Spätschicht-Team</div>
+              </div>
+              <div style="padding: 16px;" id="lateShiftTeam">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Team-Daten...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trends-Ansicht -->
+        <div id="employee-view-trends" class="employee-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📉 Performance-Trends (7 Tage)</div>
+              <select id="trendEmployeeSelect" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; cursor: pointer;" onchange="loadEmployeeTrends()">
+                <option value="all">Alle Mitarbeiter</option>
+              </select>
+            </div>
+            <div style="padding: 16px;" id="employeeTrends">
+              <div style="text-align: center; padding: 40px; font-size: 12px; color: var(--text-muted);">Lade Trends...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metriken-Ansicht -->
+        <div id="employee-view-metrics" class="employee-view-content" style="display: none;">
+          <div class="grid-3" style="margin-bottom: 16px;">
+            <div class="card">
+              <div class="card-header" style="padding: 12px 16px;">
+                <div class="card-title" style="font-size: 14px;">📊 Durchschnitts-Metriken</div>
+              </div>
+              <div style="padding: 16px;" id="averageMetrics">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Metriken...</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="padding: 12px 16px;">
+                <div class="card-title" style="font-size: 14px;">⚡ Effizienz-Metriken</div>
+              </div>
+              <div style="padding: 16px;" id="efficiencyMetrics">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Metriken...</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="padding: 12px 16px;">
+                <div class="card-title" style="font-size: 14px;">🎯 Zielerreichung</div>
+              </div>
+              <div style="padding: 16px;" id="targetMetrics">
+                <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">Lade Metriken...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tägliche Performance Tab -->
+      <div id="tab-daily" class="performance-tab-content" style="display: none;">
+        <!-- Ansichts-Auswahl -->
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-soft);">
+            <button class="daily-view-btn active" data-view="day" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-main); border-bottom: 3px solid var(--gxo-orange); transition: all 0.3s ease;" onmouseover="if(!this.classList.contains('active')) this.style.color='var(--text-main)'" onmouseout="if(!this.classList.contains('active')) this.style.color='var(--text-muted)'">
+              📅 Tagesansicht
+            </button>
+            <button class="daily-view-btn" data-view="week" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;" onmouseover="if(!this.classList.contains('active')) this.style.color='var(--text-main)'" onmouseout="if(!this.classList.contains('active')) this.style.color='var(--text-muted)'">
+              📆 Wochenansicht
+            </button>
+            <button class="daily-view-btn" data-view="month" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;" onmouseover="if(!this.classList.contains('active')) this.style.color='var(--text-main)'" onmouseout="if(!this.classList.contains('active')) this.style.color='var(--text-muted)'">
+              📊 Monatsansicht
+            </button>
+            <button class="daily-view-btn" data-view="year" style="flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease;" onmouseover="if(!this.classList.contains('active')) this.style.color='var(--text-main)'" onmouseout="if(!this.classList.contains('active')) this.style.color='var(--text-muted)'">
+              📈 Jahresansicht
+            </button>
+          </div>
+        </div>
+
+        <!-- Datum-Auswahl -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div class="card-title" style="font-size: 14px;">📅 Datumsbereich auswählen</div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="date" id="dailyDateRangeStart" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 13px;" onchange="loadDailyPerformanceData()">
+              <span style="color: var(--text-muted);">bis</span>
+              <input type="date" id="dailyDateRangeEnd" style="padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 13px;" onchange="loadDailyPerformanceData()">
+              <button class="btn btn-ghost" onclick="createDailyTestData()" style="padding: 6px 12px; font-size: 12px; background: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #10b981;">🎲 Test-Daten</button>
+              <button class="btn" onclick="exportDailyPerformanceData()" style="padding: 6px 12px; font-size: 13px;">📥 Exportieren</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zusammenfassung -->
+        <div class="grid-4" style="margin-bottom: 20px;">
+          <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%); border-left: 4px solid #3b82f6;">
+            <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+              <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📊 Geplant</div>
+            </div>
+            <div style="padding: 16px;" id="dailySummaryPlanned">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%); border-left: 4px solid #10b981;">
+            <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+              <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">✅ Aktuell</div>
+            </div>
+            <div style="padding: 16px;" id="dailySummaryActual">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-left: 4px solid #f59e0b;">
+            <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+              <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📈 Rate</div>
+            </div>
+            <div style="padding: 16px;" id="dailySummaryRate">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, rgba(245, 59, 1, 0.1) 0%, rgba(245, 59, 1, 0.05) 100%); border-left: 4px solid var(--gxo-orange);">
+            <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid var(--border-soft);">
+              <div class="card-title" style="font-size: 14px; font-weight: 600; color: var(--text-main);">📊 Prozent</div>
+            </div>
+            <div style="padding: 16px;" id="dailySummaryPercentage">
+              <div style="text-align: center; padding: 12px; font-size: 12px; color: var(--text-muted);">Lade Daten...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tagesansicht -->
+        <div id="daily-view-day" class="daily-view-content">
+          <!-- Performance-Tabelle -->
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📋 Daily Performance Tabelle (Tagesansicht)</div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-ghost" onclick="addDailyNewRow()" style="padding: 6px 12px; font-size: 12px;">➕ Neuer Eintrag</button>
+                <button class="btn btn-ghost" onclick="loadDailyPerformanceData()" style="padding: 6px 12px; font-size: 12px;">🔄 Aktualisieren</button>
+              </div>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="dailyPerformanceTable" style="width: 100%; font-size: 12px; min-width: 1800px; border-collapse: separate; border-spacing: 0;">
+              <thead>
+                <tr>
+                <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border-soft); font-weight: 600; color: var(--text-main);">Datum</th>
+                <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Tag</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #8b5cf6; border-right: 2px solid #8b5cf6;">Start Volume</th>
+                <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Rest Volume<br><span style="font-size: 10px; font-weight: 400; color: var(--text-muted);">(auto)</span></th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Actual IN Vol<br>(Cartons)</th>
+                  <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #3b82f6; border-right: 2px solid #3b82f6;">Planned<br>FTE</th>
+                  <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Planned<br>Hours</th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Planned<br>Volume</th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Actual AM<br>Hours</th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Actual PM<br>Hours</th>
+                  <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Actual<br>FTE</th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Actual<br>Volume</th>
+                  <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Rate</th>
+                  <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main); min-width: 300px;">Comment</th>
+                  <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="dailyPerformanceTableBody">
+                <tr><td colspan="15" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Daten...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+
+        <!-- Wochenansicht -->
+        <div id="daily-view-week" class="daily-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📆 Wochenansicht - Aggregierte Daten pro Woche</div>
+              <button class="btn btn-ghost" onclick="loadDailyPerformanceData()" style="padding: 6px 12px; font-size: 12px;">🔄 Aktualisieren</button>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="weeklyPerformanceTable" style="width: 100%; font-size: 12px; border-collapse: separate; border-spacing: 0;">
+                <thead>
+                  <tr>
+                    <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Kalenderwoche</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Jahr</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Rest Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Summe Actual IN Vol</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #3b82f6; border-right: 2px solid #3b82f6;">Summe Planned FTE</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual AM Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Summe Actual PM Hours</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Actual FTE</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Ø Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="weeklyPerformanceTableBody">
+                  <tr><td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Wochenansicht...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monatsansicht -->
+        <div id="daily-view-month" class="daily-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📊 Monatsansicht - Aggregierte Daten pro Monat</div>
+              <button class="btn btn-ghost" onclick="loadDailyPerformanceData()" style="padding: 6px 12px; font-size: 12px;">🔄 Aktualisieren</button>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="monthlyPerformanceTable" style="width: 100%; font-size: 12px; border-collapse: separate; border-spacing: 0;">
+                <thead>
+                  <tr>
+                    <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Monat</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Jahr</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Rest Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Summe Actual IN Vol</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #3b82f6; border-right: 2px solid #3b82f6;">Summe Planned FTE</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual AM Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Summe Actual PM Hours</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Actual FTE</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Ø Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlyPerformanceTableBody">
+                  <tr><td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Monatsansicht...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jahresansicht -->
+        <div id="daily-view-year" class="daily-view-content" style="display: none;">
+          <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="font-size: 14px;">📈 Jahresansicht - Aggregierte Daten pro Jahr</div>
+              <button class="btn btn-ghost" onclick="loadDailyPerformanceData()" style="padding: 6px 12px; font-size: 12px;">🔄 Aktualisieren</button>
+            </div>
+            <div style="padding: 16px; overflow-x: auto;">
+              <table class="data-table" id="yearlyPerformanceTable" style="width: 100%; font-size: 12px; border-collapse: separate; border-spacing: 0;">
+                <thead>
+                  <tr>
+                    <th style="padding: 12px 8px; text-align: left; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Jahr</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Rest Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Summe Actual IN Vol</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #3b82f6; border-right: 2px solid #3b82f6;">Summe Planned FTE</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #3b82f6;">Summe Planned Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual AM Hours</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Summe Actual PM Hours</th>
+                    <th style="padding: 12px 8px; text-align: center; background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-card) 100%); font-weight: 600; color: var(--text-main);">Ø Actual FTE</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%); font-weight: 600; color: var(--text-main); border-left: 2px solid #10b981; border-right: 2px solid #10b981;">Summe Actual Volume</th>
+                    <th style="padding: 12px 8px; text-align: right; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%); font-weight: 600; color: var(--text-main); border-right: 2px solid #f59e0b;">Ø Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="yearlyPerformanceTableBody">
+                  <tr><td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">Lade Jahresansicht...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </div>
@@ -459,6 +841,12 @@
       loadSoftwarePerformance();
     } else if (tab === 'warehouse') {
       loadWarehousePerformance();
+    } else if (tab === 'employees') {
+      // Initialisiere View-Switcher falls noch nicht geschehen
+      if (employeeViewButtons.length > 0 && currentEmployeeView === 'timeline') {
+        switchEmployeeView('timeline');
+      }
+      loadEmployeePerformance();
     }
   }
 
@@ -1493,6 +1881,840 @@
   
   window.loadRAStatusOverview = loadRAStatusOverview;
 
+  // ============================================
+  // MITARBEITER-PERFORMANCE
+  // ============================================
+
+  // Mitarbeiter-Performance laden
+  async function loadEmployeePerformance() {
+    const datePicker = document.getElementById('employeeDatePicker');
+    const selectedDate = datePicker ? datePicker.value : new Date().toISOString().split('T')[0];
+    
+    // Setze Datum im Picker falls nicht gesetzt
+    if (datePicker && !datePicker.value) {
+      datePicker.value = selectedDate;
+    }
+    
+    try {
+      const response = await fetch(`/api/performance/employees?date=${selectedDate}`);
+      const data = await response.json();
+      
+      if (!data.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Daten');
+      }
+      
+      loadShiftOverview(data.shift_stats);
+      loadEmployeeList(data.employees, data.date);
+      loadTopPerformers(data.employees);
+    } catch (err) {
+      console.error('Fehler beim Laden der Mitarbeiter-Performance:', err);
+      document.getElementById('employeeList').innerHTML = `<div style="text-align: center; padding: 40px; color: var(--error);">Fehler: ${err.message}</div>`;
+    }
+  }
+
+  // Schicht-Übersicht laden
+  function loadShiftOverview(shiftStats) {
+    const container = document.getElementById('shiftOverview');
+    if (!container || !shiftStats) return;
+    
+    const html = `
+      <div style="display: grid; gap: 12px;">
+        <div style="padding: 12px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%); border-left: 4px solid #3b82f6; border-radius: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="font-size: 18px;">🌅</span>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-main);">Frühschicht (6:30 - 14:57)</div>
+          </div>
+          <div style="font-size: 20px; font-weight: bold; color: #3b82f6; margin-bottom: 4px;">${shiftStats.early.employees} Mitarbeiter</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${shiftStats.early.total_units.toLocaleString('de-DE')} Units gesamt</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Ø ${shiftStats.early.avg_units} Units/Mitarbeiter</div>
+        </div>
+        
+        <div style="padding: 12px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-left: 4px solid #f59e0b; border-radius: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="font-size: 18px;">🌆</span>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-main);">Spätschicht (15:00 - 23:27)</div>
+          </div>
+          <div style="font-size: 20px; font-weight: bold; color: #f59e0b; margin-bottom: 4px;">${shiftStats.late.employees} Mitarbeiter</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${shiftStats.late.total_units.toLocaleString('de-DE')} Units gesamt</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Ø ${shiftStats.late.avg_units} Units/Mitarbeiter</div>
+        </div>
+      </div>
+    `;
+    
+    container.innerHTML = html;
+  }
+
+  // Mitarbeiter-Liste mit Timeline laden
+  function loadEmployeeList(employees, date) {
+    const container = document.getElementById('employeeList');
+    if (!container || !employees) return;
+    
+    const shiftFilter = document.getElementById('employeeShiftFilter')?.value || 'all';
+    
+    // Filtere nach Schicht
+    let filteredEmployees = employees;
+    if (shiftFilter !== 'all') {
+      filteredEmployees = employees.filter(emp => emp.shift === shiftFilter);
+    }
+    
+    // Sortiere nach total_units (absteigend)
+    filteredEmployees.sort((a, b) => b.total_units - a.total_units);
+    
+    if (filteredEmployees.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Mitarbeiter gefunden</div>';
+      return;
+    }
+    
+    let html = '<div style="display: grid; gap: 16px;">';
+    
+    filteredEmployees.forEach((emp, index) => {
+      const shiftLabel = emp.shift === 'early' ? '🌅 Frühschicht' : '🌆 Spätschicht';
+      const shiftColor = emp.shift === 'early' ? '#3b82f6' : '#f59e0b';
+      
+      // Erstelle Timeline-Daten (0-23 Uhr)
+      const timelineData = [];
+      const timelineLabels = [];
+      for (let hour = 0; hour < 24; hour++) {
+        timelineLabels.push(`${hour.toString().padStart(2, '0')}:00`);
+        timelineData.push(emp.hourly[hour] || 0);
+      }
+      
+      // Finde Peak-Stunde
+      const maxHour = timelineData.indexOf(Math.max(...timelineData));
+      
+      html += `
+        <div style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 16px; font-weight: 700; color: var(--text-main);">${index + 1}. ${emp.name}</span>
+                <span style="padding: 4px 8px; background: ${shiftColor}20; color: ${shiftColor}; border-radius: 4px; font-size: 11px; font-weight: 600;">${shiftLabel}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">${date}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--gxo-orange);">${emp.total_units}</div>
+              <div style="font-size: 11px; color: var(--text-muted);">Units gesamt</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${emp.total_cartons} Kartons</div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
+              Timeline: Units pro Stunde (0:00 - 23:59)
+              ${maxHour >= 0 ? `<span style="color: var(--text-muted); font-weight: normal; margin-left: 8px;">Peak: ${maxHour.toString().padStart(2, '0')}:00 (${timelineData[maxHour]} Units)</span>` : ''}
+            </div>
+            <canvas id="employeeTimeline_${index}" style="max-height: 150px; width: 100%;"></canvas>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);">
+            <div style="padding: 8px; background: var(--bg-soft); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Ø Units/Stunde</div>
+              <div style="font-size: 16px; font-weight: bold; color: var(--gxo-orange);">${Math.round(emp.total_units / 24 * 10) / 10}</div>
+            </div>
+            <div style="padding: 8px; background: var(--bg-soft); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Peak-Stunde</div>
+              <div style="font-size: 16px; font-weight: bold; color: var(--gxo-orange);">${maxHour.toString().padStart(2, '0')}:00</div>
+            </div>
+            <div style="padding: 8px; background: var(--bg-soft); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Aktive Stunden</div>
+              <div style="font-size: 16px; font-weight: bold; color: var(--gxo-orange);">${Object.keys(emp.hourly).filter(h => emp.hourly[h] > 0).length}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Erstelle Charts für jeden Mitarbeiter
+    setTimeout(() => {
+      filteredEmployees.forEach((emp, index) => {
+        const canvasId = `employeeTimeline_${index}`;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const timelineData = [];
+        const timelineLabels = [];
+        for (let hour = 0; hour < 24; hour++) {
+          timelineLabels.push(`${hour.toString().padStart(2, '0')}:00`);
+          timelineData.push(emp.hourly[hour] || 0);
+        }
+        
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: timelineLabels,
+            datasets: [{
+              label: 'Units',
+              data: timelineData,
+              backgroundColor: emp.shift === 'early' 
+                ? 'rgba(59, 130, 246, 0.6)' 
+                : 'rgba(245, 158, 11, 0.6)',
+              borderColor: emp.shift === 'early' 
+                ? '#3b82f6' 
+                : '#f59e0b',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              x: {
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.parsed.y} Units`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      });
+    }, 100);
+  }
+
+  // Top-Performer laden
+  function loadTopPerformers(employees) {
+    const container = document.getElementById('topPerformers');
+    if (!container || !employees) return;
+    
+    // Sortiere nach total_units
+    const sorted = [...employees].sort((a, b) => b.total_units - a.total_units);
+    const top10 = sorted.slice(0, 10);
+    
+    let html = '<div style="display: grid; gap: 8px;">';
+    
+    top10.forEach((emp, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+      const shiftLabel = emp.shift === 'early' ? '🌅 Früh' : '🌆 Spät';
+      
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">${medal}</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">${emp.name}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${shiftLabel} • ${emp.total_cartons} Kartons</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${emp.total_units}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Units</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  window.loadEmployeePerformance = loadEmployeePerformance;
+
+  // ============================================
+  // VIEW-SWITCHER FÜR MITARBEITER-PERFORMANCE
+  // ============================================
+
+  let currentEmployeeView = 'timeline';
+  const employeeViewButtons = document.querySelectorAll('.employee-view-btn');
+  const employeeViewContents = document.querySelectorAll('.employee-view-content');
+
+  employeeViewButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.getAttribute('data-view');
+      switchEmployeeView(view);
+    });
+  });
+
+  function switchEmployeeView(view) {
+    currentEmployeeView = view;
+
+    // Buttons aktualisieren
+    employeeViewButtons.forEach(btn => {
+      if (btn.getAttribute('data-view') === view) {
+        btn.classList.add('active');
+        btn.style.color = 'var(--text-main)';
+        btn.style.borderBottom = '3px solid var(--gxo-orange)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderBottom = 'none';
+      }
+    });
+
+    // Inhalte anzeigen/verstecken
+    employeeViewContents.forEach(content => {
+      if (content.id === `employee-view-${view}`) {
+        content.style.display = 'block';
+      } else {
+        content.style.display = 'none';
+      }
+    });
+
+    // Daten für die jeweilige Ansicht laden
+    loadEmployeePerformance();
+  }
+
+  // ============================================
+  // VERGLEICHS-ANSICHT
+  // ============================================
+
+  function loadEmployeeComparison(employees) {
+    const container = document.getElementById('employeeComparison');
+    if (!container || !employees) return;
+
+    // Sortiere nach total_units
+    const sorted = [...employees].sort((a, b) => b.total_units - a.total_units);
+
+    // Erstelle Vergleichs-Chart
+    const labels = sorted.slice(0, 15).map(e => e.name);
+    const unitsData = sorted.slice(0, 15).map(e => e.total_units);
+    const cartonsData = sorted.slice(0, 15).map(e => e.total_cartons);
+
+    let html = `
+      <div style="margin-bottom: 24px;">
+        <canvas id="comparisonChart" style="max-height: 400px;"></canvas>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+    `;
+
+    sorted.forEach((emp, index) => {
+      const percentage = sorted[0].total_units > 0 
+        ? Math.round((emp.total_units / sorted[0].total_units) * 100) 
+        : 0;
+      
+      html += `
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid ${index < 3 ? 'var(--gxo-orange)' : 'var(--border-soft)'};">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 14px; font-weight: 600; color: var(--text-main);">${index + 1}. ${emp.name}</span>
+            <span style="font-size: 12px; color: var(--text-muted);">${percentage}%</span>
+          </div>
+          <div style="font-size: 18px; font-weight: bold; color: var(--gxo-orange);">${emp.total_units}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${emp.total_cartons} Kartons</div>
+          <div style="margin-top: 8px; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden;">
+            <div style="height: 100%; width: ${percentage}%; background: var(--gxo-orange); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Chart erstellen
+    setTimeout(() => {
+      const ctx = document.getElementById('comparisonChart');
+      if (ctx) {
+        new Chart(ctx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Units',
+              data: unitsData,
+              backgroundColor: 'rgba(245, 59, 1, 0.6)',
+              borderColor: 'var(--gxo-orange)',
+              borderWidth: 1
+            }, {
+              label: 'Kartons',
+              data: cartonsData,
+              backgroundColor: 'rgba(59, 130, 246, 0.6)',
+              borderColor: '#3b82f6',
+              borderWidth: 1,
+              yAxisID: 'y1'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                position: 'left'
+              },
+              y1: {
+                beginAtZero: true,
+                position: 'right',
+                grid: {
+                  drawOnChartArea: false
+                }
+              }
+            }
+          }
+        });
+      }
+    }, 100);
+  }
+
+  // ============================================
+  // HEATMAP-ANSICHT
+  // ============================================
+
+  function loadEmployeeHeatmap(employees) {
+    const container = document.getElementById('employeeHeatmap');
+    if (!container || !employees) return;
+
+    // Erstelle Heatmap-Daten (Stunden x Mitarbeiter)
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const sorted = [...employees].sort((a, b) => b.total_units - a.total_units);
+
+    // Finde Max-Wert für Normalisierung
+    let maxValue = 0;
+    sorted.forEach(emp => {
+      Object.values(emp.hourly).forEach(val => {
+        if (val > maxValue) maxValue = val;
+      });
+    });
+
+    let html = `
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr>
+              <th style="padding: 8px; text-align: left; background: var(--bg-soft); border: 1px solid var(--border-soft);">Mitarbeiter</th>
+              ${hours.map(h => `<th style="padding: 8px; text-align: center; background: var(--bg-soft); border: 1px solid var(--border-soft); min-width: 40px;">${h.toString().padStart(2, '0')}:00</th>`).join('')}
+              <th style="padding: 8px; text-align: center; background: var(--bg-soft); border: 1px solid var(--border-soft);">Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    sorted.forEach(emp => {
+      const total = emp.total_units;
+      html += `<tr>`;
+      html += `<td style="padding: 8px; border: 1px solid var(--border-soft); font-weight: 600;">${emp.name}</td>`;
+      
+      hours.forEach(hour => {
+        const value = emp.hourly[hour] || 0;
+        const intensity = maxValue > 0 ? (value / maxValue) : 0;
+        const color = getHeatmapColor(intensity);
+        
+        html += `<td style="padding: 8px; text-align: center; border: 1px solid var(--border-soft); background: ${color}; color: ${intensity > 0.5 ? 'white' : 'var(--text-main)'}; font-weight: ${value > 0 ? '600' : 'normal'};">${value > 0 ? value : '-'}</td>`;
+      });
+      
+      html += `<td style="padding: 8px; text-align: center; border: 1px solid var(--border-soft); font-weight: 600; background: var(--bg-soft);">${total}</td>`;
+      html += `</tr>`;
+    });
+
+    // Summen-Zeile
+    html += `<tr style="background: var(--bg-soft); font-weight: 600;">`;
+    html += `<td style="padding: 8px; border: 1px solid var(--border-soft);">Summe</td>`;
+    hours.forEach(hour => {
+      const sum = sorted.reduce((acc, emp) => acc + (emp.hourly[hour] || 0), 0);
+      html += `<td style="padding: 8px; text-align: center; border: 1px solid var(--border-soft);">${sum}</td>`;
+    });
+    const totalSum = sorted.reduce((acc, emp) => acc + emp.total_units, 0);
+    html += `<td style="padding: 8px; text-align: center; border: 1px solid var(--border-soft);">${totalSum}</td>`;
+    html += `</tr>`;
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">Legende:</div>
+        <div style="display: flex; gap: 16px; align-items: center; font-size: 11px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 20px; height: 20px; background: #e0f2fe; border: 1px solid var(--border-soft);"></div>
+            <span>Niedrig (0-25%)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 20px; height: 20px; background: #3b82f6; border: 1px solid var(--border-soft);"></div>
+            <span>Mittel (25-50%)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 20px; height: 20px; background: #1e40af; border: 1px solid var(--border-soft);"></div>
+            <span>Hoch (50-75%)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 20px; height: 20px; background: #1e3a8a; border: 1px solid var(--border-soft);"></div>
+            <span>Sehr hoch (75-100%)</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  }
+
+  function getHeatmapColor(intensity) {
+    if (intensity === 0) return 'var(--bg-card)';
+    if (intensity < 0.25) return '#e0f2fe';
+    if (intensity < 0.5) return '#3b82f6';
+    if (intensity < 0.75) return '#1e40af';
+    return '#1e3a8a';
+  }
+
+  // ============================================
+  // TEAM-ANSICHT
+  // ============================================
+
+  function loadTeamViews(employees) {
+    if (!employees) return;
+
+    const earlyTeam = employees.filter(e => e.shift === 'early');
+    const lateTeam = employees.filter(e => e.shift === 'late');
+
+    loadTeamView('earlyShiftTeam', earlyTeam, '🌅 Frühschicht');
+    loadTeamView('lateShiftTeam', lateTeam, '🌆 Spätschicht');
+  }
+
+  function loadTeamView(containerId, team, title) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (team.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten</div>';
+      return;
+    }
+
+    const sorted = [...team].sort((a, b) => b.total_units - a.total_units);
+    const teamTotal = sorted.reduce((sum, e) => sum + e.total_units, 0);
+    const teamAvg = Math.round(teamTotal / sorted.length);
+
+    let html = `
+      <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border-radius: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Team-Statistik</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${teamTotal}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Gesamt Units</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${teamAvg}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Ø Units/Mitarbeiter</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${sorted.length}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Mitarbeiter</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: grid; gap: 8px;">
+    `;
+
+    sorted.forEach((emp, index) => {
+      html += `
+        <div style="padding: 10px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">${index + 1}. ${emp.name}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${emp.total_cartons} Kartons</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 16px; font-weight: bold; color: var(--gxo-orange);">${emp.total_units}</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Units</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ============================================
+  // TRENDS-ANSICHT
+  // ============================================
+
+  async function loadEmployeeTrends() {
+    const container = document.getElementById('employeeTrends');
+    const select = document.getElementById('trendEmployeeSelect');
+    if (!container) return;
+
+    try {
+      // Lade Daten für die letzten 7 Tage
+      const dates = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date.toISOString().split('T')[0]);
+      }
+
+      const allData = await Promise.all(
+        dates.map(date => fetch(`/api/performance/employees?date=${date}`).then(r => r.json()))
+      );
+
+      // Fülle Select mit Mitarbeiternamen
+      if (select && select.children.length === 1) {
+        const employees = allData[allData.length - 1]?.employees || [];
+        employees.forEach(emp => {
+          const option = document.createElement('option');
+          option.value = emp.name;
+          option.textContent = emp.name;
+          select.appendChild(option);
+        });
+      }
+
+      const selectedEmployee = select?.value || 'all';
+      const labels = dates.map(d => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+
+      if (selectedEmployee === 'all') {
+        // Zeige Durchschnitt aller Mitarbeiter
+        const avgData = dates.map((date, idx) => {
+          const dayData = allData[idx];
+          if (!dayData?.employees) return 0;
+          const total = dayData.employees.reduce((sum, e) => sum + e.total_units, 0);
+          return Math.round(total / dayData.employees.length);
+        });
+
+        container.innerHTML = `
+          <div style="margin-bottom: 24px;">
+            <canvas id="trendsChart" style="max-height: 400px;"></canvas>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const ctx = document.getElementById('trendsChart');
+          if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'Ø Units pro Mitarbeiter',
+                  data: avgData,
+                  borderColor: 'var(--gxo-orange)',
+                  backgroundColor: 'rgba(245, 59, 1, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                }
+              }
+            });
+          }
+        }, 100);
+      } else {
+        // Zeige Daten für ausgewählten Mitarbeiter
+        const employeeData = dates.map((date, idx) => {
+          const dayData = allData[idx];
+          if (!dayData?.employees) return 0;
+          const emp = dayData.employees.find(e => e.name === selectedEmployee);
+          return emp ? emp.total_units : 0;
+        });
+
+        container.innerHTML = `
+          <div style="margin-bottom: 24px;">
+            <canvas id="trendsChart" style="max-height: 400px;"></canvas>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const ctx = document.getElementById('trendsChart');
+          if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: `${selectedEmployee} - Units`,
+                  data: employeeData,
+                  borderColor: 'var(--gxo-orange)',
+                  backgroundColor: 'rgba(245, 59, 1, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                }
+              }
+            });
+          }
+        }, 100);
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Trends:', err);
+      container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--error);">Fehler: ${err.message}</div>`;
+    }
+  }
+
+  window.loadEmployeeTrends = loadEmployeeTrends;
+
+  // ============================================
+  // METRIKEN-ANSICHT
+  // ============================================
+
+  function loadMetricsViews(employees) {
+    if (!employees) return;
+
+    loadAverageMetrics(employees);
+    loadEfficiencyMetrics(employees);
+    loadTargetMetrics(employees);
+  }
+
+  function loadAverageMetrics(employees) {
+    const container = document.getElementById('averageMetrics');
+    if (!container) return;
+
+    const totalUnits = employees.reduce((sum, e) => sum + e.total_units, 0);
+    const totalCartons = employees.reduce((sum, e) => sum + e.total_cartons, 0);
+    const avgUnits = Math.round(totalUnits / employees.length);
+    const avgCartons = Math.round(totalCartons / employees.length);
+    const avgUnitsPerHour = Math.round((totalUnits / employees.length / 24) * 10) / 10;
+
+    container.innerHTML = `
+      <div style="display: grid; gap: 12px;">
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Units/Mitarbeiter</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${avgUnits}</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Kartons/Mitarbeiter</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${avgCartons}</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Units/Stunde</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${avgUnitsPerHour}</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Gesamt Units</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${totalUnits.toLocaleString('de-DE')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function loadEfficiencyMetrics(employees) {
+    const container = document.getElementById('efficiencyMetrics');
+    if (!container) return;
+
+    // Berechne Effizienz-Metriken
+    const activeHours = employees.map(e => Object.keys(e.hourly).filter(h => e.hourly[h] > 0).length);
+    const avgActiveHours = Math.round(activeHours.reduce((sum, h) => sum + h, 0) / employees.length);
+    
+    const peakHours = employees.map(e => {
+      const values = Object.values(e.hourly);
+      return values.indexOf(Math.max(...values));
+    });
+    const mostCommonPeak = peakHours.sort((a, b) => 
+      peakHours.filter(v => v === a).length - peakHours.filter(v => v === b).length
+    ).pop();
+
+    container.innerHTML = `
+      <div style="display: grid; gap: 12px;">
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Aktive Stunden</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${avgActiveHours}</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Häufigste Peak-Stunde</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${mostCommonPeak.toString().padStart(2, '0')}:00</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Auslastung</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${Math.round((avgActiveHours / 24) * 100)}%</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function loadTargetMetrics(employees) {
+    const container = document.getElementById('targetMetrics');
+    if (!container) return;
+
+    // Beispiel-Ziele (können später konfigurierbar gemacht werden)
+    const targetUnitsPerDay = 150;
+    const targetUnitsPerHour = 10;
+
+    const employeesAboveTarget = employees.filter(e => e.total_units >= targetUnitsPerDay).length;
+    const targetAchievement = Math.round((employeesAboveTarget / employees.length) * 100);
+
+    container.innerHTML = `
+      <div style="display: grid; gap: 12px;">
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ziel: ${targetUnitsPerDay} Units/Tag</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">${employeesAboveTarget}/${employees.length}</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Mitarbeiter erreicht</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Zielerreichung</div>
+          <div style="font-size: 20px; font-weight: bold; color: ${targetAchievement >= 80 ? '#10b981' : targetAchievement >= 50 ? '#f59e0b' : '#ef4444'};">${targetAchievement}%</div>
+        </div>
+        <div style="padding: 12px; background: var(--bg-soft); border-radius: 6px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ø Abweichung</div>
+          <div style="font-size: 20px; font-weight: bold; color: var(--gxo-orange);">
+            ${employees.reduce((sum, e) => sum + (e.total_units - targetUnitsPerDay), 0) / employees.length > 0 ? '+' : ''}
+            ${Math.round(employees.reduce((sum, e) => sum + (e.total_units - targetUnitsPerDay), 0) / employees.length)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============================================
+  // ERWEITERTE loadEmployeePerformance FUNKTION
+  // ============================================
+
+  // Erweitere die bestehende Funktion
+  const originalLoadEmployeePerformance = loadEmployeePerformance;
+  loadEmployeePerformance = async function() {
+    await originalLoadEmployeePerformance();
+    
+    // Lade zusätzliche Ansichten basierend auf aktueller View
+    const datePicker = document.getElementById('employeeDatePicker');
+    const selectedDate = datePicker ? datePicker.value : new Date().toISOString().split('T')[0];
+    
+    try {
+      const response = await fetch(`/api/performance/employees?date=${selectedDate}`);
+      const data = await response.json();
+      
+      if (data.ok && data.employees) {
+        // Lade die entsprechende Ansicht
+        if (currentEmployeeView === 'comparison') {
+          loadEmployeeComparison(data.employees);
+        } else if (currentEmployeeView === 'heatmap') {
+          loadEmployeeHeatmap(data.employees);
+        } else if (currentEmployeeView === 'teams') {
+          loadTeamViews(data.employees);
+        } else if (currentEmployeeView === 'trends') {
+          loadEmployeeTrends();
+        } else if (currentEmployeeView === 'metrics') {
+          loadMetricsViews(data.employees);
+        }
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der erweiterten Ansichten:', err);
+    }
+  };
+
+  window.loadEmployeePerformance = loadEmployeePerformance;
+
   // Hilfsfunktion: Chart als Base64-Bild erfassen
   function captureChartAsImage(chartId) {
     try {
@@ -1648,6 +2870,938 @@
     // DOM bereits geladen
     initPerformancePage();
   }
+  
+  // Setze Standard-Datum für Mitarbeiter-Performance
+  const employeeDatePicker = document.getElementById('employeeDatePicker');
+  if (employeeDatePicker && !employeeDatePicker.value) {
+    employeeDatePicker.value = new Date().toISOString().split('T')[0];
+  }
+
+  // Initialisiere Employee View Switcher
+  if (document.querySelectorAll('.employee-view-btn').length > 0) {
+    const firstViewBtn = document.querySelector('.employee-view-btn[data-view="timeline"]');
+    if (firstViewBtn) {
+      firstViewBtn.click();
+    }
+  }
+
+  // ============================================
+  // TÄGLICHE PERFORMANCE FUNKTIONEN
+  // ============================================
+
+  // Initialisiere Datumsbereich beim Wechsel zum Tab
+  function initDailyPerformanceTab() {
+    const dateRangeEnd = document.getElementById('dailyDateRangeEnd');
+    const dateRangeStart = document.getElementById('dailyDateRangeStart');
+    if (dateRangeEnd && !dateRangeEnd.value) {
+      dateRangeEnd.value = new Date().toISOString().split('T')[0];
+    }
+    if (dateRangeStart && !dateRangeStart.value) {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      dateRangeStart.value = startDate.toISOString().split('T')[0];
+    }
+    
+    // Initialisiere View-Buttons
+    const viewButtons = document.querySelectorAll('.daily-view-btn');
+    viewButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = btn.getAttribute('data-view');
+        switchDailyView(view);
+      });
+    });
+    
+    loadDailyPerformanceData();
+  }
+  
+  // Wechsle zwischen Ansichten
+  let currentDailyView = 'day';
+  function switchDailyView(view) {
+    currentDailyView = view;
+    
+    // Buttons aktualisieren
+    document.querySelectorAll('.daily-view-btn').forEach(btn => {
+      if (btn.getAttribute('data-view') === view) {
+        btn.classList.add('active');
+        btn.style.color = 'var(--text-main)';
+        btn.style.borderBottom = '3px solid var(--gxo-orange)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderBottom = 'none';
+      }
+    });
+    
+    // Inhalte anzeigen/verstecken
+    document.querySelectorAll('.daily-view-content').forEach(content => {
+      if (content.id === `daily-view-${view}`) {
+        content.style.display = 'block';
+      } else {
+        content.style.display = 'none';
+      }
+    });
+    
+    // Daten für die entsprechende Ansicht laden
+    loadDailyPerformanceData();
+  }
+
+  // Lade tägliche Performance-Daten
+  async function loadDailyPerformanceData() {
+    const startDate = document.getElementById('dailyDateRangeStart')?.value;
+    const endDate = document.getElementById('dailyDateRangeEnd')?.value;
+    
+    if (!startDate || !endDate) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/daily-performance?startDate=${startDate}&endDate=${endDate}&limit=1000`);
+      const result = await response.json();
+      
+      if (!result.ok) {
+        throw new Error(result.error || 'Fehler beim Laden');
+      }
+
+      // Lade Zusammenfassung (nur für Tagesansicht)
+      if (currentDailyView === 'day') {
+        const summaryResponse = await fetch(`/api/daily-performance/stats/summary?startDate=${startDate}&endDate=${endDate}`);
+        const summary = await summaryResponse.json();
+        
+        if (summary.ok) {
+          loadDailySummary(summary.summary);
+        }
+      } else {
+        // Für aggregierte Ansichten eigene Zusammenfassung berechnen
+        loadAggregatedSummary(result.data, currentDailyView);
+      }
+
+      // Rendere je nach aktueller Ansicht
+      if (currentDailyView === 'day') {
+        renderDailyTable(result.data, startDate, endDate);
+      } else if (currentDailyView === 'week') {
+        renderWeeklyTable(result.data);
+      } else if (currentDailyView === 'month') {
+        renderMonthlyTable(result.data);
+      } else if (currentDailyView === 'year') {
+        renderYearlyTable(result.data);
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden:', err);
+      const tbody = document.getElementById('dailyPerformanceTableBody');
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; padding: 40px; color: var(--error);">Fehler: ${err.message}</td></tr>`;
+      }
+    }
+  }
+  
+  // Alias für Kompatibilität
+  window.loadDailyPerformanceData = loadDailyPerformanceData;
+
+  // Lade aggregierte Zusammenfassung
+  function loadAggregatedSummary(data, viewType) {
+    const planned = data.reduce((sum, row) => sum + (parseInt(row.planned_volume) || 0), 0);
+    const actual = data.reduce((sum, row) => sum + (parseInt(row.actual_volume) || 0), 0);
+    const totalHours = data.reduce((sum, row) => sum + (parseInt(row.actual_am_hours) || 0) + (parseInt(row.actual_pm_hours) || 0), 0);
+    const rate = totalHours > 0 ? (actual / totalHours).toFixed(1) : 0;
+    const percentage = planned > 0 ? ((actual / planned) * 100).toFixed(1) : 0;
+    const totalDays = data.length;
+
+    const plannedEl = document.getElementById('dailySummaryPlanned');
+    const actualEl = document.getElementById('dailySummaryActual');
+    const rateEl = document.getElementById('dailySummaryRate');
+    const percentageEl = document.getElementById('dailySummaryPercentage');
+
+    const viewLabel = viewType === 'week' ? 'Wochen' : viewType === 'month' ? 'Monate' : 'Jahre';
+
+    if (plannedEl) {
+      plannedEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #3b82f6; margin-bottom: 4px;">${planned.toLocaleString('de-DE')}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Summe Planned Volume</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${data.length} ${viewLabel}</div>
+      `;
+    }
+
+    if (actualEl) {
+      actualEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #10b981; margin-bottom: 4px;">${actual.toLocaleString('de-DE')}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Summe Actual Volume</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Ø ${totalDays > 0 ? Math.round(actual / totalDays).toLocaleString('de-DE') : 0} pro ${viewType === 'week' ? 'Woche' : viewType === 'month' ? 'Monat' : 'Jahr'}</div>
+      `;
+    }
+
+    if (rateEl) {
+      rateEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #f59e0b; margin-bottom: 4px;">${rate}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Ø Rate</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Units/Stunde</div>
+      `;
+    }
+
+    if (percentageEl) {
+      percentageEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#ef4444'}; margin-bottom: 4px;">${percentage}%</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">von Planned</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${percentage >= 80 ? '✅ Gut' : percentage >= 50 ? '⚠️ OK' : '❌ Niedrig'}</div>
+      `;
+    }
+  }
+
+  // Lade Zusammenfassung
+  function loadDailySummary(summary) {
+    const planned = summary.totalPlannedVolume || 0;
+    const actual = summary.totalActualVolume || 0;
+    const rate = summary.averageRate || 0;
+    const percentage = summary.percentageFromTotal || 0;
+    const totalDays = summary.totalDays || 0;
+
+    const plannedEl = document.getElementById('dailySummaryPlanned');
+    const actualEl = document.getElementById('dailySummaryActual');
+    const rateEl = document.getElementById('dailySummaryRate');
+    const percentageEl = document.getElementById('dailySummaryPercentage');
+
+    if (plannedEl) {
+      plannedEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #3b82f6; margin-bottom: 4px;">${planned.toLocaleString('de-DE')}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Planned Volume</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${totalDays} Tage</div>
+      `;
+    }
+
+    if (actualEl) {
+      actualEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #10b981; margin-bottom: 4px;">${actual.toLocaleString('de-DE')}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Actual Volume</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Ø ${totalDays > 0 ? Math.round(actual / totalDays).toLocaleString('de-DE') : 0}/Tag</div>
+      `;
+    }
+
+    if (rateEl) {
+      rateEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: #f59e0b; margin-bottom: 4px;">${rate.toFixed(1)}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Ø Rate</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Units/Stunde</div>
+      `;
+    }
+
+    if (percentageEl) {
+      percentageEl.innerHTML = `
+        <div style="font-size: 28px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#ef4444'}; margin-bottom: 4px;">${percentage}%</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">von Planned</div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${percentage >= 80 ? '✅ Gut' : percentage >= 50 ? '⚠️ OK' : '❌ Niedrig'}</div>
+      `;
+    }
+  }
+
+  // Rendere tägliche Performance-Tabelle
+  function renderDailyTable(data, startDate, endDate) {
+    const tbody = document.getElementById('dailyPerformanceTableBody');
+    if (!tbody) return;
+
+    const allDates = [];
+    const dateMap = new Map();
+    
+    data.forEach(row => {
+      dateMap.set(row.date, row);
+    });
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      allDates.push(dateStr);
+    }
+
+    if (allDates.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten im ausgewählten Zeitraum</td></tr>';
+      return;
+    }
+
+    let html = '';
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    
+    // Finde das Start Volume (vom ersten Tag mit Start Volume)
+    let baseStartVolume = null;
+    for (const dateStr of allDates.sort()) {
+      const row = dateMap.get(dateStr);
+      if (row && row.start_volume && row.start_volume > 0) {
+        baseStartVolume = row.start_volume;
+        break;
+      }
+    }
+
+    allDates.forEach(dateStr => {
+      const row = dateMap.get(dateStr) || {
+        date: dateStr,
+        day_name: dayNames[new Date(dateStr).getDay()],
+        start_volume: null,
+        rest_volume: 0,
+        actual_in_vol_cartons: 0,
+        planned_fte: 30,
+        planned_hours: 225,
+        planned_volume: 6300,
+        actual_am_hours: 0,
+        actual_pm_hours: 0,
+        actual_fte: 0,
+        actual_volume: 0,
+        rate: 0,
+        comment: ''
+      };
+      
+      // Verwende Start Volume vom aktuellen Tag oder vom ersten Tag mit Start Volume
+      const effectiveStartVolume = row.start_volume || baseStartVolume;
+      
+      // Berechne Rest Volume automatisch wenn Start Volume vorhanden
+      let calculatedRestVolume = row.rest_volume;
+      let isRestVolumeAuto = false;
+      if (effectiveStartVolume && effectiveStartVolume > 0) {
+        // Summiere alle Actual Volumes bis zu diesem Datum
+        let cumulativeActual = 0;
+        allDates.sort().forEach(d => {
+          if (d <= dateStr) {
+            const dayData = dateMap.get(d) || {};
+            cumulativeActual += (parseInt(dayData.actual_volume) || 0);
+          }
+        });
+        calculatedRestVolume = Math.max(0, effectiveStartVolume - cumulativeActual);
+        isRestVolumeAuto = true;
+      }
+
+      const isWeekend = row.day_name === 'So' || row.day_name === 'Sa';
+      const totalHours = (row.actual_am_hours || 0) + (row.actual_pm_hours || 0);
+      const rateValue = row.rate || (totalHours > 0 ? (row.actual_volume / totalHours).toFixed(1) : 0);
+      const rateColor = rateValue >= 20 ? '#10b981' : rateValue >= 15 ? '#f59e0b' : rateValue > 0 ? '#ef4444' : 'var(--text-muted)';
+      const rateBg = rateValue >= 20 ? 'rgba(16, 185, 129, 0.15)' : rateValue >= 15 ? 'rgba(245, 158, 11, 0.15)' : rateValue > 0 ? 'rgba(239, 68, 68, 0.15)' : 'transparent';
+
+      html += `
+        <tr data-date="${row.date}" style="${isWeekend ? 'background: rgba(107, 114, 128, 0.1); opacity: 0.8;' : ''}">
+          <td style="padding: 8px; position: sticky; left: 0; background: ${isWeekend ? 'rgba(107, 114, 128, 0.1)' : 'var(--bg-card)'}; z-index: 5; border-right: 2px solid var(--border-soft);">
+            <input type="date" value="${row.date}" class="date-input" style="width: 100%; padding: 6px 8px; background: transparent; border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyDate(this, '${row.date}')" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <span style="padding: 4px 10px; background: ${isWeekend ? 'rgba(107, 114, 128, 0.2)' : 'var(--bg-soft)'}; border-radius: 6px; font-weight: 600; font-size: 12px; color: ${isWeekend ? 'var(--text-muted)' : 'var(--text-main)'};">${row.day_name}</span>
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.start_volume || ''}" class="number-input" data-field="start_volume" data-date="${row.date}" placeholder="z.B. 300000" style="width: 130px; padding: 6px 8px; text-align: right; background: rgba(139, 92, 246, 0.1); border: 1px solid #8b5cf6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyField(this)" onblur="updateDailyField(this); setTimeout(() => saveDailyRow('${row.date}'), 100)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onmouseout="if(this === document.activeElement) return; this.style.borderColor='#8b5cf6'; this.style.boxShadow='none'" step="0.01" title="Start Volume - wird automatisch gespeichert wenn Sie das Feld verlassen">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${calculatedRestVolume.toFixed(0)}" class="number-input" data-field="rest_volume" data-date="${row.date}" ${isRestVolumeAuto ? 'readonly' : ''} style="width: 120px; padding: 6px 8px; text-align: right; background: ${isRestVolumeAuto ? 'rgba(139, 92, 246, 0.15)' : 'var(--bg-card)'}; border: 1px solid ${isRestVolumeAuto ? '#8b5cf6' : 'var(--border-soft)'}; border-radius: 6px; color: ${isRestVolumeAuto ? 'var(--text-main)' : 'var(--text-main)'}; font-size: 12px; font-weight: ${isRestVolumeAuto ? '700' : '400'}; cursor: ${isRestVolumeAuto ? 'not-allowed' : 'text'}; transition: all 0.2s ease;" onchange="${isRestVolumeAuto ? '' : 'updateDailyField(this)'}" onfocus="${isRestVolumeAuto ? '' : "this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'"}" onblur="${isRestVolumeAuto ? '' : "this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'"}" title="${isRestVolumeAuto ? 'Automatisch berechnet: Start Volume - Summe Actual Volumes' : 'Manuell editierbar (oder Start Volume setzen für automatische Berechnung)'}">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_in_vol_cartons || 0}" class="number-input" data-field="actual_in_vol_cartons" data-date="${row.date}" style="width: 100px; padding: 6px 8px; text-align: right; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.planned_fte || 30}" class="number-input" data-field="planned_fte" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.planned_hours || 225}" class="number-input" data-field="planned_hours" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.planned_volume || 6300}" class="number-input" data-field="planned_volume" data-date="${row.date}" style="width: 100px; padding: 6px 8px; text-align: right; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#3b82f6'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_am_hours || 0}" class="number-input" data-field="actual_am_hours" data-date="${row.date}" style="width: 90px; padding: 6px 8px; text-align: right; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#10b981'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_pm_hours || 0}" class="number-input" data-field="actual_pm_hours" data-date="${row.date}" style="width: 90px; padding: 6px 8px; text-align: right; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#f59e0b'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <input type="number" value="${row.actual_fte || 0}" class="number-input" data-field="actual_fte" data-date="${row.date}" style="width: 70px; padding: 6px 8px; text-align: center; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 12px; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <input type="number" value="${row.actual_volume || 0}" class="number-input" data-field="actual_volume" data-date="${row.date}" style="width: 110px; padding: 6px 8px; text-align: right; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 6px; color: var(--text-main); font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='#10b981'; this.style.boxShadow='none'">
+          </td>
+          <td style="padding: 8px; text-align: right;">
+            <span class="rate-display" data-date="${row.date}" style="display: inline-block; padding: 4px 10px; background: ${rateBg}; border-radius: 6px; font-weight: 700; color: ${rateColor}; font-size: 13px; min-width: 50px; text-align: center;">${rateValue > 0 ? rateValue : '-'}</span>
+          </td>
+          <td style="padding: 8px;">
+            <textarea class="comment-input" data-field="comment" data-date="${row.date}" style="width: 100%; min-width: 300px; padding: 8px; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 6px; color: var(--text-main); font-size: 11px; resize: vertical; min-height: 50px; font-family: inherit; transition: all 0.2s ease;" onchange="updateDailyField(this)" onfocus="this.style.borderColor='var(--gxo-orange)'; this.style.boxShadow='0 0 0 3px rgba(245, 59, 1, 0.1)'" onblur="this.style.borderColor='var(--border-soft)'; this.style.boxShadow='none'" placeholder="Kommentar eingeben...">${row.comment || ''}</textarea>
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <div style="display: flex; gap: 4px; justify-content: center;">
+              <button class="btn btn-ghost" onclick="event.stopPropagation(); saveDailyRow('${row.date}')" style="padding: 6px 10px; font-size: 12px; background: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #10b981; border-radius: 6px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'" title="Speichern">💾</button>
+              <button class="btn btn-ghost" onclick="event.stopPropagation(); deleteDailyRow('${row.date}')" style="padding: 6px 10px; font-size: 12px; background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; border-radius: 6px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'" title="Löschen">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  }
+
+  // Feld aktualisieren
+  async function updateDailyField(input) {
+    const date = input.getAttribute('data-date');
+    const field = input.getAttribute('data-field');
+    if (field === 'actual_volume' || field === 'actual_am_hours' || field === 'actual_pm_hours') {
+      calculateDailyRate(date);
+    }
+    if (field === 'start_volume' || field === 'actual_volume') {
+      // Aktualisiere Rest Volume wenn Start Volume oder Actual Volume geändert wird
+      updateDailyRestVolume(date);
+      
+      // Auto-Save für Start Volume (wichtig, damit es gespeichert wird)
+      if (field === 'start_volume') {
+        // Warte kurz, dann speichere automatisch
+        setTimeout(() => {
+          saveDailyRow(date);
+        }, 500);
+      }
+    }
+  }
+  
+  // Rest Volume automatisch berechnen
+  function updateDailyRestVolume(date) {
+    const row = document.querySelector(`tr[data-date="${date}"]`);
+    if (!row) return;
+    
+    const startVolumeInput = row.querySelector('input[data-field="start_volume"]');
+    const startVolume = parseFloat(startVolumeInput?.value || 0);
+    
+    if (startVolume <= 0) {
+      // Kein Start Volume gesetzt, Rest Volume bleibt manuell editierbar
+      const restVolumeInput = row.querySelector('input[data-field="rest_volume"]');
+      if (restVolumeInput) {
+        restVolumeInput.readOnly = false;
+        restVolumeInput.style.background = 'var(--bg-card)';
+        restVolumeInput.style.borderColor = 'var(--border-soft)';
+        restVolumeInput.style.cursor = 'text';
+      }
+      return;
+    }
+    
+    // Finde alle Daten bis zu diesem Datum
+    const allRows = Array.from(document.querySelectorAll('tr[data-date]'));
+    const currentDate = new Date(date);
+    let cumulativeActual = 0;
+    
+    allRows.forEach(r => {
+      const rowDate = r.getAttribute('data-date');
+      if (rowDate && rowDate <= date) {
+        const actualVolumeInput = r.querySelector('input[data-field="actual_volume"]');
+        cumulativeActual += (parseFloat(actualVolumeInput?.value || 0));
+      }
+    });
+    
+    const calculatedRest = Math.max(0, startVolume - cumulativeActual);
+    const restVolumeInput = row.querySelector('input[data-field="rest_volume"]');
+    if (restVolumeInput) {
+      restVolumeInput.value = calculatedRest.toFixed(0);
+      restVolumeInput.readOnly = true;
+      restVolumeInput.style.background = 'rgba(139, 92, 246, 0.15)';
+      restVolumeInput.style.borderColor = '#8b5cf6';
+      restVolumeInput.style.cursor = 'not-allowed';
+      restVolumeInput.style.fontWeight = '700';
+    }
+    
+    // Aktualisiere auch alle nachfolgenden Tage
+    allRows.forEach(r => {
+      const rowDate = r.getAttribute('data-date');
+      if (rowDate && rowDate > date) {
+        const rowStartVolumeInput = r.querySelector('input[data-field="start_volume"]');
+        const rowStartVolume = parseFloat(rowStartVolumeInput?.value || 0);
+        if (rowStartVolume <= 0) {
+          // Verwende das Start Volume vom aktuellen Tag
+          let rowCumulativeActual = 0;
+          allRows.forEach(r2 => {
+            const r2Date = r2.getAttribute('data-date');
+            if (r2Date && r2Date <= rowDate) {
+              const r2ActualVolumeInput = r2.querySelector('input[data-field="actual_volume"]');
+              rowCumulativeActual += (parseFloat(r2ActualVolumeInput?.value || 0));
+            }
+          });
+          const rowCalculatedRest = Math.max(0, startVolume - rowCumulativeActual);
+          const rowRestVolumeInput = r.querySelector('input[data-field="rest_volume"]');
+          if (rowRestVolumeInput) {
+            rowRestVolumeInput.value = rowCalculatedRest.toFixed(0);
+            rowRestVolumeInput.readOnly = true;
+            rowRestVolumeInput.style.background = 'rgba(139, 92, 246, 0.15)';
+            rowRestVolumeInput.style.borderColor = '#8b5cf6';
+            rowRestVolumeInput.style.cursor = 'not-allowed';
+            rowRestVolumeInput.style.fontWeight = '700';
+          }
+        }
+      }
+    });
+  }
+
+  // Rate berechnen
+  function calculateDailyRate(date) {
+    const row = document.querySelector(`tr[data-date="${date}"]`);
+    if (!row) return;
+    const actualVolume = parseFloat(row.querySelector('input[data-field="actual_volume"]')?.value || 0);
+    const actualAmHours = parseFloat(row.querySelector('input[data-field="actual_am_hours"]')?.value || 0);
+    const actualPmHours = parseFloat(row.querySelector('input[data-field="actual_pm_hours"]')?.value || 0);
+    const totalHours = actualAmHours + actualPmHours;
+    const rate = totalHours > 0 ? (actualVolume / totalHours).toFixed(1) : 0;
+    const rateDisplay = row.querySelector('.rate-display');
+    if (rateDisplay) {
+      const rateValue = parseFloat(rate);
+      const rateColor = rateValue >= 20 ? '#10b981' : rateValue >= 15 ? '#f59e0b' : rateValue > 0 ? '#ef4444' : 'var(--text-muted)';
+      const rateBg = rateValue >= 20 ? 'rgba(16, 185, 129, 0.15)' : rateValue >= 15 ? 'rgba(245, 158, 11, 0.15)' : rateValue > 0 ? 'rgba(239, 68, 68, 0.15)' : 'transparent';
+      rateDisplay.textContent = rateValue > 0 ? rate : '-';
+      rateDisplay.style.color = rateColor;
+      rateDisplay.style.background = rateBg;
+    }
+  }
+
+  // Zeile speichern
+  async function saveDailyRow(date) {
+    const row = document.querySelector(`tr[data-date="${date}"]`);
+    if (!row) return;
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const dateObj = new Date(date);
+    const dayName = dayNames[dateObj.getDay()];
+    
+    // Start Volume richtig auslesen (leerer String = null, sonst parseFloat)
+    const startVolumeInput = row.querySelector('input[data-field="start_volume"]');
+    const startVolumeValue = startVolumeInput?.value?.trim();
+    const startVolume = startVolumeValue && startVolumeValue !== '' ? parseFloat(startVolumeValue) : null;
+    
+    const data = {
+      date: date,
+      day_name: dayName,
+      start_volume: startVolume,
+      rest_volume: parseFloat(row.querySelector('input[data-field="rest_volume"]')?.value || 0),
+      actual_in_vol_cartons: parseInt(row.querySelector('input[data-field="actual_in_vol_cartons"]')?.value || 0),
+      planned_fte: parseInt(row.querySelector('input[data-field="planned_fte"]')?.value || 30),
+      planned_hours: parseInt(row.querySelector('input[data-field="planned_hours"]')?.value || 225),
+      planned_volume: parseInt(row.querySelector('input[data-field="planned_volume"]')?.value || 6300),
+      actual_am_hours: parseInt(row.querySelector('input[data-field="actual_am_hours"]')?.value || 0),
+      actual_pm_hours: parseInt(row.querySelector('input[data-field="actual_pm_hours"]')?.value || 0),
+      actual_fte: parseInt(row.querySelector('input[data-field="actual_fte"]')?.value || 0),
+      actual_volume: parseInt(row.querySelector('input[data-field="actual_volume"]')?.value || 0),
+      rate: parseFloat(row.querySelector('.rate-display')?.textContent || 0),
+      comment: row.querySelector('textarea[data-field="comment"]')?.value || ''
+    };
+    
+    console.log('Speichere Daten für', date, 'mit Start Volume:', startVolume);
+    
+    try {
+      const response = await fetch('/api/daily-performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (result.ok) {
+        const btn = row.querySelector('button[onclick*="saveDailyRow"]');
+        if (btn) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '✅';
+          btn.style.color = '#10b981';
+          setTimeout(() => { btn.innerHTML = originalText; btn.style.color = ''; }, 2000);
+        }
+        
+        // Nach dem Speichern Rest Volume neu berechnen und Tabelle aktualisieren
+        if (startVolume) {
+          setTimeout(() => {
+            loadDailyPerformanceData();
+          }, 300);
+        }
+      } else {
+        throw new Error(result.error || 'Fehler beim Speichern');
+      }
+    } catch (err) {
+      console.error('Fehler beim Speichern:', err);
+      alert('Fehler beim Speichern: ' + err.message);
+    }
+  }
+
+  // Zeile löschen
+  async function deleteDailyRow(date) {
+    if (!confirm(`Möchten Sie den Eintrag für ${date} wirklich löschen?`)) return;
+    try {
+      const response = await fetch(`/api/daily-performance/${date}`, { method: 'DELETE' });
+      const result = await response.json();
+      if (result.ok) {
+        loadDailyPerformanceData();
+      } else {
+        throw new Error(result.error || 'Fehler beim Löschen');
+      }
+    } catch (err) {
+      console.error('Fehler beim Löschen:', err);
+      alert('Fehler beim Löschen: ' + err.message);
+    }
+  }
+
+  // Datum aktualisieren
+  async function updateDailyDate(input, oldDate) {
+    const newDate = input.value;
+    if (newDate === oldDate) return;
+    const oldRow = document.querySelector(`tr[data-date="${oldDate}"]`);
+    if (!oldRow) return;
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const data = {
+      date: newDate,
+      day_name: dayNames[new Date(newDate).getDay()],
+      start_volume: parseFloat(oldRow.querySelector('input[data-field="start_volume"]')?.value || 0) || null,
+      rest_volume: parseFloat(oldRow.querySelector('input[data-field="rest_volume"]')?.value || 0),
+      actual_in_vol_cartons: parseInt(oldRow.querySelector('input[data-field="actual_in_vol_cartons"]')?.value || 0),
+      planned_fte: parseInt(oldRow.querySelector('input[data-field="planned_fte"]')?.value || 30),
+      planned_hours: parseInt(oldRow.querySelector('input[data-field="planned_hours"]')?.value || 225),
+      planned_volume: parseInt(oldRow.querySelector('input[data-field="planned_volume"]')?.value || 6300),
+      actual_am_hours: parseInt(oldRow.querySelector('input[data-field="actual_am_hours"]')?.value || 0),
+      actual_pm_hours: parseInt(oldRow.querySelector('input[data-field="actual_pm_hours"]')?.value || 0),
+      actual_fte: parseInt(oldRow.querySelector('input[data-field="actual_fte"]')?.value || 0),
+      actual_volume: parseInt(oldRow.querySelector('input[data-field="actual_volume"]')?.value || 0),
+      rate: parseFloat(oldRow.querySelector('.rate-display')?.textContent || 0),
+      comment: oldRow.querySelector('textarea[data-field="comment"]')?.value || ''
+    };
+    try {
+      await fetch('/api/daily-performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      await fetch(`/api/daily-performance/${oldDate}`, { method: 'DELETE' });
+      loadDailyPerformanceData();
+    } catch (err) {
+      console.error('Fehler beim Aktualisieren des Datums:', err);
+      alert('Fehler beim Aktualisieren: ' + err.message);
+      input.value = oldDate;
+    }
+  }
+
+  // Neuer Eintrag
+  function addDailyNewRow() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = prompt('Datum eingeben (YYYY-MM-DD):', today);
+    if (!dateInput) return;
+    fetch(`/api/daily-performance/${dateInput}`).then(r => r.json()).then(result => {
+      if (result.ok) loadDailyPerformanceData();
+    }).catch(err => console.error('Fehler:', err));
+  }
+
+  // Test-Daten erstellen
+  async function createDailyTestData() {
+    if (!confirm('Möchten Sie Test-Daten für die letzten 30 Tage erstellen? Bestehende Daten werden überschrieben.')) return;
+    try {
+      const response = await fetch('/api/daily-performance/seed?days=30', { method: 'POST' });
+      const result = await response.json();
+      if (result.ok) {
+        alert(`✅ ${result.message}`);
+        loadDailyPerformanceData();
+      } else {
+        throw new Error(result.error || 'Fehler beim Erstellen');
+      }
+    } catch (err) {
+      console.error('Fehler beim Erstellen der Test-Daten:', err);
+      alert('Fehler beim Erstellen der Test-Daten: ' + err.message);
+    }
+  }
+
+  // Export
+  async function exportDailyPerformanceData() {
+    const startDate = document.getElementById('dailyDateRangeStart')?.value;
+    const endDate = document.getElementById('dailyDateRangeEnd')?.value;
+    if (!startDate || !endDate) {
+      alert('Bitte wählen Sie ein Datumsbereich aus');
+      return;
+    }
+    try {
+      const response = await fetch(`/api/daily-performance?startDate=${startDate}&endDate=${endDate}&limit=1000`);
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || 'Fehler beim Export');
+      const headers = ['Datum', 'Tag', 'Rest Volume', 'Actual IN Vol (Cartons)', 'Planned FTE', 'Planned Hours', 'Planned Volume', 'Actual AM Hours', 'Actual PM Hours', 'Actual FTE', 'Actual Volume', 'Rate', 'Comment'];
+      const csvRows = [headers.join(';')];
+      result.data.forEach(row => {
+        csvRows.push([row.date, row.day_name || '', row.rest_volume || 0, row.actual_in_vol_cartons || 0, row.planned_fte || 30, row.planned_hours || 225, row.planned_volume || 6300, row.actual_am_hours || 0, row.actual_pm_hours || 0, row.actual_fte || 0, row.actual_volume || 0, row.rate || 0, (row.comment || '').replace(/"/g, '""')].join(';'));
+      });
+      const csv = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Daily_Performance_${startDate}_${endDate}.csv`;
+      link.click();
+    } catch (err) {
+      console.error('Fehler beim Export:', err);
+      alert('Fehler beim Export: ' + err.message);
+    }
+  }
+
+  // Tab-Wechsel erweitern
+  const originalSwitchTab = switchTab;
+  switchTab = function(tab) {
+    originalSwitchTab(tab);
+    if (tab === 'daily') {
+      initDailyPerformanceTab();
+    }
+  };
+
+  // Wochenansicht rendern
+  function renderWeeklyTable(data) {
+    const tbody = document.getElementById('weeklyPerformanceTableBody');
+    if (!tbody) return;
+    
+    // Gruppiere nach Kalenderwoche
+    const weekMap = new Map();
+    
+    data.forEach(row => {
+      const date = new Date(row.date);
+      const year = date.getFullYear();
+      const week = getWeekNumber(date);
+      const key = `${year}-W${week.toString().padStart(2, '0')}`;
+      
+      if (!weekMap.has(key)) {
+        weekMap.set(key, {
+          year,
+          week,
+          key,
+          dates: [],
+          rest_volumes: [],
+          actual_in_vol_cartons: 0,
+          planned_fte: 0,
+          planned_hours: 0,
+          planned_volume: 0,
+          actual_am_hours: 0,
+          actual_pm_hours: 0,
+          actual_fte: 0,
+          actual_volumes: [],
+          rates: []
+        });
+      }
+      
+      const weekData = weekMap.get(key);
+      weekData.dates.push(row.date);
+      if (row.rest_volume) weekData.rest_volumes.push(row.rest_volume);
+      weekData.actual_in_vol_cartons += (parseInt(row.actual_in_vol_cartons) || 0);
+      weekData.planned_fte += (parseInt(row.planned_fte) || 0);
+      weekData.planned_hours += (parseInt(row.planned_hours) || 0);
+      weekData.planned_volume += (parseInt(row.planned_volume) || 0);
+      weekData.actual_am_hours += (parseInt(row.actual_am_hours) || 0);
+      weekData.actual_pm_hours += (parseInt(row.actual_pm_hours) || 0);
+      weekData.actual_fte += (parseInt(row.actual_fte) || 0);
+      if (row.actual_volume) weekData.actual_volumes.push(parseInt(row.actual_volume) || 0);
+      if (row.rate) weekData.rates.push(parseFloat(row.rate) || 0);
+    });
+    
+    let html = '';
+    const sortedWeeks = Array.from(weekMap.values()).sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.week - a.week;
+    });
+    
+    sortedWeeks.forEach(weekData => {
+      const avgRestVolume = weekData.rest_volumes.length > 0 
+        ? (weekData.rest_volumes.reduce((a, b) => a + b, 0) / weekData.rest_volumes.length).toFixed(0)
+        : 0;
+      const sumActualVolume = weekData.actual_volumes.reduce((a, b) => a + b, 0);
+      const avgRate = weekData.rates.length > 0
+        ? (weekData.rates.reduce((a, b) => a + b, 0) / weekData.rates.length).toFixed(1)
+        : 0;
+      const avgFte = weekData.dates.length > 0
+        ? (weekData.actual_fte / weekData.dates.length).toFixed(1)
+        : 0;
+      
+      html += `
+        <tr>
+          <td style="padding: 8px; font-weight: 600;">KW ${weekData.week}</td>
+          <td style="padding: 8px; text-align: center;">${weekData.year}</td>
+          <td style="padding: 8px; text-align: right;">${parseFloat(avgRestVolume).toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${weekData.actual_in_vol_cartons.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${weekData.planned_fte.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${weekData.planned_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${weekData.planned_volume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${weekData.actual_am_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${weekData.actual_pm_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${avgFte}</td>
+          <td style="padding: 8px; text-align: right; font-weight: 600;">${sumActualVolume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">
+            <span style="display: inline-block; padding: 4px 10px; background: ${parseFloat(avgRate) >= 20 ? 'rgba(16, 185, 129, 0.15)' : parseFloat(avgRate) >= 15 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; border-radius: 6px; font-weight: 700; color: ${parseFloat(avgRate) >= 20 ? '#10b981' : parseFloat(avgRate) >= 15 ? '#f59e0b' : '#ef4444'}; font-size: 13px;">${avgRate}</span>
+          </td>
+        </tr>
+      `;
+    });
+    
+    tbody.innerHTML = html || '<tr><td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten verfügbar</td></tr>';
+  }
+  
+  // Monatsansicht rendern
+  function renderMonthlyTable(data) {
+    const tbody = document.getElementById('monthlyPerformanceTableBody');
+    if (!tbody) return;
+    
+    // Gruppiere nach Monat
+    const monthMap = new Map();
+    
+    data.forEach(row => {
+      const date = new Date(row.date);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthName = date.toLocaleDateString('de-DE', { month: 'long' });
+      const key = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      if (!monthMap.has(key)) {
+        monthMap.set(key, {
+          year,
+          month,
+          monthName,
+          key,
+          dates: [],
+          rest_volumes: [],
+          actual_in_vol_cartons: 0,
+          planned_fte: 0,
+          planned_hours: 0,
+          planned_volume: 0,
+          actual_am_hours: 0,
+          actual_pm_hours: 0,
+          actual_fte: 0,
+          actual_volumes: [],
+          rates: []
+        });
+      }
+      
+      const monthData = monthMap.get(key);
+      monthData.dates.push(row.date);
+      if (row.rest_volume) monthData.rest_volumes.push(row.rest_volume);
+      monthData.actual_in_vol_cartons += (parseInt(row.actual_in_vol_cartons) || 0);
+      monthData.planned_fte += (parseInt(row.planned_fte) || 0);
+      monthData.planned_hours += (parseInt(row.planned_hours) || 0);
+      monthData.planned_volume += (parseInt(row.planned_volume) || 0);
+      monthData.actual_am_hours += (parseInt(row.actual_am_hours) || 0);
+      monthData.actual_pm_hours += (parseInt(row.actual_pm_hours) || 0);
+      monthData.actual_fte += (parseInt(row.actual_fte) || 0);
+      if (row.actual_volume) monthData.actual_volumes.push(parseInt(row.actual_volume) || 0);
+      if (row.rate) monthData.rates.push(parseFloat(row.rate) || 0);
+    });
+    
+    let html = '';
+    const sortedMonths = Array.from(monthMap.values()).sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+    
+    sortedMonths.forEach(monthData => {
+      const avgRestVolume = monthData.rest_volumes.length > 0 
+        ? (monthData.rest_volumes.reduce((a, b) => a + b, 0) / monthData.rest_volumes.length).toFixed(0)
+        : 0;
+      const sumActualVolume = monthData.actual_volumes.reduce((a, b) => a + b, 0);
+      const avgRate = monthData.rates.length > 0
+        ? (monthData.rates.reduce((a, b) => a + b, 0) / monthData.rates.length).toFixed(1)
+        : 0;
+      const avgFte = monthData.dates.length > 0
+        ? (monthData.actual_fte / monthData.dates.length).toFixed(1)
+        : 0;
+      
+      html += `
+        <tr>
+          <td style="padding: 8px; font-weight: 600;">${monthData.monthName}</td>
+          <td style="padding: 8px; text-align: center;">${monthData.year}</td>
+          <td style="padding: 8px; text-align: right;">${parseFloat(avgRestVolume).toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${monthData.actual_in_vol_cartons.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${monthData.planned_fte.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${monthData.planned_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${monthData.planned_volume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${monthData.actual_am_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${monthData.actual_pm_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${avgFte}</td>
+          <td style="padding: 8px; text-align: right; font-weight: 600;">${sumActualVolume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">
+            <span style="display: inline-block; padding: 4px 10px; background: ${parseFloat(avgRate) >= 20 ? 'rgba(16, 185, 129, 0.15)' : parseFloat(avgRate) >= 15 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; border-radius: 6px; font-weight: 700; color: ${parseFloat(avgRate) >= 20 ? '#10b981' : parseFloat(avgRate) >= 15 ? '#f59e0b' : '#ef4444'}; font-size: 13px;">${avgRate}</span>
+          </td>
+        </tr>
+      `;
+    });
+    
+    tbody.innerHTML = html || '<tr><td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten verfügbar</td></tr>';
+  }
+  
+  // Jahresansicht rendern
+  function renderYearlyTable(data) {
+    const tbody = document.getElementById('yearlyPerformanceTableBody');
+    if (!tbody) return;
+    
+    // Gruppiere nach Jahr
+    const yearMap = new Map();
+    
+    data.forEach(row => {
+      const date = new Date(row.date);
+      const year = date.getFullYear();
+      
+      if (!yearMap.has(year)) {
+        yearMap.set(year, {
+          year,
+          dates: [],
+          rest_volumes: [],
+          actual_in_vol_cartons: 0,
+          planned_fte: 0,
+          planned_hours: 0,
+          planned_volume: 0,
+          actual_am_hours: 0,
+          actual_pm_hours: 0,
+          actual_fte: 0,
+          actual_volumes: [],
+          rates: []
+        });
+      }
+      
+      const yearData = yearMap.get(year);
+      yearData.dates.push(row.date);
+      if (row.rest_volume) yearData.rest_volumes.push(row.rest_volume);
+      yearData.actual_in_vol_cartons += (parseInt(row.actual_in_vol_cartons) || 0);
+      yearData.planned_fte += (parseInt(row.planned_fte) || 0);
+      yearData.planned_hours += (parseInt(row.planned_hours) || 0);
+      yearData.planned_volume += (parseInt(row.planned_volume) || 0);
+      yearData.actual_am_hours += (parseInt(row.actual_am_hours) || 0);
+      yearData.actual_pm_hours += (parseInt(row.actual_pm_hours) || 0);
+      yearData.actual_fte += (parseInt(row.actual_fte) || 0);
+      if (row.actual_volume) yearData.actual_volumes.push(parseInt(row.actual_volume) || 0);
+      if (row.rate) yearData.rates.push(parseFloat(row.rate) || 0);
+    });
+    
+    let html = '';
+    const sortedYears = Array.from(yearMap.values()).sort((a, b) => b.year - a.year);
+    
+    sortedYears.forEach(yearData => {
+      const avgRestVolume = yearData.rest_volumes.length > 0 
+        ? (yearData.rest_volumes.reduce((a, b) => a + b, 0) / yearData.rest_volumes.length).toFixed(0)
+        : 0;
+      const sumActualVolume = yearData.actual_volumes.reduce((a, b) => a + b, 0);
+      const avgRate = yearData.rates.length > 0
+        ? (yearData.rates.reduce((a, b) => a + b, 0) / yearData.rates.length).toFixed(1)
+        : 0;
+      const avgFte = yearData.dates.length > 0
+        ? (yearData.actual_fte / yearData.dates.length).toFixed(1)
+        : 0;
+      
+      html += `
+        <tr>
+          <td style="padding: 8px; font-weight: 600; font-size: 14px;">${yearData.year}</td>
+          <td style="padding: 8px; text-align: right;">${parseFloat(avgRestVolume).toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${yearData.actual_in_vol_cartons.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${yearData.planned_fte.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${yearData.planned_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${yearData.planned_volume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${yearData.actual_am_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">${yearData.actual_pm_hours.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: center;">${avgFte}</td>
+          <td style="padding: 8px; text-align: right; font-weight: 600; font-size: 13px;">${sumActualVolume.toLocaleString('de-DE')}</td>
+          <td style="padding: 8px; text-align: right;">
+            <span style="display: inline-block; padding: 4px 10px; background: ${parseFloat(avgRate) >= 20 ? 'rgba(16, 185, 129, 0.15)' : parseFloat(avgRate) >= 15 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; border-radius: 6px; font-weight: 700; color: ${parseFloat(avgRate) >= 20 ? '#10b981' : parseFloat(avgRate) >= 15 ? '#f59e0b' : '#ef4444'}; font-size: 13px;">${avgRate}</span>
+          </td>
+        </tr>
+      `;
+    });
+    
+    tbody.innerHTML = html || '<tr><td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">Keine Daten verfügbar</td></tr>';
+  }
+  
+  // Hilfsfunktion: Kalenderwoche berechnen
+  function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  window.loadDailyPerformanceData = loadDailyPerformanceData;
+  window.createDailyTestData = createDailyTestData;
+  window.exportDailyPerformanceData = exportDailyPerformanceData;
+  window.addDailyNewRow = addDailyNewRow;
+  window.saveDailyRow = saveDailyRow;
+  window.deleteDailyRow = deleteDailyRow;
+  window.updateDailyField = updateDailyField;
+  window.updateDailyDate = updateDailyDate;
+  window.switchDailyView = switchDailyView;
 </script>
 
 </body>
