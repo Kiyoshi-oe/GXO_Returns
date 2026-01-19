@@ -210,6 +210,12 @@ router.get('/filter-ra', (req, res) => {
     if (filter_type === 'request') {
       sql += ` AND (mh_status LIKE ? OR mh_status LIKE ?)`;
       params.push('%Request%', '%request%');
+    } else if (filter_type === 'cancelled') {
+      sql += ` AND (mh_status LIKE ? OR mh_status LIKE ?)`;
+      params.push('%Cancelled%', '%cancelled%');
+    } else if (filter_type === 'request_or_cancelled') {
+      sql += ` AND (mh_status LIKE ? OR mh_status LIKE ? OR mh_status LIKE ? OR mh_status LIKE ?)`;
+      params.push('%Request%', '%request%', '%Cancelled%', '%cancelled%');
     } else if (filter_type === 'missing_ra') {
       sql += ` AND (asn_ra_no IS NULL OR asn_ra_no = '' OR asn_ra_no = 'NULL')`;
       sql += ` AND (olpn IS NOT NULL AND olpn != '' OR dn IS NOT NULL AND dn != '')`;

@@ -804,9 +804,9 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Area</label>
+              <label>Bereich</label>
               <div class="searchable-dropdown" id="areaDropdown">
-                <input type="text" id="areaInput" placeholder="Area wählen oder tippen..." autocomplete="off">
+                <input type="text" id="areaInput" placeholder="Bereich wählen oder tippen..." autocomplete="off">
                 <div class="searchable-dropdown-list" id="areaDropdownList"></div>
               </div>
             </div>
@@ -921,9 +921,9 @@
                 <input type="date" id="bulkDateInput" lang="de-DE">
               </div>
               <div class="form-group">
-                <label>Area (fest)</label>
+                <label>Bereich (fest)</label>
                 <div class="searchable-dropdown" id="bulkAreaDropdown">
-                  <input type="text" id="bulkAreaInput" placeholder="Area wählen..." autocomplete="off">
+                  <input type="text" id="bulkAreaInput" placeholder="Bereich wählen..." autocomplete="off">
                   <div class="searchable-dropdown-list" id="bulkAreaDropdownList"></div>
                 </div>
               </div>
@@ -11847,6 +11847,9 @@
     
     // Stellplatz-Dropdown initialisieren
     initOperatorLocationDropdown();
+    
+    // Dropdown-Optionen laden (Area, Land, etc.)
+    loadDropdownOptions();
     
     // Datum-Input: CW automatisch aktualisieren wenn Datum geändert wird
     const dateInput = document.getElementById('operatorDateInput');

@@ -1307,7 +1307,6 @@ class I18n {
       'Palette umsetzen': this.t('dashboard.move-pallet'),
       'RA Report prüfen': this.t('dashboard.check-ra-report'),
       'Retouren nach Frachtführer': this.t('dashboard.returns-by-carrier'),
-      'Verteilung als Beispiel, Daten sind Platzhalter': this.t('dashboard.returns-by-carrier-subtitle'),
       'Lager Kennzahlen': this.currentLang === 'en' ? 'Warehouse Key Figures' : 'Lager Kennzahlen',
       '📋 Letzte Einträge Wareneingang': this.t('dashboard.last-entries'),
       'Letzte Einträge Wareneingang': this.t('dashboard.last-entries'),

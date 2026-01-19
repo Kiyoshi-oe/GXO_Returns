@@ -92,8 +92,7 @@ function initStatements() {
       unclearRAs: db.prepare(`
         SELECT COUNT(*) as c
         FROM inbound_simple
-        WHERE (neue_ra IS NOT NULL AND neue_ra != '') 
-           OR (new_reopen_ra IS NOT NULL AND new_reopen_ra != '')
+        WHERE (asn_ra_no IS NULL OR asn_ra_no = '')
           AND ignore_flag = 0
       `)
     },

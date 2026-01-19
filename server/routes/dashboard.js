@@ -197,27 +197,79 @@ router.get('/trends', (req, res) => {
 router.get('/charts/week', (req, res) => {
   try {
     const db = getDb();
+    // Letzte 8 Wochen anzeigen
     const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - 7);
+    weekStart.setDate(weekStart.getDate() - 56); // 8 Wochen = 56 Tage
     const weekStartStr = weekStart.toISOString();
     
+    // Versuche zuerst das cw-Feld zu verwenden, sonst berechne aus Datum
     const data = db.prepare(`
       SELECT 
+        cw,
         DATE(created_at) as date,
         COUNT(*) as count,
         SUM(actual_carton) as cartons
       FROM inbound_simple
       WHERE created_at >= ? AND ignore_flag = 0
-      GROUP BY DATE(created_at)
+      GROUP BY cw, DATE(created_at)
       ORDER BY date
     `).all(weekStartStr);
     
-    res.json(data);
+    // Format für Chart.js: Kalenderwochen gruppieren
+    const weekData = {};
+    data.forEach(row => {
+      let weekLabel;
+      
+      // Verwende cw-Feld falls vorhanden, sonst berechne aus Datum
+      if (row.cw && row.cw.trim() !== '') {
+        // cw kann "CW 45" oder "45" sein
+        const cwMatch = row.cw.match(/(\d+)/);
+        if (cwMatch) {
+          weekLabel = `CW ${cwMatch[1]}`;
+        } else {
+          weekLabel = row.cw;
+        }
+      } else {
+        // Berechne Kalenderwoche aus Datum
+        const date = new Date(row.date);
+        const week = getWeekNumber(date);
+        weekLabel = `CW ${week}`;
+      }
+      
+      if (!weekData[weekLabel]) {
+        weekData[weekLabel] = 0;
+      }
+      weekData[weekLabel] += row.count;
+    });
+    
+    // Sortiere nach Kalenderwoche (numerisch)
+    const sortedWeeks = Object.keys(weekData).sort((a, b) => {
+      const weekA = parseInt(a.replace(/[^\d]/g, '')) || 0;
+      const weekB = parseInt(b.replace(/[^\d]/g, '')) || 0;
+      return weekA - weekB;
+    });
+    
+    // Nur die letzten 8 Wochen anzeigen
+    const recentWeeks = sortedWeeks.slice(-8);
+    
+    res.json({
+      labels: recentWeeks,
+      data: recentWeeks.map(week => weekData[week])
+    });
   } catch (err) {
     console.error("Fehler beim Abrufen der Wochendaten:", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+// Hilfsfunktion: Kalenderwoche berechnen (ISO 8601)
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 
 // GET /api/dashboard/charts/carrier - Carrier-Verteilung für Chart
 router.get('/charts/carrier', (req, res) => {
@@ -236,7 +288,11 @@ router.get('/charts/carrier', (req, res) => {
       LIMIT 10
     `).all();
     
-    res.json(data);
+    // Format für Chart.js
+    res.json({
+      labels: data.map(d => d.label || 'Unbekannt'),
+      data: data.map(d => d.value)
+    });
   } catch (err) {
     console.error("Fehler beim Abrufen der Carrier-Daten:", err);
     res.status(500).json({ ok: false, error: err.message });

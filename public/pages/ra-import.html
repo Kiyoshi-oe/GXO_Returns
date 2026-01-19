@@ -183,6 +183,8 @@
                   <label>Filter-Typ</label>
                   <select id="filterType" class="form-select" onchange="loadRAFilterData()">
                     <option value="request">📋 RA mit Status "Request"</option>
+                    <option value="cancelled">🚫 RA mit Status "Cancelled"</option>
+                    <option value="request_or_cancelled">📋 RA mit Status "Request" oder "Cancelled"</option>
                     <option value="missing_ra">❌ OLPN/DN ohne RA-Nummer</option>
                     <option value="all">📦 Alle Einträge</option>
                   </select>
@@ -9915,6 +9917,11 @@
   window.assignRAToEntry = assignRAToEntry;
   window.debounceFilter = debounceFilter;
   window.loadRAHistory = loadRAHistory;
+  window.performSearch = performSearch;
+  window.debounceSearch = debounceSearch;
+  window.selectEntry = selectEntry;
+  window.assignRAToSingleEntry = assignRAToSingleEntry;
+  window.clearSelectedEntry = clearSelectedEntry;
   
   // Initialisierung
   document.addEventListener('DOMContentLoaded', () => {
